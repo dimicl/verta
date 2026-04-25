@@ -1,0 +1,42 @@
+name: verta
+
+services:
+  db:
+    image: postgres:17
+    container_name: verta_db
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: verta_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - verta_postgres_data:/var/lib/postgresql/data
+
+  verta-api:
+    build:
+      context: ../..
+      dockerfile: infra/docker/backend.Dockerfile
+    container_name: verta_app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=verta_db;Username=admin;Password=password123
+      - ASPNETCORE_ENVIRONMENT=Development
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: verta_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@verta.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+
+volumes:
+  verta_postgres_data:
