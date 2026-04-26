@@ -1,0 +1,80 @@
+<div class="auth-page">
+  <div class="auth-card">
+    <img src="/icons/verta.png" class="logo" />
+
+    @if(isRegisterMode){
+    <ng-container *ngTemplateOutlet="registerTemplate"></ng-container>
+    } @else {
+    <ng-container *ngTemplateOutlet="loginTemplate"></ng-container>
+    }
+
+    <button
+      class="switch-mode-button"
+      type="button"
+      (click)="onToggleAuthMode()"
+    >
+      {{ subtitleText() }}
+    </button>
+
+    <button
+      class="action-button"
+      [disabled]="loginForm.invalid || registerForm.invalid"
+      (click)="onFormAction()"
+    >
+      {{ buttonText() }}
+    </button>
+  </div>
+</div>
+
+<ng-template #loginTemplate>
+  <form class="auth-form" [formGroup]="loginForm">
+    <app-input
+      [label]="'Email'"
+      [type]="'email'"
+      [icon]="sharedSvgRoutes.EMAIL_ICON"
+      (onGetValue)="loginForm.get('email')?.setValue($event)"
+    />
+    <app-input
+      [label]="'Password'"
+      [type]="'password'"
+      [icon]="sharedSvgRoutes.PASSWORD_ICON"
+      (onGetValue)="loginForm.get('password')?.setValue($event)"
+    />
+  </form>
+</ng-template>
+
+<ng-template #registerTemplate>
+  <form class="auth-form" [formGroup]="registerForm">
+    <div class="form-grid">
+      <app-input
+        [label]="'First Name'"
+        [type]="'text'"
+        (onGetValue)="registerForm.get('firstName')?.setValue($event)"
+      />
+      <app-input
+        [label]="'Last Name'"
+        [type]="'text'"
+        (onGetValue)="registerForm.get('lastName')?.setValue($event)"
+      />
+    </div>
+
+    <app-input
+      [label]="'Email'"
+      [type]="'email'"
+      [icon]="sharedSvgRoutes.EMAIL_ICON"
+      (onGetValue)="registerForm.get('email')?.setValue($event)"
+    />
+    <app-input
+      [label]="'Password'"
+      [type]="'password'"
+      [icon]="sharedSvgRoutes.PASSWORD_ICON"
+      (onGetValue)="registerForm.get('password')?.setValue($event)"
+    />
+    <app-input
+      [label]="'Confirm Password'"
+      [type]="'password'"
+      [icon]="sharedSvgRoutes.PASSWORD_ICON"
+      (onGetValue)="registerForm.get('confirmPassword')?.setValue($event)"
+    />
+  </form>
+</ng-template>

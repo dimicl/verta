@@ -1,11 +1,23 @@
 import { Routes } from '@angular/router';
+import { MainComponent } from '../main/main.component';
+import { AuthComponent } from '../auth/auth.component';
 
 export const routes: Routes = [
   {
+    path: '',
+    redirectTo: 'login',
+    pathMatch: 'full',
+  },
+  {
     path: 'main',
-    loadChildren: () =>
-      import('../main/main.component').then((m) => m.MainComponent),
-    /*     resolve: { main: MainResolver },
-     */
+    component: MainComponent,
+  },
+  {
+    path: 'login',
+    component: AuthComponent,
+  },
+  {
+    path: 'register',
+    component: AuthComponent,
   },
 ];

@@ -1,0 +1,96 @@
+.input-wrapper {
+  width: 100%;
+}
+
+.input-container {
+  position: relative;
+  width: 100%;
+}
+
+.input-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  transform: translateY(-50%);
+  color: #8b919b;
+  pointer-events: none;
+  opacity: 0.95;
+}
+
+.input-icon ::ng-deep svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.input-icon ::ng-deep path {
+  fill: #8b919b;
+}
+
+.input-field {
+  width: 100%;
+  padding: 4px 6px;
+  font-size: 14px;
+  border: none;
+  min-height: 26px;
+  border-radius: 4px;
+  background-color: #eeeeee;
+  color: #2e3138;
+  outline: none;
+  box-shadow: none;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: transparent;
+  }
+
+  &:hover {
+    background-color: #dadada;
+  }
+
+  &:focus {
+    background-color: #424242;
+    color: #e7f1ff;
+  }
+}
+
+.input-label {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  font-weight: 400;
+  color: #6c757d;
+  pointer-events: none;
+  transition: all 0.2s ease;
+}
+
+.input-wrapper.has-icon .input-field {
+  padding-left: 34px;
+}
+
+.input-wrapper.has-icon .input-label {
+  left: 34px;
+}
+
+.input-field:focus + .input-label,
+.input-wrapper.has-value .input-label {
+  top: 0;
+  transform: translateY(-100%);
+  font-size: 11px;
+  font-weight: 700;
+  color: #424242;
+  padding-bottom: 4px;
+}
+
+.input-wrapper.focused .input-label {
+  color: #424242;
+}
+
+.input-wrapper.focused .input-icon {
+  color: #d0d5de;
+}
