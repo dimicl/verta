@@ -1,0 +1,22 @@
+<div
+  class="input-wrapper"
+  [class.focused]="isFocused()"
+  [class.has-value]="!!value()"
+  [class.has-icon]="!!icon()"
+>
+  <div class="input-container">
+    @if (icon()) {
+    <svg-icon class="input-icon" [src]="icon()"></svg-icon>
+    }
+    <input
+      class="input-field"
+      [type]="type()"
+      [id]="label() || 'input'"
+      [placeholder]="placeholder() || label()"
+      (focus)="onFocus()"
+      (blur)="onBlur()"
+      (input)="onInput($event)"
+    />
+    <label class="input-label" [for]="label() || 'input'">{{ label() }}</label>
+  </div>
+</div>
