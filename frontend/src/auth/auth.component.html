@@ -16,11 +16,9 @@
       {{ subtitleText() }}
     </button>
 
-    <button
-      class="action-button"
-      [disabled]="loginForm.invalid || registerForm.invalid"
-      (click)="onFormAction()"
-    >
+    {{ registerForm.invalid }}
+    {{ loginForm.invalid }}
+    <button class="action-button" (click)="onFormAction()">
       {{ buttonText() }}
     </button>
   </div>

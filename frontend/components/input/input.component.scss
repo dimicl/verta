@@ -19,13 +19,13 @@
   opacity: 0.95;
 }
 
-.input-icon ::ng-deep svg {
+.input-icon svg {
   width: 16px;
   height: 16px;
   display: block;
 }
 
-.input-icon ::ng-deep path {
+.input-icon path {
   fill: #8b919b;
 }
 
@@ -93,4 +93,10 @@
 
 .input-wrapper.focused .input-icon {
   color: #d0d5de;
+}
+
+.error-message {
+  color: #df2214;
+  font-size: 12px;
+  margin-top: 4px;
 }

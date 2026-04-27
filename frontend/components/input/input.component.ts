@@ -11,10 +11,9 @@ export class InputComponent {
   public icon = input<string>();
   public type = input<string>('text');
   public label = input<string>('');
-  public placeholder = input<string>('');
   public value = signal<string>('');
   public isFocused = signal<boolean>(false);
-
+  public errorMessage = signal<string>('');
   public onGetValue = output<string>();
 
   public onInput(event: Event) {

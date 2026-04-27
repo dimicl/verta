@@ -1,6 +1,8 @@
 using backend.Application.Interfaces;
 using backend.Infrastructure.Persistence;
 using backend.Shared.Helpers;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Application.Services;
 
@@ -9,14 +11,20 @@ public class AuthService : IAuthService
     private readonly AppDbContext _context;
     private readonly IConfiguration _configuration;
     private readonly IUserRepository _userRepository;
-    public AuthService(AppDbContext context, IConfiguration configuration, IUserRepository userRepository)
+
+    public AuthService(
+        AppDbContext context,
+        IConfiguration configuration,
+        IUserRepository userRepository      
+        )
     {
         _context = context;
         _configuration = configuration;
         _userRepository = userRepository;
+        
     }
 
-    public async Task<AuthResponse> Register(RegisterRequest request)
+    public async Task Register(RegisterRequest request)
     {
         var passwordHash = PasswordHasher.Hash(request.Password);
         var user = new User
@@ -25,20 +33,17 @@ public class AuthService : IAuthService
             Password = passwordHash,
             FirstName = request.FirstName,
             LastName = request.LastName,
-            Role = UserRole.Member,
             Status = "active",
-            CreatedAt = DateTime.UtcNow.ToString(),
-            UpdatedAt = DateTime.UtcNow.ToString()
+            CreatedAt = DateTime.UtcNow.ToShortDateString(),
+            UpdatedAt = DateTime.UtcNow.ToShortDateString()
         };
         
-        var createdUser = await _userRepository.Create(user);
-        return AuthHelper.BuildAuthResponse(createdUser, _configuration);
-        
-
+        await _userRepository.Add(user);
     }
+
     public async Task<AuthResponse> Login(LoginRequest request)
     {
-        var user = await _userRepository.GetByEmail(request.Email);
+        var user = await _userRepository.GetByEmailAsync(request.Email);
         if (user == null)
             throw new Exception("User not found");
         

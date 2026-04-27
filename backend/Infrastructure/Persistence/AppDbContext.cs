@@ -15,7 +15,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.Email).IsRequired();
             entity.Property(e => e.Password).IsRequired();
-            entity.Property(e => e.Role).HasConversion<string>();
         });
     }
 }

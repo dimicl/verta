@@ -12,7 +12,7 @@
       class="input-field"
       [type]="type()"
       [id]="label() || 'input'"
-      [placeholder]="placeholder() || label()"
+      [placeholder]="''"
       (focus)="onFocus()"
       (blur)="onBlur()"
       (input)="onInput($event)"
@@ -20,3 +20,4 @@
     <label class="input-label" [for]="label() || 'input'">{{ label() }}</label>
   </div>
 </div>
+<div class="error-message">{{ errorMessage() }}</div>

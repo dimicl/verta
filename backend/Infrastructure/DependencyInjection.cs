@@ -1,5 +1,7 @@
 using backend.Application.Interfaces;
 using backend.Application.Services;
+using backend.Infrastructure.Messaging;
+using backend.Infrastructure.Notifications;
 using backend.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,8 +16,13 @@ public static class DependencyInjection
 
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(connectionString));
+
+        //services
         services.AddScoped<IAuthService, AuthService>();
-        services.AddScoped<IUserRepository, UserService>();
+        services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IChatService, SignalRNotificationService>();
+        services.AddScoped<IMessageBus, RabbitMQBus>();
 
         return services;
     }

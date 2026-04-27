@@ -1,0 +1,10 @@
+using backend.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+public class ConversationRepository: GenericRepository<Conversation>, IConversationRepository
+{
+    public ConversationRepository(AppDbContext context): base(context){}
+    public async Task<Conversation?> GetDirectConversation(int senderId, int receiverId)
+    {
+        return await _dbSet.FirstOrDefaultAsync(c => c.Participants.Any(p => p.UserId == senderId && p.UserId == receiverId));
+    }
+}

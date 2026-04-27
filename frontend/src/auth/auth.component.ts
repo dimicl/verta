@@ -58,14 +58,17 @@ export class AuthComponent implements OnInit {
   }
 
   public onFormAction() {
-    /*  if (this.isRegisterMode) {
-      this.authService.register(this.registerForm.value).subscribe((response) => {
-        console.log(response);
-      });
+    if (this.isRegisterMode) {
+      this.authService
+        .register(this.registerForm.value)
+        .subscribe((response) => {
+          console.log(response);
+          this.router.navigate(['/main']);
+        });
     } else {
       this.authService.login(this.loginForm.value).subscribe((response) => {
         console.log(response);
       });
-    } */
+    }
   }
 }
