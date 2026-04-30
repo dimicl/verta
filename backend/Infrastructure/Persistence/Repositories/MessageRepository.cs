@@ -7,7 +7,10 @@ public class MessageRepository: GenericRepository<Message>, IMessageRepository
 
     public async Task<List<Message>> GetMessagesByConversationId(int conversationId)
     {
-        return await _dbSet.Where(m => m.ConversationId == conversationId).ToListAsync();
+        return await _dbSet
+            .Where(m => m.ConversationId == conversationId)
+            .OrderBy(m => m.CreatedAt)
+            .ToListAsync();
     }
 
 

@@ -1,27 +1,26 @@
 using backend.Application.Interfaces;
-using backend.Infrastructure.Persistence;
 using backend.Shared.Helpers;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Application.Services;
 
 public class AuthService : IAuthService
 {
-    private readonly AppDbContext _context;
     private readonly IConfiguration _configuration;
     private readonly IUserRepository _userRepository;
+    private readonly IMessageBus _messageBus;
+    private readonly INotificationService _notificationService;
 
     public AuthService(
-        AppDbContext context,
         IConfiguration configuration,
-        IUserRepository userRepository      
+        IUserRepository userRepository,
+        IMessageBus messageBus,
+        INotificationService notificationService
         )
     {
-        _context = context;
         _configuration = configuration;
         _userRepository = userRepository;
-        
+        _messageBus = messageBus;
+        _notificationService = notificationService;
     }
 
     public async Task Register(RegisterRequest request)
@@ -39,6 +38,9 @@ public class AuthService : IAuthService
         };
         
         await _userRepository.Add(user);
+        var updateMessage = $"User registered: {user.Email}";
+        await _messageBus.PublishAsync("user-events", updateMessage);
+        await _notificationService.SendUpdateAsync(updateMessage);
     }
 
     public async Task<AuthResponse> Login(LoginRequest request)
@@ -49,6 +51,10 @@ public class AuthService : IAuthService
         
         if (!PasswordHasher.Verify(request.Password, user.Password))
             throw new Exception("Invalid password");
+
+        var updateMessage = $"User logged in: {user.Email}";
+        await _messageBus.PublishAsync("user-events", updateMessage);
+        await _notificationService.SendUpdateAsync(updateMessage);
 
         return AuthHelper.BuildAuthResponse(user, _configuration);
     }

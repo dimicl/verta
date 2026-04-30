@@ -3,6 +3,8 @@
   [class.focused]="isFocused()"
   [class.has-value]="!!value()"
   [class.has-icon]="!!icon()"
+  [class.has-error]="hasError()"
+  [class.is-valid]="isValid()"
 >
   <div class="input-container">
     @if (icon()) {
@@ -12,6 +14,8 @@
       class="input-field"
       [type]="type()"
       [id]="label() || 'input'"
+      [value]="value()"
+      [attr.autocomplete]="autocomplete()"
       [placeholder]="''"
       (focus)="onFocus()"
       (blur)="onBlur()"
@@ -20,4 +24,6 @@
     <label class="input-label" [for]="label() || 'input'">{{ label() }}</label>
   </div>
 </div>
+@if (errorMessage()) {
 <div class="error-message">{{ errorMessage() }}</div>
+}

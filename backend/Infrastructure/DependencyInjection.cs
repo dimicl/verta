@@ -20,8 +20,12 @@ public static class DependencyInjection
         //services
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IChatService, ChatService>();
         services.AddScoped<IUserRepository, UserRepository>();
-        services.AddScoped<IChatService, SignalRNotificationService>();
+        services.AddScoped<IConversationRepository, ConversationRepository>();
+        services.AddScoped<IConversationParticipantRepository, ConversationParticipantRepository>();
+        services.AddScoped<IMessageRepository, MessageRepository>();
+        services.AddScoped<INotificationService, SignalRNotificationService>();
         services.AddScoped<IMessageBus, RabbitMQBus>();
 
         return services;

@@ -1,0 +1,83 @@
+<div class="chat-container">
+  <aside class="chat-sidebar">
+    <div class="chat-sidebar-groups" [class.is-expanded]="isGroupsExpanded">
+      <div class="chat-sidebar-group-header" (click)="onHeaderGroupsToggle()">
+        <div class="chat-sidebar-group-header-general">
+          <svg-icon
+            [src]="sharedSvgRoutes.ARROW_DOWN_ICON"
+            class="chat-sidebar-group-header-icon"
+            [class.is-expanded]="isGroupsExpanded"
+          ></svg-icon>
+          <span class="chat-sidebar-group-header-text"># groups</span>
+        </div>
+        <svg-icon
+          [src]="sharedSvgRoutes.PLUS_ICON"
+          class="plus-icon"
+        ></svg-icon>
+      </div>
+      <div
+        class="chat-sidebar-group-content"
+        [class.is-collapsed]="!isGroupsExpanded"
+      >
+        @for(groupItem of groups; track groupItem.id) {
+        <ng-container
+          *ngTemplateOutlet="chatTemplate; context: { data: groupItem, group: true }"
+        ></ng-container>
+        }
+      </div>
+    </div>
+    <div class="chat-sidebar-groups">
+      <div class="chat-sidebar-group-header" (click)="onHeaderDirectToggle()">
+        <div class="chat-sidebar-group-header-general">
+          <svg-icon
+            [src]="sharedSvgRoutes.ARROW_DOWN_ICON"
+            class="chat-sidebar-group-header-icon"
+            [class.is-expanded]="isDirectExpanded"
+          ></svg-icon>
+          <span class="chat-sidebar-group-header-text"># direct</span>
+        </div>
+        <svg-icon
+          [src]="sharedSvgRoutes.PLUS_ICON"
+          class="plus-icon"
+        ></svg-icon>
+      </div>
+      <div
+        class="chat-sidebar-group-content"
+        [class.is-collapsed]="!isDirectExpanded"
+      >
+        @for(user of directUsers; track user.id) {
+        <button
+          type="button"
+          class="chat-item chat-item--clickable"
+          [class.chat-item--active]="selectedDirectUser.id === user.id"
+          (click)="onDirectUserSelect(user.id)"
+        >
+          <svg-icon
+            [src]="sharedSvgRoutes.DIRECT_ICON"
+            class="chat-item-icon"
+          ></svg-icon>
+          <span class="chat-item-text">{{ user.firstName }} {{ user.lastName }}</span>
+        </button>
+        }
+      </div>
+    </div>
+  </aside>
+  <section class="chat-main">
+    <app-chat-bubble
+      [currentUserId]="currentUserId"
+      [receiverId]="selectedDirectUser.id"
+      [receiverFirstName]="selectedDirectUser.firstName"
+      [receiverLastName]="selectedDirectUser.lastName"
+    ></app-chat-bubble>
+  </section>
+</div>
+
+<ng-template #chatTemplate let-data="data" let-group="group">
+  <div class="chat-item">
+    <svg-icon
+      [src]="group ? sharedSvgRoutes.GROUP_ICON : sharedSvgRoutes.DIRECT_ICON"
+      class="chat-item-icon"
+    ></svg-icon>
+    <span class="chat-item-text">{{ data.name }}</span>
+  </div>
+</ng-template>

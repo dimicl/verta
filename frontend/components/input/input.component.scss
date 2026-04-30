@@ -9,7 +9,7 @@
 
 .input-icon {
   position: absolute;
-  left: 10px;
+  left: 6px;
   top: 50%;
   width: 16px;
   height: 16px;
@@ -64,6 +64,7 @@
   transform: translateY(-50%);
   font-size: 14px;
   font-weight: 400;
+  line-height: 18px;
   color: #6c757d;
   pointer-events: none;
   transition: all 0.2s ease;
@@ -74,7 +75,7 @@
 }
 
 .input-wrapper.has-icon .input-label {
-  left: 34px;
+  left: 28px;
 }
 
 .input-field:focus + .input-label,
@@ -95,8 +96,47 @@
   color: #d0d5de;
 }
 
+.input-wrapper.has-error .input-field {
+  background-color: #f8eeee;
+  color: #2e3138;
+}
+
+.input-wrapper.has-error .input-label {
+  color: #8b1b1b;
+}
+
+.input-wrapper.is-valid .input-field {
+  background-color: #eef1fb;
+  color: #2e3138;
+}
+
+.input-wrapper.is-valid .input-label {
+  color: #132a86;
+}
+
+.input-wrapper.focused.is-valid .input-field {
+  border-color: #132a86;
+  background-color: #132a86;
+  color: #ffffff;
+}
+
+.input-wrapper.focused.is-valid .input-label {
+  color: #132a86;
+}
+
+.input-wrapper.focused.has-error .input-field {
+  border-color: #8b1b1b;
+  background-color: #8b1b1b;
+  color: #ffffff;
+}
+
+.input-wrapper.focused.has-error .input-label {
+  color: #8b1b1b;
+}
+
 .error-message {
-  color: #df2214;
-  font-size: 12px;
   margin-top: 4px;
+  color: #8b1b1b;
+  font-size: 12px;
+  line-height: 16px;
 }

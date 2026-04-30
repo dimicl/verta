@@ -23,6 +23,7 @@ export class AuthComponent implements OnInit {
 
   public buttonText = signal<string>('');
   public subtitleText = signal<string>('');
+  public isSubmitted = signal<boolean>(false);
 
   public sharedSvgRoutes = SharedSvgRoutes;
   public AuthHelper = AuthHelper;
@@ -38,10 +39,10 @@ export class AuthComponent implements OnInit {
   private setupTitle() {
     if (this.isRegisterMode) {
       this.buttonText.set('Create account');
-      this.subtitleText.set('Need an account? Create one');
+      this.subtitleText.set('Have an account? Sign in');
     } else {
       this.buttonText.set('Sign in');
-      this.subtitleText.set('Have an account? Sign in');
+      this.subtitleText.set('Need an account? Create one');
     }
   }
 
@@ -54,20 +55,134 @@ export class AuthComponent implements OnInit {
   }
 
   public onToggleAuthMode() {
+    this.loginForm.reset();
+    this.registerForm.reset();
+    this.isSubmitted.set(false);
     this.router.navigate([this.isRegisterMode ? '/login' : '/register']);
   }
 
+  public getFieldError(controlName: string): string {
+    const form = this.isRegisterMode ? this.registerForm : this.loginForm;
+    const control = form.get(controlName);
+
+    if (!control) {
+      return '';
+    }
+
+    const shouldShowError =
+      this.isSubmitted() || control.touched || control.dirty;
+
+    if (!shouldShowError || !control.errors) {
+      return '';
+    }
+
+    if (control.errors['required']) {
+      return 'This field is required.';
+    }
+
+    if (control.errors['email']) {
+      return 'Please enter a valid email address.';
+    }
+
+    if (control.errors['minlength']) {
+      const requiredLength = control.errors['minlength'].requiredLength;
+      return `Minimum length is ${requiredLength} characters.`;
+    }
+
+    if (control.errors['maxlength']) {
+      const requiredLength = control.errors['maxlength'].requiredLength;
+      return `Maximum length is ${requiredLength} characters.`;
+    }
+
+    if (control.errors['pattern']) {
+      return 'Password must contain uppercase, lowercase, number and special character.';
+    }
+
+    if (control.errors['passwordMismatch']) {
+      return 'Passwords do not match.';
+    }
+
+    return '';
+  }
+
+  public hasFieldError(controlName: string): boolean {
+    const form = this.isRegisterMode ? this.registerForm : this.loginForm;
+    const control = form.get(controlName);
+
+    if (!control) {
+      return false;
+    }
+
+    const shouldShowError =
+      this.isSubmitted() || control.touched || control.dirty;
+
+    return shouldShowError && control.invalid;
+  }
+
+  public isFieldValid(controlName: string): boolean {
+    const form = this.isRegisterMode ? this.registerForm : this.loginForm;
+    const control = form.get(controlName);
+
+    if (!control) {
+      return false;
+    }
+
+    const shouldShowState =
+      this.isSubmitted() || control.touched || control.dirty;
+
+    return shouldShowState && control.valid;
+  }
+
+  public onFieldValueChange(controlName: string, value: string): void {
+    const form = this.isRegisterMode ? this.registerForm : this.loginForm;
+    const control = form.get(controlName);
+
+    if (!control) {
+      return;
+    }
+
+    control.setValue(value);
+    control.markAsDirty();
+    control.updateValueAndValidity({ onlySelf: true });
+  }
+
+  public onFieldBlur(controlName: string): void {
+    const form = this.isRegisterMode ? this.registerForm : this.loginForm;
+    const control = form.get(controlName);
+
+    if (!control) {
+      return;
+    }
+
+    control.markAsTouched();
+    control.updateValueAndValidity({ onlySelf: true });
+  }
+
   public onFormAction() {
+    const form = this.isRegisterMode ? this.registerForm : this.loginForm;
+    this.isSubmitted.set(true);
+    form.markAllAsTouched();
+
+    if (form.invalid) {
+      return;
+    }
+
     if (this.isRegisterMode) {
       this.authService
         .register(this.registerForm.value)
         .subscribe((response) => {
           console.log(response);
+          localStorage.setItem('user_id', response.user.id);
+          localStorage.setItem('token', response.token);
+          this.registerForm.reset();
           this.router.navigate(['/main']);
         });
     } else {
       this.authService.login(this.loginForm.value).subscribe((response) => {
-        console.log(response);
+        localStorage.setItem('user_id', response.user.id);
+        localStorage.setItem('token', response.token);
+        this.loginForm.reset();
+        this.router.navigate(['/main']);
       });
     }
   }

@@ -24,6 +24,7 @@ public class RabbitMQBus : IMessageBus
         var factory = new ConnectionFactory
         {
             HostName = host,
+            Port = int.Parse(port),
             UserName = username,
             Password = password
         };

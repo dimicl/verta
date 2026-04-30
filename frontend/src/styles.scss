@@ -38,3 +38,24 @@ table {
   border-collapse: collapse;
   border-spacing: 0;
 }
+
+.notification-tooltip .tooltip-inner {
+  background-color: #2f2f2f;
+  border-radius: 2px;
+  padding: 4px 6px;
+  color: #f0f0f0;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.tooltip .tooltip-inner {
+  background-color: #2f2f2f;
+  border-radius: 2px;
+  padding: 2px 4px;
+  font-weight: 500;
+  color: #f0f0f0;
+  width: 100%;
+  margin-top: 4px;
+  font-size: 9px;
+  line-height: 12px;
+}

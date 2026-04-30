@@ -5,6 +5,10 @@ public class ConversationRepository: GenericRepository<Conversation>, IConversat
     public ConversationRepository(AppDbContext context): base(context){}
     public async Task<Conversation?> GetDirectConversation(int senderId, int receiverId)
     {
-        return await _dbSet.FirstOrDefaultAsync(c => c.Participants.Any(p => p.UserId == senderId && p.UserId == receiverId));
+        return await _dbSet
+            .Include(c => c.Participants)
+            .FirstOrDefaultAsync(c =>
+                c.Participants.Any(p => p.UserId == senderId) &&
+                c.Participants.Any(p => p.UserId == receiverId));
     }
 }
