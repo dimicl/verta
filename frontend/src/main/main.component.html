@@ -1,7 +1,7 @@
 <div class="content">
   <aside>
     <div class="sidebar">
-      <nav></nav>
+      <ng-container *ngTemplateOutlet="sidebarTemplate"></ng-container>
     </div>
   </aside>
 
@@ -10,17 +10,51 @@
       <ng-container *ngTemplateOutlet="headerTemplate"></ng-container>
     </header>
     <div class="main">
-      <ng-container *ngTemplateOutlet="toolbarTemplate"></ng-container>
-      @if(selectedToolbarTab() === 'Chat'){
+      @switch(selectedToolbarTab()) { @case('Chat') {
       <ng-container *ngTemplateOutlet="chatTemplate"></ng-container>
-      } @else {
-      <ng-container *ngTemplateOutlet="mainTemplate"></ng-container>
-      }
+      } @case('Board') {
+      <ng-container *ngTemplateOutlet="boardTemplate"></ng-container>
+      } @case('Backlog') {
+      <ng-container *ngTemplateOutlet="backlogTemplate"></ng-container>
+      } }
     </div>
   </div>
 </div>
 
-<ng-template #sidebarTemplate> </ng-template>
+<ng-template #sidebarTemplate>
+  <div class="workspace">
+    <div class="workspace-info">
+      <div class="workspace-avatar">W</div>
+      <div class="workspace-name">Workspace Name</div>
+    </div>
+
+    <div class="workspace-actions">
+      <button class="invite-btn">Invite</button>
+    </div>
+  </div>
+
+  <!-- BOARDS -->
+  <div class="boards-section">
+    <div class="boards-header">
+      <span>Boards</span>
+      <div
+        class="add-board-btn"
+        ngbTooltip="Add Board"
+        triggers="hover"
+        container="body"
+        placement="bottom"
+      >
+        <svg-icon class="add-icon" [src]="sharedSvgRoutes.PLUS_ICON" />
+      </div>
+    </div>
+
+    <div class="boards-list">
+      <div class="board-item active">Project Alpha</div>
+      <div class="board-item">Marketing</div>
+      <div class="board-item">Design</div>
+    </div>
+  </div>
+</ng-template>
 
 <ng-template #headerTemplate>
   <div class="header-container">
@@ -56,6 +90,7 @@
       triggers="hover"
       container="body"
       placement="bottom"
+      (click)="onAddTask()"
     >
       <svg-icon
         [src]="sharedSvgRoutes.PLUS_ICON"
@@ -74,53 +109,20 @@
         (click)="onUserSelect(user.id)"
       />
       }
+      <app-ve-extra-members></app-ve-extra-members>
     </div>
   </div>
   <div class="header-actions">
-    <div
-      class="notification-icon-container"
-      [class.active-container]="onNotificationShown()"
-      [ngbPopover]="notificationPopover"
-      placement="bottom-end"
-      triggers="click"
-      [autoClose]="true"
-      container="body"
-      (shown)="onNotificationShown.set(true)"
-      (hidden)="onNotificationShown.set(false)"
-    >
-      <div
-        ngbTooltip="Notification"
-        [tooltipClass]="'notification-tooltip'"
-        [animation]="true"
-        placement="bottom"
-        triggers="hover"
-        container="body"
-      >
-        <svg-icon
-          class="notification-icon"
-          [src]="sharedSvgRoutes.NOTIFICATION_ICON"
-        ></svg-icon>
-      </div>
-    </div>
+    <app-ve-notification></app-ve-notification>
   </div>
 </ng-template>
 
-<ng-template #toolbarTemplate>
-  <div class="toolbar"></div>
-</ng-template>
-
-<ng-template #notificationPopover>
-  <div class="notification-popover">
-    <p class="notification-popover-title">Notification</p>
-  </div>
-</ng-template>
-
-<ng-template #mainTemplate>
+<ng-template #boardTemplate>
   @let phases = [ "ToDo", "In Progress", "PR", "Testing", "Done" ];
   <div class="main-content">
     <div class="phases-container">
       @for (phase of phases; track phase) {
-      <div class="phase-container">
+      <div class="phase-container" [class.empty-state]="true">
         <span class="phase-title">{{ phase }}</span>
         <div class="phase-content"></div>
       </div>
@@ -131,4 +133,35 @@
 
 <ng-template #chatTemplate>
   <app-chat></app-chat>
+</ng-template>
+
+<ng-template #backlogTemplate>
+  <div class="backlog-container">
+    @for (sprint of sprints; track sprint.id){
+    <div class="sprint-container" [class.is-expanded]="isGroupsExpanded">
+      <div
+        class="sprint-header"
+        [class.is-collapsed]="!isGroupsExpanded"
+        (click)="onHeaderGroupsToggle()"
+      >
+        <div class="sprint-header-general">
+          <svg-icon
+            [src]="sharedSvgRoutes.ARROW_DOWN_ICON"
+            class="sprint-header-icon"
+            [class.is-expanded]="isGroupsExpanded"
+          ></svg-icon>
+          <span class="sprint-header-text">{{ sprint.name }}</span>
+        </div>
+      </div>
+      <div class="task-group" [class.is-collapsed]="!isGroupsExpanded">
+        @let names = ["Luka", "Pera", "Zika"]; @for(name of names; track name) {
+        <div class="task-item">
+          <input type="checkbox" class="checkbox" />
+          <span class="task-title">{{ name }} </span>
+        </div>
+        }
+      </div>
+    </div>
+    }
+  </div>
 </ng-template>

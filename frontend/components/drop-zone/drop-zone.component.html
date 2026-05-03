@@ -1,0 +1,15 @@
+<div class="drop-zone-container">
+  <div class="drop-zone" (click)="fileInput.click()">
+    <svg-icon class="drop-zone-icon" [src]="sharedSvgRoutes.UPLOAD_ICON" />
+    <span class="drop-zone-text">UPLOAD FILE</span>
+  </div>
+
+  <input
+    #fileInput
+    aria-hidden="true"
+    multiple
+    type="file"
+    hidden
+    (input)="onInput($event)"
+  />
+</div>

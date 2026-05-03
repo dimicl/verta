@@ -8,4 +8,6 @@ export class SharedSvgRoutes {
   static GROUP_ICON = '/icons/group.svg';
   static DIRECT_ICON = '/icons/direct.svg';
   static PLUS_ICON = '/icons/plus.svg';
+  static CLOSE_ICON = '/icons/close.svg';
+  static UPLOAD_ICON = '/icons/upload.svg';
 }

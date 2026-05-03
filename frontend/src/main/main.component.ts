@@ -4,9 +4,12 @@ import { CommonModule } from '@angular/common';
 import { InputComponent } from '../../components/input/input.component';
 import { SharedSvgRoutes } from '../../shared/constants/shared-svg-routes';
 import { SvgIconComponent } from 'angular-svg-icon';
-import { NgbModule, NgbPopover } from '@ng-bootstrap/ng-bootstrap';
+import { NgbModal, NgbModule, NgbPopover } from '@ng-bootstrap/ng-bootstrap';
 import { AvatarComponent } from '../../components/avatar/avatar.component';
 import { ChatComponent } from '../chat/chat.component';
+import { VeNotificationComponent } from '../../components/ve-notification/ve-notification.component';
+import { TaskModalComponent } from '../../components/task-modal/task-modal.component';
+import { VeExtraMembersComponent } from '../../components/ve-extra-members/ve-extra-members.component';
 
 @Component({
   selector: 'app-main',
@@ -18,13 +21,13 @@ import { ChatComponent } from '../chat/chat.component';
     SvgIconComponent,
     AvatarComponent,
     NgbModule,
-    NgbPopover,
     ChatComponent,
+    VeNotificationComponent,
+    VeExtraMembersComponent,
   ],
 })
 export class MainComponent implements OnInit {
   public sharedSvgRoutes = SharedSvgRoutes;
-  onNotificationShown = signal<boolean>(false);
   public readonly toolbarItems = ['Backlog', 'Board', 'Chat'] as const;
   public readonly selectedToolbarTab =
     signal<(typeof this.toolbarItems)[number]>('Backlog');
@@ -47,9 +50,31 @@ export class MainComponent implements OnInit {
     },
   ];
 
+  sprints = [
+    {
+      id: 1,
+      name: 'Sprint 1',
+      from: '',
+      to: '',
+      description: 'Ovo je neki opis za koliko se zavrsava',
+    },
+    {
+      id: 2,
+      name: 'Backlog',
+      from: '',
+      to: '',
+      description: 'Ovo je neki opis za koliko se zavrsava',
+    },
+  ];
+
+  public isGroupsExpanded = true;
+
   selectedUser = signal<number | null>(null);
 
-  constructor(private userService: UserService) {}
+  constructor(
+    private userService: UserService,
+    private modalService: NgbModal
+  ) {}
 
   public onToolbarTabSelect(tab: (typeof this.toolbarItems)[number]): void {
     this.selectedToolbarTab.set(tab);
@@ -77,5 +102,16 @@ export class MainComponent implements OnInit {
 
   public onUserSelect(userId: number): void {
     this.selectedUser.set(userId);
+  }
+
+  public onAddTask(): void {
+    this.modalService.open(TaskModalComponent, {
+      backdrop: 'static',
+      keyboard: false,
+    });
+  }
+
+  public onHeaderGroupsToggle(): void {
+    this.isGroupsExpanded = !this.isGroupsExpanded;
   }
 }

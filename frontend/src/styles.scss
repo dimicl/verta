@@ -39,15 +39,6 @@ table {
   border-spacing: 0;
 }
 
-.notification-tooltip .tooltip-inner {
-  background-color: #2f2f2f;
-  border-radius: 2px;
-  padding: 4px 6px;
-  color: #f0f0f0;
-  width: 100%;
-  margin-top: 4px;
-}
-
 .tooltip .tooltip-inner {
   background-color: #2f2f2f;
   border-radius: 2px;
@@ -58,4 +49,32 @@ table {
   margin-top: 4px;
   font-size: 9px;
   line-height: 12px;
+}
+
+.tooltip .tooltip-arrow {
+  display: none;
+}
+
+.popover .popover-body {
+  padding: 0;
+}
+
+.notification-popover {
+  width: 200px;
+  height: 300px;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+  padding: 10px;
+  border: 0.5px solid #c6c6c6;
+
+  .notification-popover-title {
+    font-size: 14px;
+    line-height: 18px;
+    font-weight: 600;
+    color: #2f2f2f;
+  }
+}
+
+.popover .popover-arrow {
+  display: none;
 }
