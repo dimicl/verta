@@ -1,5 +1,5 @@
 import { Component, OnInit, signal } from '@angular/core';
-import { UserService } from '../../shared/services';
+import { UserService, WorkspaceService } from '../../shared/services';
 import { CommonModule } from '@angular/common';
 import { InputComponent } from '../../components/input/input.component';
 import { SharedSvgRoutes } from '../../shared/constants/shared-svg-routes';
@@ -10,6 +10,10 @@ import { ChatComponent } from '../chat/chat.component';
 import { VeNotificationComponent } from '../../components/ve-notification/ve-notification.component';
 import { TaskModalComponent } from '../../components/task-modal/task-modal.component';
 import { VeExtraMembersComponent } from '../../components/ve-extra-members/ve-extra-members.component';
+import { CreateWorkspaceModalComponent } from '../../components/create-workspace-modal/create-workspace-modal.component';
+import { WorkspaceModalComponent } from '../../components/workspace-modal/workspace-modal.component';
+import { WorkspaceResponse } from '../../shared/interfaces/workspace-response.interface';
+import { InviteModalComponent } from '../../components/invite-modal/invite-modal.component';
 
 @Component({
   selector: 'app-main',
@@ -24,6 +28,7 @@ import { VeExtraMembersComponent } from '../../components/ve-extra-members/ve-ex
     ChatComponent,
     VeNotificationComponent,
     VeExtraMembersComponent,
+    WorkspaceModalComponent,
   ],
 })
 export class MainComponent implements OnInit {
@@ -31,6 +36,8 @@ export class MainComponent implements OnInit {
   public readonly toolbarItems = ['Backlog', 'Board', 'Chat'] as const;
   public readonly selectedToolbarTab =
     signal<(typeof this.toolbarItems)[number]>('Backlog');
+
+  public workspace: WorkspaceResponse | null = null;
 
   users = [
     {
@@ -71,10 +78,30 @@ export class MainComponent implements OnInit {
 
   selectedUser = signal<number | null>(null);
 
+  public ngOnInit(): void {
+    this.userService
+      .getUserById(localStorage.getItem('user_id') ?? '')
+      .subscribe((response) => {
+        console.log(response);
+      });
+
+    this.getWorkspace();
+  }
+
   constructor(
     private userService: UserService,
+    private workspaceService: WorkspaceService,
     private modalService: NgbModal
   ) {}
+
+  private getWorkspace() {
+    this.workspaceService.getWorkspace().subscribe({
+      next: (result) => {
+        this.workspace = result;
+        console.log(this.workspace);
+      },
+    });
+  }
 
   public onToolbarTabSelect(tab: (typeof this.toolbarItems)[number]): void {
     this.selectedToolbarTab.set(tab);
@@ -92,14 +119,6 @@ export class MainComponent implements OnInit {
     return `${100 / this.toolbarItems.length}%`;
   }
 
-  public ngOnInit(): void {
-    this.userService
-      .getUserById(localStorage.getItem('user_id') ?? '')
-      .subscribe((response) => {
-        console.log(response);
-      });
-  }
-
   public onUserSelect(userId: number): void {
     this.selectedUser.set(userId);
   }
@@ -113,5 +132,19 @@ export class MainComponent implements OnInit {
 
   public onHeaderGroupsToggle(): void {
     this.isGroupsExpanded = !this.isGroupsExpanded;
+  }
+
+  public hasWorkspaceId = signal<boolean>(false);
+
+  public onGetWorkspace() {
+    this.hasWorkspaceId.set(true);
+  }
+
+  public onOpenCreateModal() {
+    this.modalService.open(WorkspaceModalComponent, {});
+  }
+
+  public onOpenInviteModal() {
+    this.modalService.open(InviteModalComponent, {});
   }
 }

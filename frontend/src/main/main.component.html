@@ -23,13 +23,23 @@
 
 <ng-template #sidebarTemplate>
   <div class="workspace">
+    @if(this.workspace?.id){
     <div class="workspace-info">
-      <div class="workspace-avatar">W</div>
-      <div class="workspace-name">Workspace Name</div>
+      <div class="workspace-avatar">V</div>
+      <div class="workspace-name">
+        {{ workspace?.name }}
+      </div>
     </div>
+    } @else{
+    <div class="workspace-actions">
+      <div class="invite-btn" (click)="onOpenCreateModal()">
+        Create Workspace
+      </div>
+    </div>
+    }
 
     <div class="workspace-actions">
-      <button class="invite-btn">Invite</button>
+      <div class="invite-btn" (click)="onOpenInviteModal()">Invite</div>
     </div>
   </div>
 
