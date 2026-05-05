@@ -1,16 +1,177 @@
 <div class="content">
   <aside>
     <div class="sidebar">
-      <nav></nav>
+      <ng-container *ngTemplateOutlet="sidebarTemplate"></ng-container>
     </div>
   </aside>
 
   <div class="main-container">
     <header class="header">
-      <h1>Header</h1>
+      <ng-container *ngTemplateOutlet="headerTemplate"></ng-container>
     </header>
     <div class="main">
-      <h1>Main</h1>
+      @switch(selectedToolbarTab()) { @case('Chat') {
+      <ng-container *ngTemplateOutlet="chatTemplate"></ng-container>
+      } @case('Board') {
+      <ng-container *ngTemplateOutlet="boardTemplate"></ng-container>
+      } @case('Backlog') {
+      <ng-container *ngTemplateOutlet="backlogTemplate"></ng-container>
+      } }
     </div>
   </div>
 </div>
+
+<ng-template #sidebarTemplate>
+  <div class="workspace">
+    @if(this.workspace?.id){
+    <div class="workspace-info">
+      <div class="workspace-avatar">V</div>
+      <div class="workspace-name">
+        {{ workspace?.name }}
+      </div>
+    </div>
+    } @else{
+    <div class="workspace-actions">
+      <div class="invite-btn" (click)="onOpenCreateModal()">
+        Create Workspace
+      </div>
+    </div>
+    }
+
+    <div class="workspace-actions">
+      <div class="invite-btn" (click)="onOpenInviteModal()">Invite</div>
+    </div>
+  </div>
+
+  <!-- BOARDS -->
+  <div class="boards-section">
+    <div class="boards-header">
+      <span>Boards</span>
+      <div
+        class="add-board-btn"
+        ngbTooltip="Add Board"
+        triggers="hover"
+        container="body"
+        placement="bottom"
+      >
+        <svg-icon class="add-icon" [src]="sharedSvgRoutes.PLUS_ICON" />
+      </div>
+    </div>
+
+    <div class="boards-list">
+      <div class="board-item active">Project Alpha</div>
+      <div class="board-item">Marketing</div>
+      <div class="board-item">Design</div>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #headerTemplate>
+  <div class="header-container">
+    <div class="toolbar">
+      <div class="toolbar-tabs">
+        <div
+          class="toolbar-slider"
+          [style.left]="getToolbarSliderLeft()"
+          [style.width]="getToolbarSliderWidth()"
+        ></div>
+        @for (item of toolbarItems; track item) {
+        <div
+          type="button"
+          class="toolbar-item"
+          [class.toolbar-item--active]="selectedToolbarTab() === item"
+          (click)="onToolbarTabSelect(item)"
+        >
+          <span class="toolbar-item-text">{{ item }}</span>
+        </div>
+        }
+      </div>
+    </div>
+    <div class="input">
+      <app-input
+        [label]="'Search'"
+        [type]="'search'"
+        [icon]="sharedSvgRoutes.SEARCH_ICON"
+      />
+    </div>
+    <div
+      class="users-container-add-button"
+      ngbTooltip="Create"
+      triggers="hover"
+      container="body"
+      placement="bottom"
+      (click)="onAddTask()"
+    >
+      <svg-icon
+        [src]="sharedSvgRoutes.PLUS_ICON"
+        class="users-container-add-button-icon"
+      ></svg-icon>
+    </div>
+    <div class="users-container">
+      @for (user of users; track user.id) {
+      <app-avatar
+        [firstName]="user.firstName"
+        [lastName]="user.lastName"
+        [width]="18"
+        [height]="18"
+        [dashboardType]="true"
+        [isSelected]="selectedUser() === user.id"
+        (click)="onUserSelect(user.id)"
+      />
+      }
+      <app-ve-extra-members></app-ve-extra-members>
+    </div>
+  </div>
+  <div class="header-actions">
+    <app-ve-notification></app-ve-notification>
+  </div>
+</ng-template>
+
+<ng-template #boardTemplate>
+  @let phases = [ "ToDo", "In Progress", "PR", "Testing", "Done" ];
+  <div class="main-content">
+    <div class="phases-container">
+      @for (phase of phases; track phase) {
+      <div class="phase-container" [class.empty-state]="true">
+        <span class="phase-title">{{ phase }}</span>
+        <div class="phase-content"></div>
+      </div>
+      }
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #chatTemplate>
+  <app-chat></app-chat>
+</ng-template>
+
+<ng-template #backlogTemplate>
+  <div class="backlog-container">
+    @for (sprint of sprints; track sprint.id){
+    <div class="sprint-container" [class.is-expanded]="isGroupsExpanded">
+      <div
+        class="sprint-header"
+        [class.is-collapsed]="!isGroupsExpanded"
+        (click)="onHeaderGroupsToggle()"
+      >
+        <div class="sprint-header-general">
+          <svg-icon
+            [src]="sharedSvgRoutes.ARROW_DOWN_ICON"
+            class="sprint-header-icon"
+            [class.is-expanded]="isGroupsExpanded"
+          ></svg-icon>
+          <span class="sprint-header-text">{{ sprint.name }}</span>
+        </div>
+      </div>
+      <div class="task-group" [class.is-collapsed]="!isGroupsExpanded">
+        @let names = ["Luka", "Pera", "Zika"]; @for(name of names; track name) {
+        <div class="task-item">
+          <input type="checkbox" class="checkbox" />
+          <span class="task-title">{{ name }} </span>
+        </div>
+        }
+      </div>
+    </div>
+    }
+  </div>
+</ng-template>

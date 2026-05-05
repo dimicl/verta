@@ -1,0 +1,50 @@
+<div class="modal-container">
+  <div class="modal-header">
+    <div><span class="modal-header-title">Add Task</span></div>
+    <div
+      class="modal-header-actions"
+      ngbTooltip="Close"
+      triggers="hover"
+      container="body"
+      placement="bottom"
+      (click)="onClose()"
+    >
+      <svg-icon
+        class="modal-header-actions-icon"
+        [src]="sharedSvgRoutes.CLOSE_ICON"
+      ></svg-icon>
+    </div>
+  </div>
+  <div class="modal-body">
+    <div class="title-part">
+      <div class="title-header">Title</div>
+      <input
+        class="title-input"
+        type="text"
+        placeholder="Enter task title..."
+      />
+    </div>
+
+    <div class="description-part">
+      <div class="description-header">Description</div>
+      <textarea
+        class="description-textarea"
+        rows="4"
+        placeholder="Enter description..."
+      ></textarea>
+    </div>
+
+    <div class="attachments">
+      <div class="attachments-header">
+        <span class="attachments-title">Attachments</span>
+        <div class="attachments-counter">
+          <span class="files-counter">0</span>
+        </div>
+      </div>
+      <app-drop-zone></app-drop-zone>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <div class="action-button">Save</div>
+  </div>
+</div>

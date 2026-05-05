@@ -1,6 +1,17 @@
 name: verta
 
 services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: verta_rabbit
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - verta_rabbit_data:/var/lib/rabbitmq
   db:
     image: postgres:17
     container_name: verta_db
@@ -23,8 +34,13 @@ services:
       - "8080:8080"
     depends_on:
       - db
+      - rabbitmq
     environment:
       - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=verta_db;Username=admin;Password=password123
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__Username=guest
+      - RabbitMQ__Password=guest
       - ASPNETCORE_ENVIRONMENT=Development
 
   pgadmin:
@@ -40,3 +56,4 @@ services:
 
 volumes:
   verta_postgres_data:
+  verta_rabbit_data:

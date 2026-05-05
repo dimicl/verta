@@ -1,0 +1,19 @@
+<div
+  class="others"
+  [class.is-selected]="onNotificationShown()"
+  [ngbPopover]="othersTemplate"
+  placement="bottom-left"
+  triggers="click"
+  [autoClose]="true"
+  container="body"
+  (shown)="onNotificationShown.set(true)"
+  (hidden)="onNotificationShown.set(false)"
+>
+  <span class="others-text">+14</span>
+</div>
+
+<ng-template #othersTemplate>
+  <div class="notification-popover">
+    <p class="notification-popover-title">Members</p>
+  </div></ng-template
+>
