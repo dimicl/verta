@@ -1,29 +1,36 @@
 using backend.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
+using backend.Shared.Helpers;
 
 namespace backend.Application.Services;
 
-public class UserService : IUserRepository
+public class UserService : IUserService
 {
-    private readonly AppDbContext _context;
-    public UserService(AppDbContext context)
-    {
-        _context = context;
-    }
+    private readonly IUserRepository _repo;
 
-    public async Task<User?> GetById(Guid id)
+    public UserService(IUserRepository repo)
     {
-        return await _context.Users.FindAsync(id);
+        _repo = repo;
     }
-    public async Task<User?> GetByEmail(string email)
-    {
-        return await _context.Users.FirstOrDefaultAsync(x => x.Email == email);
-    }
+   
+   public async Task<UserResponse> GetById(int id)
+   {
+     var user = await _repo.GetById(id);
+     if (user == null)
+     {
+        throw new Exception("User not found");
+     }
+     return UserHelper.ToEntity(user);
 
-    public async Task<User> Create(User user)
-    {
-        await _context.Users.AddAsync(user);
-        await _context.SaveChangesAsync();
-        return user;
-    }
+   }
+
+   public async Task<UserResponse> GetByEmail(string email)
+   {
+     var user = await _repo.GetByEmailAsync(email);
+     if (user == null)
+     {
+        throw new Exception("User not found");
+     }
+     return UserHelper.ToEntity(user);
+   }
+
 }

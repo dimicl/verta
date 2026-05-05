@@ -1,0 +1,134 @@
+.modal-container {
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .modal-header-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #2f2f2f;
+    }
+
+    .modal-header-actions-icon {
+      display: flex;
+      cursor: pointer;
+      width: 24px;
+      height: 24px;
+      svg path {
+        fill: #2f2f2f;
+      }
+    }
+  }
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+
+  .attachments {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    .attachments-header {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      .attachments-title {
+        font-size: 14px;
+        line-height: 18px;
+        font-weight: 500;
+      }
+
+      .attachments-counter {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background-color: #424242;
+        padding: 2px 5px;
+
+        .files-counter {
+          font-weight: 600;
+          color: #ffffff;
+          line-height: 14px;
+          font-size: 11px;
+        }
+      }
+    }
+  }
+}
+
+.modal-footer {
+  .action-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    background-color: #030ba7;
+    width: 120px;
+    padding: 4px 6px;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transform: background-color 0.3s ease-in;
+
+    &:hover {
+      background-color: #00056b;
+    }
+  }
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.title-part,
+.description-part {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 6px;
+}
+
+.title-header,
+.description-header {
+  font-size: 14px;
+  font-weight: 600;
+  color: #555;
+}
+
+.title-input {
+  height: 36px;
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+  border: none;
+  transition: border-color 0.2s;
+}
+
+.description-textarea {
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  resize: none;
+  outline: none;
+  border: none;
+
+  transition: border-color 0.2s;
+
+  &:focus {
+    border-color: #888;
+  }
+}
