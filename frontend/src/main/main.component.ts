@@ -1,9 +1,150 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
+import { UserService, WorkspaceService } from '../../shared/services';
+import { CommonModule } from '@angular/common';
+import { InputComponent } from '../../components/input/input.component';
+import { SharedSvgRoutes } from '../../shared/constants/shared-svg-routes';
+import { SvgIconComponent } from 'angular-svg-icon';
+import { NgbModal, NgbModule, NgbPopover } from '@ng-bootstrap/ng-bootstrap';
+import { AvatarComponent } from '../../components/avatar/avatar.component';
+import { ChatComponent } from '../chat/chat.component';
+import { VeNotificationComponent } from '../../components/ve-notification/ve-notification.component';
+import { TaskModalComponent } from '../../components/task-modal/task-modal.component';
+import { VeExtraMembersComponent } from '../../components/ve-extra-members/ve-extra-members.component';
+import { CreateWorkspaceModalComponent } from '../../components/create-workspace-modal/create-workspace-modal.component';
+import { WorkspaceModalComponent } from '../../components/workspace-modal/workspace-modal.component';
+import { WorkspaceResponse } from '../../shared/interfaces/workspace-response.interface';
+import { InviteModalComponent } from '../../components/invite-modal/invite-modal.component';
 
 @Component({
   selector: 'app-main',
-  imports: [],
   templateUrl: './main.component.html',
   styleUrl: './main.component.scss',
+  imports: [
+    CommonModule,
+    InputComponent,
+    SvgIconComponent,
+    AvatarComponent,
+    NgbModule,
+    ChatComponent,
+    VeNotificationComponent,
+    VeExtraMembersComponent,
+    WorkspaceModalComponent,
+  ],
 })
-export class MainComponent {}
+export class MainComponent implements OnInit {
+  public sharedSvgRoutes = SharedSvgRoutes;
+  public readonly toolbarItems = ['Backlog', 'Board', 'Chat'] as const;
+  public readonly selectedToolbarTab =
+    signal<(typeof this.toolbarItems)[number]>('Backlog');
+
+  public workspace: WorkspaceResponse | null = null;
+
+  users = [
+    {
+      id: 1,
+      firstName: 'John',
+      lastName: 'Doe',
+    },
+    {
+      id: 2,
+      firstName: 'Jane',
+      lastName: 'Becks',
+    },
+    {
+      id: 3,
+      firstName: 'Laura',
+      lastName: 'Smith',
+    },
+  ];
+
+  sprints = [
+    {
+      id: 1,
+      name: 'Sprint 1',
+      from: '',
+      to: '',
+      description: 'Ovo je neki opis za koliko se zavrsava',
+    },
+    {
+      id: 2,
+      name: 'Backlog',
+      from: '',
+      to: '',
+      description: 'Ovo je neki opis za koliko se zavrsava',
+    },
+  ];
+
+  public isGroupsExpanded = true;
+
+  selectedUser = signal<number | null>(null);
+
+  public ngOnInit(): void {
+    this.userService
+      .getUserById(localStorage.getItem('user_id') ?? '')
+      .subscribe((response) => {
+        console.log(response);
+      });
+
+    this.getWorkspace();
+  }
+
+  constructor(
+    private userService: UserService,
+    private workspaceService: WorkspaceService,
+    private modalService: NgbModal
+  ) {}
+
+  private getWorkspace() {
+    this.workspaceService.getWorkspace().subscribe({
+      next: (result) => {
+        this.workspace = result;
+        console.log(this.workspace);
+      },
+    });
+  }
+
+  public onToolbarTabSelect(tab: (typeof this.toolbarItems)[number]): void {
+    this.selectedToolbarTab.set(tab);
+  }
+
+  public getToolbarSliderLeft(): string {
+    const selectedIndex = this.toolbarItems.indexOf(this.selectedToolbarTab());
+    const safeIndex = selectedIndex < 0 ? 0 : selectedIndex;
+    const tabWidth = 100 / this.toolbarItems.length;
+
+    return `${safeIndex * tabWidth}%`;
+  }
+
+  public getToolbarSliderWidth(): string {
+    return `${100 / this.toolbarItems.length}%`;
+  }
+
+  public onUserSelect(userId: number): void {
+    this.selectedUser.set(userId);
+  }
+
+  public onAddTask(): void {
+    this.modalService.open(TaskModalComponent, {
+      backdrop: 'static',
+      keyboard: false,
+    });
+  }
+
+  public onHeaderGroupsToggle(): void {
+    this.isGroupsExpanded = !this.isGroupsExpanded;
+  }
+
+  public hasWorkspaceId = signal<boolean>(false);
+
+  public onGetWorkspace() {
+    this.hasWorkspaceId.set(true);
+  }
+
+  public onOpenCreateModal() {
+    this.modalService.open(WorkspaceModalComponent, {});
+  }
+
+  public onOpenInviteModal() {
+    this.modalService.open(InviteModalComponent, {});
+  }
+}

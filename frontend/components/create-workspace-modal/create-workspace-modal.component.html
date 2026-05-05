@@ -1,0 +1,23 @@
+<div class="modal">
+  <div class="modal-header">
+    <h2>Create Workspace</h2>
+  </div>
+
+  <div class="modal-body">
+    <div class="form-group">
+      <label>Workspace Name</label>
+      <input
+        type="text"
+        [(ngModel)]="model.name"
+        placeholder="e.g. Design Team"
+      />
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button class="btn-secondary" (click)="close()">Cancel</button>
+    <button class="btn-primary" (click)="create()">Create</button>
+  </div>
+</div>
+
+<p>cao</p>

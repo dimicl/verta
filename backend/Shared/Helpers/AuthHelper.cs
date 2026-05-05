@@ -1,36 +1,30 @@
-
-
 using backend.Infrastructure.Persistence;
 
 namespace backend.Shared.Helpers;
 
 public static class AuthHelper
 {
-    public static async Task<User> CreateUser(  
+    public static async Task<User> CreateUser(
         IUserRepository userRepository,
         string firstName,
         string lastName,
         string email,
-        string password,
-        UserRole role
-    )
+        string password)
     {
-        if (await userRepository.GetByEmail(email) != null)
+        if (await userRepository.GetByEmailAsync(email) != null)
             throw new Exception("Email already exists");
-        
 
         var passwordHash = PasswordHasher.Hash(password);
         var user = new User
         {
-            Id = Guid.NewGuid(),
             FirstName = firstName,
             LastName = lastName,
             Email = email,
             Password = passwordHash,
-            Role = role,
+            Status = "active"
         };
-    
-        await userRepository.Create(user);
+
+        await userRepository.Add(user);
         return user;
     }
 
@@ -49,7 +43,8 @@ public static class AuthHelper
                 Email = user.Email,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
-                Role = user.Role,
+                Role = UserRole.Member,
+                Status = user.Status
             }
         };
     }

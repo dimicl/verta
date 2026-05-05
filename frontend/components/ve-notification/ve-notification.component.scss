@@ -1,0 +1,25 @@
+.notification-icon-container {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  .notification-icon {
+    display: flex;
+    width: 20px;
+    height: 20px;
+  }
+  &:hover {
+    background-color: #c6c6c6;
+  }
+
+  &.active-container {
+    background-color: #2f2f2f;
+    .notification-icon {
+      color: #f0f0f0;
+    }
+  }
+}

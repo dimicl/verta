@@ -1,0 +1,19 @@
+<div class="workspace-modal-overlay">
+  <div class="workspace-modal">
+    <div class="workspace-modal-header">
+      <span class="workspace-modal-header-text">Create Workspace</span>
+    </div>
+
+    <div class="workspace-modal-body">
+      <div class="workspace-form-group">
+        <app-input [label]="'Workspace name'" (onGetValue)="onInput($event)" />
+      </div>
+    </div>
+
+    <div class="workspace-modal-footer">
+      <button class="workspace-btn workspace-btn--primary" (click)="onCreate()">
+        {{ "Create" }}
+      </button>
+    </div>
+  </div>
+</div>

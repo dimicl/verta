@@ -16,65 +16,103 @@
       {{ subtitleText() }}
     </button>
 
-    <button
-      class="action-button"
-      [disabled]="loginForm.invalid || registerForm.invalid"
-      (click)="onFormAction()"
-    >
+    <button class="action-button" (click)="onFormAction()">
       {{ buttonText() }}
     </button>
   </div>
 </div>
 
 <ng-template #loginTemplate>
-  <form class="auth-form" [formGroup]="loginForm">
+  <form class="auth-form" [formGroup]="loginForm" autocomplete="off">
     <app-input
       [label]="'Email'"
       [type]="'email'"
+      [autocomplete]="'off'"
+      [modelValue]="loginForm.get('email')?.value ?? ''"
       [icon]="sharedSvgRoutes.EMAIL_ICON"
-      (onGetValue)="loginForm.get('email')?.setValue($event)"
+      [errorMessage]="getFieldError('email')"
+      [hasError]="hasFieldError('email')"
+      [isValid]="isFieldValid('email')"
+      (onGetValue)="onFieldValueChange('email', $event)"
+      (onInputBlur)="onFieldBlur('email')"
     />
     <app-input
       [label]="'Password'"
       [type]="'password'"
+      [autocomplete]="'new-password'"
+      [modelValue]="loginForm.get('password')?.value ?? ''"
       [icon]="sharedSvgRoutes.PASSWORD_ICON"
-      (onGetValue)="loginForm.get('password')?.setValue($event)"
+      [errorMessage]="getFieldError('password')"
+      [hasError]="hasFieldError('password')"
+      [isValid]="isFieldValid('password')"
+      (onGetValue)="onFieldValueChange('password', $event)"
+      (onInputBlur)="onFieldBlur('password')"
     />
   </form>
 </ng-template>
 
 <ng-template #registerTemplate>
-  <form class="auth-form" [formGroup]="registerForm">
+  <form class="auth-form" [formGroup]="registerForm" autocomplete="off">
     <div class="form-grid">
       <app-input
         [label]="'First Name'"
         [type]="'text'"
-        (onGetValue)="registerForm.get('firstName')?.setValue($event)"
+        [autocomplete]="'off'"
+        [modelValue]="registerForm.get('firstName')?.value ?? ''"
+        [errorMessage]="getFieldError('firstName')"
+        [hasError]="hasFieldError('firstName')"
+        [isValid]="isFieldValid('firstName')"
+        (onGetValue)="onFieldValueChange('firstName', $event)"
+        (onInputBlur)="onFieldBlur('firstName')"
       />
       <app-input
         [label]="'Last Name'"
         [type]="'text'"
-        (onGetValue)="registerForm.get('lastName')?.setValue($event)"
+        [autocomplete]="'off'"
+        [modelValue]="registerForm.get('lastName')?.value ?? ''"
+        [errorMessage]="getFieldError('lastName')"
+        [hasError]="hasFieldError('lastName')"
+        [isValid]="isFieldValid('lastName')"
+        (onGetValue)="onFieldValueChange('lastName', $event)"
+        (onInputBlur)="onFieldBlur('lastName')"
       />
     </div>
 
     <app-input
       [label]="'Email'"
       [type]="'email'"
+      [autocomplete]="'off'"
+      [modelValue]="registerForm.get('email')?.value ?? ''"
       [icon]="sharedSvgRoutes.EMAIL_ICON"
-      (onGetValue)="registerForm.get('email')?.setValue($event)"
+      [errorMessage]="getFieldError('email')"
+      [hasError]="hasFieldError('email')"
+      [isValid]="isFieldValid('email')"
+      (onGetValue)="onFieldValueChange('email', $event)"
+      (onInputBlur)="onFieldBlur('email')"
     />
     <app-input
       [label]="'Password'"
       [type]="'password'"
+      [autocomplete]="'new-password'"
+      [modelValue]="registerForm.get('password')?.value ?? ''"
       [icon]="sharedSvgRoutes.PASSWORD_ICON"
-      (onGetValue)="registerForm.get('password')?.setValue($event)"
+      [errorMessage]="getFieldError('password')"
+      [hasError]="hasFieldError('password')"
+      [isValid]="isFieldValid('password')"
+      (onGetValue)="onFieldValueChange('password', $event)"
+      (onInputBlur)="onFieldBlur('password')"
     />
     <app-input
       [label]="'Confirm Password'"
       [type]="'password'"
+      [autocomplete]="'new-password'"
+      [modelValue]="registerForm.get('confirmPassword')?.value ?? ''"
       [icon]="sharedSvgRoutes.PASSWORD_ICON"
-      (onGetValue)="registerForm.get('confirmPassword')?.setValue($event)"
+      [errorMessage]="getFieldError('confirmPassword')"
+      [hasError]="hasFieldError('confirmPassword')"
+      [isValid]="isFieldValid('confirmPassword')"
+      (onGetValue)="onFieldValueChange('confirmPassword', $event)"
+      (onInputBlur)="onFieldBlur('confirmPassword')"
     />
   </form>
 </ng-template>

@@ -1,0 +1,21 @@
+<div class="invite-modal">
+  <div class="invite-modal-header">
+    <span class="invite-modal-header-text">Invite Members</span>
+  </div>
+
+  <div class="invite-modal-body">
+    <div class="invite-form-group">
+      <app-input
+        [label]="'Email'"
+        [type]="'email'"
+        (onGetValue)="onInput($event)"
+      />
+    </div>
+  </div>
+
+  <div class="invite-modal-footer">
+    <button class="invite-btn invite-btn--primary">
+      {{ "Create" }}
+    </button>
+  </div>
+</div>
