@@ -6,7 +6,7 @@ public class User
 
     public required string Email { get; set; }
     public required string Password { get; set; }
-    public required string Status { get; set; }
-    public string? CreatedAt { get; set; }
-    public string? UpdatedAt { get; set; }
+    public UserStatus Status { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; }
 }

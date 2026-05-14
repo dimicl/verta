@@ -5,7 +5,7 @@ public record UserRequest
     public required string LastName { get; set; }
     public required string Email { get; set; }
     public required string Password { get; set; }
-    public required UserRole Role { get; set; }
-    public required string Status { get; set; }
+    public UserRole? Role { get; set; }
+    public UserStatus Status { get; set; }
     public required DateTime CreatedAt { get; set; }
 }

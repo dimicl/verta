@@ -20,7 +20,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.Email).IsRequired();
+            entity.HasIndex(e => e.Email).IsUnique();
             entity.Property(e => e.Password).IsRequired();
+            entity.Property(e => e.Status).IsRequired().HasConversion<string>();
         });
 
         modelBuilder.Entity<Conversation>(entity =>

@@ -5,5 +5,5 @@ public record UserResponse
     public required string LastName { get; set; }
     public required string Email { get; set; }
     public UserRole Role { get; set; }
-    public required string Status { get; set; }   
+    public UserStatus Status { get; set; }   
 }
