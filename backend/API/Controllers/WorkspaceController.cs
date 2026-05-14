@@ -29,4 +29,6 @@ public class WorkspaceController : ControllerBase
         var result = await service.GetByOwnerId();
         return Ok(result);
     }
+
+    //Invite (accepted = false, notifikacija preko signalR, accepted = true kad prihvati)
 }

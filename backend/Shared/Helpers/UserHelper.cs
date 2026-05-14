@@ -1,6 +1,6 @@
 public static class UserHelper
 {
-    public static UserResponse ToEntity(User user)
+    public static UserResponse ToResponse(User user)
     {
         return new UserResponse
         {

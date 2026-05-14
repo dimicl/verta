@@ -25,6 +25,9 @@ public class AuthService : IAuthService
 
     public async Task Register(RegisterRequest request)
     {
+        var existingUser = await _userRepository.GetByEmailAsync(request.Email);
+        if (existingUser != null)
+            throw new Exception("Email already exists");
         var passwordHash = PasswordHasher.Hash(request.Password);
         var user = new User
         {
@@ -32,9 +35,9 @@ public class AuthService : IAuthService
             Password = passwordHash,
             FirstName = request.FirstName,
             LastName = request.LastName,
-            Status = "active",
-            CreatedAt = DateTime.UtcNow.ToShortDateString(),
-            UpdatedAt = DateTime.UtcNow.ToShortDateString()
+            Status = UserStatus.Active,
+            CreatedAt = DateTime.UtcNow,
+            //UpdatedAt = DateTime.UtcNow
         };
         
         await _userRepository.Add(user);
@@ -51,6 +54,9 @@ public class AuthService : IAuthService
         
         if (!PasswordHasher.Verify(request.Password, user.Password))
             throw new Exception("Invalid password");
+
+        if (user.Status != UserStatus.Active)
+            throw new Exception("User account is not active");
 
         var updateMessage = $"User logged in: {user.Email}";
         await _messageBus.PublishAsync("user-events", updateMessage);
