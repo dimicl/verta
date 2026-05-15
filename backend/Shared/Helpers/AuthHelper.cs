@@ -21,7 +21,7 @@ public static class AuthHelper
             LastName = lastName,
             Email = email,
             Password = passwordHash,
-            Status = "active"
+            Status = UserStatus.Active
         };
 
         await userRepository.Add(user);
@@ -44,7 +44,7 @@ public static class AuthHelper
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 Role = UserRole.Member,
-                Status = user.Status
+                Status = UserStatus.Active
             }
         };
     }

@@ -11,6 +11,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
     public DbSet<Workspace> Workspaces => Set<Workspace>();
     public DbSet<WorkspaceMember> WorkspaceMembers => Set<WorkspaceMember>();
+    public DbSet<Invitation> Invitations => Set<Invitation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -19,8 +20,14 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.ToTable("users");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.FirstName).IsRequired();
+            entity.Property(e => e.LastName).IsRequired();
             entity.Property(e => e.Email).IsRequired();
+            entity.HasIndex(e => e.Email).IsUnique();
             entity.Property(e => e.Password).IsRequired();
+            entity.Property(e => e.Status).IsRequired().HasConversion<string>();
+            entity.Property(e => e.CreatedAt).HasColumnType("timestamp with time zone").IsRequired();
+            entity.Property(e => e.UpdatedAt).HasColumnType("timestamp with time zone");
         });
 
         modelBuilder.Entity<Conversation>(entity =>
@@ -77,10 +84,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .IsRequired()
                 .HasMaxLength(100);
 
-            entity.Property(x => x.OwnerId)
+            entity.Property(x => x.CreatedAt)
                 .IsRequired();
 
-            entity.HasOne<User>()
+            entity.HasOne(x => x.Owner)
                 .WithMany()
                 .HasForeignKey(x => x.OwnerId)
                 .OnDelete(DeleteBehavior.Restrict);
@@ -88,31 +95,57 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
 
         modelBuilder.Entity<WorkspaceMember>(entity =>
-{
-    entity.ToTable("workspace_members");
+        {
+            entity.ToTable("workspace_members");
 
-    entity.HasKey(x => x.Id);
-    entity.Property(x => x.Id).ValueGeneratedOnAdd();
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
 
-    entity.Property(x => x.Role)
-        .IsRequired();
+            entity.Property(x => x.Role)
+                .IsRequired().HasConversion<string>();
 
-    entity.Property(x => x.CreatedAt)
-        .IsRequired();
+            entity.Property(x => x.CreatedAt)
+                .IsRequired();
 
-    entity.HasOne(x => x.Workspace)
-        .WithMany(w => w.Members)
-        .HasForeignKey(x => x.WorkspaceId)
-        .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.Workspace)
+                .WithMany(w => w.Members)
+                .HasForeignKey(x => x.WorkspaceId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-    entity.HasOne(x => x.User)
-        .WithMany()
-        .HasForeignKey(x => x.UserId)
-        .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-    entity.HasIndex(x => new { x.WorkspaceId, x.UserId })
-        .IsUnique();
-});
+            entity.HasIndex(x => new { x.WorkspaceId, x.UserId })
+                .IsUnique();
+        });
 
+        modelBuilder.Entity<Invitation>(entity =>
+        {
+            entity.ToTable("invitations");
+
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Id)
+                .ValueGeneratedOnAdd();
+
+            entity.Property(x => x.Role)
+                .IsRequired()
+                .HasConversion<string>();
+
+            entity.Property(x => x.IsAccepted)
+                .IsRequired();
+
+            entity.HasOne(x => x.Workspace)
+                .WithMany()
+                .HasForeignKey(x => x.WorkspaceId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
     }
 }

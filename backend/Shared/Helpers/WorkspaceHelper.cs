@@ -17,7 +17,7 @@ public static class WorkspaceHelper
         {
             Id = member.Id,
             WorkspaceId = member.WorkspaceId,
-            OwnerId = member.UserId,
+            UserId = member.UserId,
             Role = member.Role,
             CreatedAt = member.CreatedAt
         };
@@ -28,8 +28,8 @@ public static class WorkspaceHelper
         return new WorkspaceMemberRequest
         {
             WorkspaceId = response.Id,
-            OwnerId = response.OwnerId,
-            CreatedAt = response.CreatedAt
+            UserId = response.OwnerId,
+            Role = UserRole.Owner
         };
     }
 }
