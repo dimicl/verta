@@ -8,10 +8,12 @@ public class WorkspaceController : ControllerBase
 {
     private readonly IWorkspaceService service;
     private readonly IWorkspaceMemberService memberService;
-    public WorkspaceController(IWorkspaceService _service, IWorkspaceMemberService _memberService)
+    private readonly IInvitationService invitationService;
+    public WorkspaceController(IWorkspaceService _service, IWorkspaceMemberService _memberService, IInvitationService _invitationService)
     {
         service = _service;
         memberService = _memberService;
+        invitationService = _invitationService;
     }
 
     [Authorize]
@@ -23,12 +25,22 @@ public class WorkspaceController : ControllerBase
     }
 
     [Authorize]
-    [HttpGet("space")]
-    public async Task<IActionResult> GetWorkspace()
-    {       
+    [HttpGet("workspace/my")]
+    public async Task<IActionResult> GetMyWorkspace()
+    {
         var result = await service.GetByOwnerId();
+
         return Ok(result);
     }
 
-    //Invite (accepted = false, notifikacija preko signalR, accepted = true kad prihvati)
+    [Authorize]
+    [HttpPost("workspace/{workspaceId}/invite")]
+    public async Task<IActionResult> InviteUser(
+        int workspaceId,
+        [FromBody] InvitationRequest request)
+    {
+        var result = await invitationService.InviteUser(workspaceId, request);
+
+        return Ok(result);
+    }
 }

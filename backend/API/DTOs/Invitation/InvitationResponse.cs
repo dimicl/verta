@@ -1,4 +1,4 @@
-public record WorkspaceMemberResponse
+public record InvitationResponse
 {
     public required int Id { get; set; }
 
@@ -8,5 +8,5 @@ public record WorkspaceMemberResponse
 
     public required UserRole Role { get; set; }
 
-    public required DateTime CreatedAt { get; set; }
+    public required bool IsAccepted { get; set; }
 }

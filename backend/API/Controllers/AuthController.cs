@@ -18,6 +18,7 @@ public class AuthController : ControllerBase
     {
         await _authService.Register(request);
         return Ok(new { message = "User created successfully" });
+        //ovde treba li da se loguje kad se registruje ako da msm da treba da vraca id i token a ne samo komentar
     }
     
     [HttpPost("login")]
