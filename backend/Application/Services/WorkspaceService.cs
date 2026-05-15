@@ -57,13 +57,13 @@ public class WorkspaceService : IWorkspaceService
 
    public async Task<WorkspaceResponse> GetByOwnerId()
    {
-            var userId = _userContext.GetUserId();
-     var workspace = await _repo.GetByOwnerIdAsync(userId);
-     if(workspace != null)
-     {
-             return WorkspaceHelper.ToEntity(workspace);
-     }
-     throw new Exception("Workspace does not exist.");
+      var userId = _userContext.GetUserId();
+      var workspace = await _repo.GetByOwnerIdAsync(userId);
+      if(workspace != null)
+      {
+         return WorkspaceHelper.ToEntity(workspace);
+      }
+      throw new Exception("Workspace does not exist.");
    }
 
    

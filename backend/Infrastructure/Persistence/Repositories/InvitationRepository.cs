@@ -1,27 +1,26 @@
 using backend.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-public class WorkspaceMemberRepository
-    : GenericRepository<WorkspaceMember>, IWorkspaceMemberRepository
+public class InvitationRepository : GenericRepository<Invitation>, IInvitationRepository
 {
-    public WorkspaceMemberRepository(AppDbContext context) : base(context)
+    public InvitationRepository(AppDbContext context) : base(context)
     {
     }
 
-    public async Task<WorkspaceMember?> GetByWorkspaceAndUserIdAsync(int workspaceId, int userId)
+    public async Task<Invitation?> GetByWorkspaceAndUserIdAsync(int workspaceId, int userId)
     {
         return await _dbSet
             .FirstOrDefaultAsync(x => x.WorkspaceId == workspaceId && x.UserId == userId);
     }
 
-    public async Task<List<WorkspaceMember>> GetByWorkspaceIdAsync(int workspaceId)
+    public async Task<List<Invitation>> GetByWorkspaceIdAsync(int workspaceId)
     {
         return await _dbSet
             .Where(x => x.WorkspaceId == workspaceId)
             .ToListAsync();
     }
 
-    public async Task<List<WorkspaceMember>> GetByUserIdAsync(int userId)
+    public async Task<List<Invitation>> GetByUserIdAsync(int userId)
     {
         return await _dbSet
             .Where(x => x.UserId == userId)

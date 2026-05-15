@@ -25,7 +25,9 @@ public static class DependencyInjection
         services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();
         services.AddScoped<IWorkspaceService, WorkspaceService>();     
         services.AddScoped<IWorkspaceMemberRepository, WorkspaceMemberRepository>();
-        services.AddScoped<IWorkspaceMemberService, WorkspaceMemberService>();  
+        services.AddScoped<IWorkspaceMemberService, WorkspaceMemberService>();
+        services.AddScoped<IInvitationRepository, InvitationRepository>();
+        services.AddScoped<IInvitationService, InvitationService>();  
         services.AddScoped<IUserContext, UserContext>(); 
         services.AddScoped<IConversationRepository, ConversationRepository>();
         services.AddScoped<IConversationParticipantRepository, ConversationParticipantRepository>();
