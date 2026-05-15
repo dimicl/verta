@@ -10,4 +10,5 @@ export class SharedSvgRoutes {
   static PLUS_ICON = '/icons/plus.svg';
   static CLOSE_ICON = '/icons/close.svg';
   static UPLOAD_ICON = '/icons/upload.svg';
+  static PROFILE_ICON = '/icons/profile.svg';
 }
