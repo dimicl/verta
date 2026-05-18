@@ -101,6 +101,7 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.MapControllers();
+app.MapHub<NotificationHub>("/notifications");
 app.MapHub<SystemHub>("/hubs/chat");
 
 app.Run();

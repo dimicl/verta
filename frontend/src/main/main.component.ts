@@ -10,10 +10,11 @@ import { ChatComponent } from '../chat/chat.component';
 import { VeNotificationComponent } from '../../components/ve-notification/ve-notification.component';
 import { TaskModalComponent } from '../../components/task-modal/task-modal.component';
 import { VeExtraMembersComponent } from '../../components/ve-extra-members/ve-extra-members.component';
-import { CreateWorkspaceModalComponent } from '../../components/create-workspace-modal/create-workspace-modal.component';
 import { WorkspaceModalComponent } from '../../components/workspace-modal/workspace-modal.component';
 import { WorkspaceResponse } from '../../shared/interfaces/workspace-response.interface';
 import { InviteModalComponent } from '../../components/invite-modal/invite-modal.component';
+import { VeProfileComponent } from '../../components/ve-profile/ve-profile.component';
+import { VeStatusComponent } from '../../components/ve-status/ve-status.component';
 
 @Component({
   selector: 'app-main',
@@ -29,6 +30,8 @@ import { InviteModalComponent } from '../../components/invite-modal/invite-modal
     VeNotificationComponent,
     VeExtraMembersComponent,
     WorkspaceModalComponent,
+    VeProfileComponent,
+    VeStatusComponent,
   ],
 })
 export class MainComponent implements OnInit {
@@ -79,11 +82,9 @@ export class MainComponent implements OnInit {
   selectedUser = signal<number | null>(null);
 
   public ngOnInit(): void {
-    this.userService
-      .getUserById(localStorage.getItem('user_id') ?? '')
-      .subscribe((response) => {
-        console.log(response);
-      });
+    this.userService.getUserById().subscribe((response) => {
+      console.log(response);
+    });
 
     this.getWorkspace();
   }
@@ -145,6 +146,7 @@ export class MainComponent implements OnInit {
   }
 
   public onOpenInviteModal() {
-    this.modalService.open(InviteModalComponent, {});
+    const modalRef = this.modalService.open(InviteModalComponent);
+    modalRef.componentInstance.workspaceId = this.workspace?.id;
   }
 }

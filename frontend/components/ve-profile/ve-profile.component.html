@@ -1,0 +1,53 @@
+<div
+  class="profile-icon-container"
+  [class.active-container]="onProfileShown()"
+  [ngbPopover]="profilePopover"
+  placement="bottom-end"
+  triggers="click"
+  [autoClose]="true"
+  container="body"
+  (shown)="onProfileShown.set(true)"
+  (hidden)="onProfileShown.set(false)"
+>
+  <div
+    ngbTooltip="Profile"
+    [tooltipClass]="'notification-tooltip'"
+    [animation]="true"
+    placement="bottom"
+    triggers="hover"
+    container="body"
+  >
+    <svg-icon
+      class="profile-icon"
+      [src]="sharedSvgRoutes.PROFILE_ICON"
+    ></svg-icon>
+  </div>
+</div>
+
+<ng-template #profilePopover>
+  <p class="popover-title">Profile</p>
+
+  <div class="profile-body">
+    <app-avatar
+      [firstName]="this.user?.firstName"
+      [lastName]="this.user?.lastName"
+    ></app-avatar>
+    <div class="name-variables">
+      <div class="upper">
+        <span class="label">{{ user?.firstName }}</span>
+        <span class="label">{{ user?.lastName }}</span>
+      </div>
+      <div>
+        <span class="email-label">{{ user?.email }}</span>
+      </div>
+    </div>
+  </div>
+  <div class="buttons-block">
+    <div class="button">
+      <span class="button-label">Edit</span>
+    </div>
+    <div class="button">
+      <span class="button-label" (click)="onLogout()">Log Out</span>
+    </div>
+  </div>
+</ng-template>

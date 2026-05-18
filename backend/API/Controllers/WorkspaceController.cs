@@ -34,13 +34,20 @@ public class WorkspaceController : ControllerBase
     }
 
     [Authorize]
-    [HttpPost("workspace/{workspaceId}/invite")]
+    [HttpPost("workspace/invite")]
     public async Task<IActionResult> InviteUser(
-        int workspaceId,
         [FromBody] InvitationRequest request)
     {
-        var result = await invitationService.InviteUser(workspaceId, request);
-
-        return Ok(result);
+        try
+        {
+            var result = await invitationService.InviteUser(request);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            
+            return BadRequest(new {message = ex.Message});
+        }
+        
     }
 }

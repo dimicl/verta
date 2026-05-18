@@ -1,0 +1,105 @@
+.profile-icon-container {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  .profile-icon {
+    display: flex;
+
+    svg path {
+      fill: #c6c6c6;
+    }
+
+    svg ellipse {
+      fill: #c6c6c6;
+    }
+  }
+
+  &:hover {
+    background-color: #c6c6c6;
+    .profile-icon:not(.active-container) {
+      svg path {
+        fill: #919191;
+      }
+
+      svg ellipse {
+        fill: #919191;
+      }
+    }
+  }
+
+  &.active-container {
+    background-color: #2f2f2f;
+    svg ellipse {
+      color: #f0f0f0;
+    }
+
+    svg path {
+      color: #f0f0f0;
+    }
+  }
+}
+
+.profile-body {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+
+  .name-variables {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    justify-content: start;
+    gap: 2px;
+
+    .upper {
+      display: flex;
+      align-items: center;
+    }
+
+    .label {
+      font-size: 14px;
+      line-height: 18px;
+      color: #424242;
+      font-weight: 700;
+    }
+    .email-label {
+      font-weight: 400;
+    }
+  }
+}
+
+.buttons-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  .button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 6px;
+    background-color: #c6c6c6;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background-color 0.3s ease-in-out;
+
+    &:hover {
+      background-color: #919191;
+      .button-label {
+        color: #f1f1f1;
+      }
+    }
+
+    .button-label {
+      font-weight: 600;
+      color: #424242;
+      transition: color 0.3s ease-in-out;
+    }
+  }
+}

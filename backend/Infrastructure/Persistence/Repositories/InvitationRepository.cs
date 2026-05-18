@@ -7,10 +7,10 @@ public class InvitationRepository : GenericRepository<Invitation>, IInvitationRe
     {
     }
 
-    public async Task<Invitation?> GetByWorkspaceAndUserIdAsync(int workspaceId, int userId)
+    public async Task<Invitation?> GetByWorkspaceAndEmailAsync(int workspaceId, string email)
     {
         return await _dbSet
-            .FirstOrDefaultAsync(x => x.WorkspaceId == workspaceId && x.UserId == userId);
+            .FirstOrDefaultAsync(x => x.WorkspaceId == workspaceId && x.User.Email == email);
     }
 
     public async Task<List<Invitation>> GetByWorkspaceIdAsync(int workspaceId)
