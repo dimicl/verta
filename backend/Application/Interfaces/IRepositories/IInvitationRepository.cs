@@ -1,6 +1,6 @@
 public interface IInvitationRepository : IGenericRepository<Invitation>
 {
-    Task<Invitation?> GetByWorkspaceAndUserIdAsync(int workspaceId, int userId);
+    Task<Invitation?> GetByWorkspaceAndEmailAsync(int workspaceId, string email);
 
     Task<List<Invitation>> GetByWorkspaceIdAsync(int workspaceId);
 

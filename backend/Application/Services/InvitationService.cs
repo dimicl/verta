@@ -1,5 +1,6 @@
 using backend.Application.Interfaces;
 using backend.Shared.Helpers;
+using Microsoft.AspNetCore.SignalR;
 
 namespace backend.Application.Services;
 
@@ -10,19 +11,25 @@ public class InvitationService : IInvitationService
     private readonly IWorkspaceMemberRepository _workspaceMemberRepo;
     private readonly IUserContext _userContext;
 
+    private readonly IUserRepository _userRepository;
+
     public InvitationService(
         IInvitationRepository invitationRepo,
         IWorkspaceRepository workspaceRepo,
         IWorkspaceMemberRepository workspaceMemberRepo,
-        IUserContext userContext)
+        IUserContext userContext,
+        IUserRepository userRepository
+
+    )
     {
         _invitationRepo = invitationRepo;
         _workspaceRepo = workspaceRepo;
         _workspaceMemberRepo = workspaceMemberRepo;
         _userContext = userContext;
+        _userRepository = userRepository;
     }
 
-    public async Task<InvitationResponse> InviteUser(int workspaceId, InvitationRequest request)
+    public async Task<InvitationResponse> InviteUser(InvitationRequest request)
     {
         if (request == null)
         {
@@ -31,7 +38,14 @@ public class InvitationService : IInvitationService
 
         var currentUserId = _userContext.GetUserId();
 
-        var workspace = await _workspaceRepo.GetById(workspaceId);
+        var invitedUser = await _userRepository.GetByEmailAsync(request.Email);
+        
+        if(invitedUser == null)
+        {
+            throw new Exception("Invited user does not exist.");
+        }
+
+        var workspace = await _workspaceRepo.GetById(request.WorkspaceId);
 
         if (workspace == null)
         {
@@ -43,14 +57,14 @@ public class InvitationService : IInvitationService
             throw new Exception("Only workspace owner can invite users.");
         }
 
-        if (request.UserId == currentUserId)
+        if (invitedUser.Id == currentUserId)
         {
             throw new Exception("You cannot invite yourself.");
         }
 
         var existingMember = await _workspaceMemberRepo.GetByWorkspaceAndUserIdAsync(
-            workspaceId,
-            request.UserId
+            request.WorkspaceId,
+            invitedUser.Id
         );
 
         if (existingMember != null)
@@ -58,9 +72,9 @@ public class InvitationService : IInvitationService
             throw new Exception("User is already member of this workspace.");
         }
 
-        var existingInvitation = await _invitationRepo.GetByWorkspaceAndUserIdAsync(
-            workspaceId,
-            request.UserId
+        var existingInvitation = await _invitationRepo.GetByWorkspaceAndEmailAsync(
+            request.WorkspaceId,
+            request.Email
         );
 
         if (existingInvitation != null)
@@ -70,9 +84,9 @@ public class InvitationService : IInvitationService
 
         var invitation = new Invitation
         {
-            WorkspaceId = workspaceId,
-            UserId = request.UserId,
-            Role = request.Role,
+            WorkspaceId = workspace.Id,
+            UserId = invitedUser.Id,
+            Role = UserRole.Member,
             IsAccepted = true
         };
 
@@ -80,9 +94,9 @@ public class InvitationService : IInvitationService
 
         var member = new WorkspaceMember
         {
-            WorkspaceId = workspaceId,
-            UserId = request.UserId,
-            Role = request.Role,
+            WorkspaceId = workspace.Id,
+            UserId = invitedUser.Id,
+            Role = UserRole.Member,
             CreatedAt = DateTime.UtcNow
         };
 

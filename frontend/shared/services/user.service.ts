@@ -7,7 +7,6 @@ export class UserService {
   constructor(private http: HttpClient) {}
 
   public getUserById() {
-    const id = localStorage.getItem('user_id');
-    return this.http.get(`${this.API_URL}/users/${id}`);
+    return this.http.get(`${this.API_URL}/users/me`);
   }
 }

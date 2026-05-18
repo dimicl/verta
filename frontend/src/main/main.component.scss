@@ -292,6 +292,20 @@
         font-size: 14px;
         line-height: 14px;
       }
+
+      .points-container {
+        display: flex;
+        align-items: center;
+        border-radius: 3px;
+        background: #c6c6c6;
+        padding: 0 4px;
+
+        .points-label {
+          font-size: 9px;
+          line-height: 14px;
+          font-weight: 700;
+        }
+      }
     }
   }
 }

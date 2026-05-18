@@ -22,7 +22,15 @@ export class WorkspaceService {
   }
 
   public getWorkspace() {
-    return this.http.get<any>(`${this.API_URL}/space`, {
+    return this.http.get<any>(`${this.API_URL}/workspace/my`, {
+      headers: {
+        Authorization: `Bearer ${this.token}`,
+      },
+    });
+  }
+
+  public inviteUser(request: any) {
+    return this.http.post<any>(`${this.API_URL}/workspace/invite`, request, {
       headers: {
         Authorization: `Bearer ${this.token}`,
       },
