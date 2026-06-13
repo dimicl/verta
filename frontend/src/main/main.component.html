@@ -5,6 +5,7 @@
     </div>
   </aside>
 
+  @if(this.workspace){
   <div class="main-container">
     <header class="header">
       <ng-container *ngTemplateOutlet="headerTemplate"></ng-container>
@@ -19,6 +20,9 @@
       } }
     </div>
   </div>
+  }@else {
+  <div class="main-empty-state">There is no active board</div>
+  }
 </div>
 
 <ng-template #sidebarTemplate>
@@ -36,14 +40,15 @@
         Create Workspace
       </div>
     </div>
-    }
-
+    } @if(this.workspace){
     <div class="workspace-actions">
       <div class="invite-btn" (click)="onOpenInviteModal()">Invite</div>
     </div>
+    }
   </div>
 
   <!-- BOARDS -->
+  @if(this.workspace){
   <div class="boards-section">
     <div class="boards-header">
       <span>Boards</span>
@@ -53,17 +58,20 @@
         triggers="hover"
         container="body"
         placement="bottom"
+        (click)="onAddBoard()"
       >
         <svg-icon class="add-icon" [src]="sharedSvgRoutes.PLUS_ICON" />
       </div>
     </div>
 
     <div class="boards-list">
-      <div class="board-item active">Project Alpha</div>
+      <div class="empty-state-board">No boards</div>
+      <!-- <div class="board-item active">Project Alpha</div>
       <div class="board-item">Marketing</div>
-      <div class="board-item">Design</div>
+      <div class="board-item">Design</div> -->
     </div>
   </div>
+  }
 </ng-template>
 
 <ng-template #headerTemplate>

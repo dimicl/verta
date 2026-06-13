@@ -1,0 +1,19 @@
+<div class="board-modal-overlay">
+  <div class="board-modal">
+    <div class="board-modal-header">
+      <span class="board-modal-header-text">Create Board</span>
+    </div>
+
+    <div class="board-modal-body">
+      <div class="board-form-group">
+        <app-input [label]="'Board name'" (onGetValue)="onInput($event)" />
+      </div>
+    </div>
+
+    <div class="board-modal-footer">
+      <button class="board-btn board-btn--primary" (click)="onCreate()">
+        {{ "Create" }}
+      </button>
+    </div>
+  </div>
+</div>
