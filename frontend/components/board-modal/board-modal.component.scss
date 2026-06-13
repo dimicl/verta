@@ -1,0 +1,101 @@
+.board-modal-overlay {
+  position: fixed;
+  inset: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+
+  z-index: 9999;
+}
+
+.board-modal {
+  width: 420px;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 24px;
+
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+
+  animation: boardModalIn 0.15s ease-out;
+}
+
+@keyframes boardModalIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.board-modal-header {
+  margin-bottom: 20px;
+
+  .board-modal-header-text {
+    font-size: 20px;
+    font-weight: 700;
+    color: #2b2b2b;
+  }
+}
+
+.board-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.board-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  label {
+    font-size: 13px;
+    color: #666;
+    font-weight: 600;
+  }
+
+  input {
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    outline: none;
+  }
+}
+
+.board-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.board-btn {
+  padding: 6px 8px;
+  border-radius: 3px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  transition: 0.2s ease;
+  font-weight: 600;
+
+  &--primary {
+    background: #4f5cff;
+    color: white;
+
+    &:hover {
+      background: #3f4de0;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+  }
+}

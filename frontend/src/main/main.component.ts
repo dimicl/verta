@@ -15,6 +15,7 @@ import { WorkspaceResponse } from '../../shared/interfaces/workspace-response.in
 import { InviteModalComponent } from '../../components/invite-modal/invite-modal.component';
 import { VeProfileComponent } from '../../components/ve-profile/ve-profile.component';
 import { VeStatusComponent } from '../../components/ve-status/ve-status.component';
+import { BoardModalComponent } from '../../components/board-modal/board-modal.component';
 
 @Component({
   selector: 'app-main',
@@ -41,6 +42,7 @@ export class MainComponent implements OnInit {
     signal<(typeof this.toolbarItems)[number]>('Backlog');
 
   public workspace: WorkspaceResponse | null = null;
+  public boards: any | null = null;
 
   users = [
     {
@@ -148,5 +150,9 @@ export class MainComponent implements OnInit {
   public onOpenInviteModal() {
     const modalRef = this.modalService.open(InviteModalComponent);
     modalRef.componentInstance.workspaceId = this.workspace?.id;
+  }
+
+  public onAddBoard() {
+    this.modalService.open(BoardModalComponent, {});
   }
 }

@@ -36,6 +36,18 @@
   //background-color: #919191;
 }
 
+.main-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  width: 100%;
+  min-height: 100%;
+  font-size: 28px;
+  font-weight: 800;
+  color: #c6c6c6;
+}
+
 .main {
   flex: 1;
 }
@@ -453,4 +465,9 @@
     background-color: #e5e7eb;
     font-weight: 600;
   }
+}
+
+.empty-state-board {
+  color: #919191;
+  font-size: 12px;
 }
