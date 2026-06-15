@@ -13,6 +13,14 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<WorkspaceMember> WorkspaceMembers => Set<WorkspaceMember>();
     public DbSet<Invitation> Invitations => Set<Invitation>();
 
+    public DbSet<Board> Boards => Set<Board>();
+    public DbSet<WorkItem> WorkItems => Set<WorkItem>();
+    public DbSet<SubWorkItem> SubWorkItems => Set<SubWorkItem>();
+    public DbSet<Comment> Comments => Set<Comment>();
+    public DbSet<WorkItemFile> WorkItemFiles => Set<WorkItemFile>();
+
+    public DbSet<BoardLock> BoardLocks => Set<BoardLock>();
+    
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<User>(entity =>
@@ -145,6 +153,164 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.HasOne(x => x.User)
                 .WithMany()
                 .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Board>(entity =>
+        {
+            entity.ToTable("boards");
+
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Name)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(x => x.CreatedAt)
+                .IsRequired();
+
+            entity.HasOne(x => x.Workspace)
+                .WithMany(w => w.Boards)
+                .HasForeignKey(x => x.WorkspaceId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.Owner)
+                .WithMany()
+                .HasForeignKey(x => x.OwnerId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<BoardLock>(entity =>
+        {
+            entity.ToTable("board_locks");
+
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.LockedAt)
+                .IsRequired();
+
+            entity.HasOne(x => x.Board)
+                .WithMany()
+                .HasForeignKey(x => x.BoardId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.LockedByUser)
+                .WithMany()
+                .HasForeignKey(x => x.LockedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(x => x.BoardId)
+                .IsUnique();
+        });
+
+        modelBuilder.Entity<WorkItem>(entity =>
+        {
+            entity.ToTable("work_items");
+
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Name)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            entity.Property(x => x.Description)
+                .IsRequired();
+
+            entity.Property(x => x.Status)
+                .HasConversion<string>();
+
+            entity.Property(x => x.Priority)
+                .HasConversion<string>();
+
+            entity.Property(x => x.CreatedAt)
+                .IsRequired();
+
+            entity.HasOne(x => x.Board)
+                .WithMany(b => b.WorkItems)
+                .HasForeignKey(x => x.BoardId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.CreatedByUser)
+                .WithMany()
+                .HasForeignKey(x => x.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.AssignedUser)
+                .WithMany()
+                .HasForeignKey(x => x.AssignedUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<SubWorkItem>(entity =>
+        {
+            entity.ToTable("sub_work_items");
+
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Name)
+                .IsRequired();
+
+            entity.Property(x => x.Description)
+                .IsRequired();
+
+            entity.Property(x => x.Status)
+                .HasConversion<string>();
+
+            entity.HasOne(x => x.WorkItem)
+                .WithMany(w => w.SubWorkItems)
+                .HasForeignKey(x => x.WorkItemId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Comment>(entity =>
+        {
+            entity.ToTable("comments");
+
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Content)
+                .IsRequired();
+
+            entity.Property(x => x.CreatedAt)
+                .IsRequired();
+
+            entity.HasOne(x => x.WorkItem)
+                .WithMany(w => w.Comments)
+                .HasForeignKey(x => x.WorkItemId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<WorkItemFile>(entity =>
+        {
+            entity.ToTable("work_item_files");
+
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.FileName)
+                .IsRequired();
+
+            entity.Property(x => x.FileType)
+                .IsRequired();
+
+            entity.Property(x => x.FileUrl)
+                .IsRequired();
+
+            entity.Property(x => x.CreatedAt)
+                .IsRequired();
+
+            entity.HasOne(x => x.WorkItem)
+                .WithMany(w => w.Files)
+                .HasForeignKey(x => x.WorkItemId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }
