@@ -34,6 +34,22 @@ public static class DependencyInjection
         services.AddScoped<IMessageRepository, MessageRepository>();
         services.AddScoped<INotificationService, SignalRNotificationService>();
         services.AddScoped<IMessageBus, RabbitMQBus>();
+        services.AddScoped<IBoardRepository, BoardRepository>();
+        services.AddScoped<IBoardService, BoardService>();
+        services.AddScoped<IWorkItemRepository, WorkItemRepository>();
+        services.AddScoped<IWorkItemService, WorkItemService>();
+        services.AddScoped<ICommentRepository, CommentRepository>();
+        services.AddScoped<ICommentService, CommentService>();
+        services.AddScoped<ISubWorkItemRepository, SubWorkItemRepository>();
+        services.AddScoped<ISubWorkItemService, SubWorkItemService>();
+        services.AddScoped<IWorkItemFileRepository, WorkItemFileRepository>();
+        services.AddScoped<IWorkItemFileService, WorkItemFileService>();
+        services.AddScoped<DomainEventSubject>();
+        services.AddScoped<SignalRDomainEventObserver>();
+        services.AddScoped<RabbitMqDomainEventObserver>();
+        services.AddScoped<IBoardLockRepository, BoardLockRepository>();
+        services.AddScoped<IBoardLockService, BoardLockService>();
+        services.AddScoped<CommandInvoker>();
 
         services.AddHttpContextAccessor();
 

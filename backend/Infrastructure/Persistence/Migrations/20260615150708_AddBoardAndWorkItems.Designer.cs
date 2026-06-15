@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using backend.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using backend.Infrastructure.Persistence;
 namespace backend.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260615150708_AddBoardAndWorkItems")]
+    partial class AddBoardAndWorkItems
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -54,33 +57,6 @@ namespace backend.Infrastructure.Persistence.Migrations
                     b.HasIndex("WorkspaceId");
 
                     b.ToTable("boards", (string)null);
-                });
-
-            modelBuilder.Entity("BoardLock", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("BoardId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("LockedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("LockedByUserId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BoardId")
-                        .IsUnique();
-
-                    b.HasIndex("LockedByUserId");
-
-                    b.ToTable("board_locks", (string)null);
                 });
 
             modelBuilder.Entity("Comment", b =>
@@ -474,25 +450,6 @@ namespace backend.Infrastructure.Persistence.Migrations
                     b.Navigation("Owner");
 
                     b.Navigation("Workspace");
-                });
-
-            modelBuilder.Entity("BoardLock", b =>
-                {
-                    b.HasOne("Board", "Board")
-                        .WithMany()
-                        .HasForeignKey("BoardId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("User", "LockedByUser")
-                        .WithMany()
-                        .HasForeignKey("LockedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Board");
-
-                    b.Navigation("LockedByUser");
                 });
 
             modelBuilder.Entity("Comment", b =>

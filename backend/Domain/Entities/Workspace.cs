@@ -10,5 +10,7 @@ public class Workspace
 
     public List<WorkspaceMember>? Members { get; set; } 
 
+    public List<Board>? Boards { get; set; }
+
     public DateTime CreatedAt { get; set; }
 }
