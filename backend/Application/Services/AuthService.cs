@@ -8,26 +8,23 @@ public class AuthService : IAuthService
     private readonly IConfiguration _configuration;
     private readonly IUserRepository _userRepository;
     private readonly IMessageBus _messageBus;
-    private readonly INotificationService _notificationService;
 
     public AuthService(
         IConfiguration configuration,
         IUserRepository userRepository,
-        IMessageBus messageBus,
-        INotificationService notificationService
-        )
+        IMessageBus messageBus)
     {
         _configuration = configuration;
         _userRepository = userRepository;
         _messageBus = messageBus;
-        _notificationService = notificationService;
     }
 
-    public async Task Register(RegisterRequest request)
+    public async Task<AuthResponse> Register(RegisterRequest request)
     {
         var existingUser = await _userRepository.GetByEmailAsync(request.Email);
         if (existingUser != null)
             throw new Exception("Email already exists");
+
         var passwordHash = PasswordHasher.Hash(request.Password);
         var user = new User
         {
@@ -37,13 +34,29 @@ public class AuthService : IAuthService
             LastName = request.LastName,
             Status = UserStatus.Active,
             CreatedAt = DateTime.UtcNow,
-            //UpdatedAt = DateTime.UtcNow
         };
-        
+
         await _userRepository.Add(user);
-        var updateMessage = $"User registered: {user.Email}";
-        await _messageBus.PublishAsync("user-events", updateMessage);
-        await _notificationService.SendUpdateAsync(updateMessage);
+
+        // Publish ne blokira registraciju — greška se samo loguje
+        try
+        {
+            await _messageBus.PublishAsync("user-events",
+                System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    EventName = "UserRegistered",
+                    Payload = new { UserId = user.Id, Email = user.Email },
+                    CreatedAt = DateTime.UtcNow
+                }));
+        }
+        catch (Exception ex)
+        {
+            // Log only — ne propagiramo, korisnik je kreiran uspešno
+            // U produkciji: ILogger<AuthService> ovde
+            _ = ex;
+        }
+
+        return AuthHelper.BuildAuthResponse(user, _configuration);
     }
 
     public async Task<AuthResponse> Login(LoginRequest request)
@@ -51,16 +64,20 @@ public class AuthService : IAuthService
         var user = await _userRepository.GetByEmailAsync(request.Email);
         if (user == null)
             throw new Exception("User not found");
-        
+
         if (!PasswordHasher.Verify(request.Password, user.Password))
             throw new Exception("Invalid password");
 
         if (user.Status != UserStatus.Active)
             throw new Exception("User account is not active");
 
-        var updateMessage = $"User logged in: {user.Email}";
-        await _messageBus.PublishAsync("user-events", updateMessage);
-        await _notificationService.SendUpdateAsync(updateMessage);
+        await _messageBus.PublishAsync("user-events",
+            System.Text.Json.JsonSerializer.Serialize(new
+            {
+                EventName = "UserLoggedIn",
+                Payload = new { UserId = user.Id },
+                CreatedAt = DateTime.UtcNow
+            }));
 
         return AuthHelper.BuildAuthResponse(user, _configuration);
     }

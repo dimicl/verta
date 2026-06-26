@@ -1,6 +1,5 @@
 using backend.Application.Interfaces;
 using backend.Shared.Helpers;
-using Microsoft.AspNetCore.SignalR;
 
 namespace backend.Application.Services;
 
@@ -10,16 +9,16 @@ public class InvitationService : IInvitationService
     private readonly IWorkspaceRepository _workspaceRepo;
     private readonly IWorkspaceMemberRepository _workspaceMemberRepo;
     private readonly IUserContext _userContext;
-
     private readonly IUserRepository _userRepository;
+    private readonly INotificationService _notificationService;
 
     public InvitationService(
         IInvitationRepository invitationRepo,
         IWorkspaceRepository workspaceRepo,
         IWorkspaceMemberRepository workspaceMemberRepo,
         IUserContext userContext,
-        IUserRepository userRepository
-
+        IUserRepository userRepository,
+        INotificationService notificationService
     )
     {
         _invitationRepo = invitationRepo;
@@ -27,6 +26,7 @@ public class InvitationService : IInvitationService
         _workspaceMemberRepo = workspaceMemberRepo;
         _userContext = userContext;
         _userRepository = userRepository;
+        _notificationService = notificationService;
     }
 
     public async Task<InvitationResponse> InviteUser(InvitationRequest request)
@@ -101,6 +101,16 @@ public class InvitationService : IInvitationService
         };
 
         await _workspaceMemberRepo.Add(member);
+
+        await _notificationService.SendToUserAsync(
+            invitedUser.Id,
+            "WorkspaceInvitation",
+            new
+            {
+                WorkspaceId = workspace.Id,
+                WorkspaceName = workspace.Name,
+                InvitedByUserId = currentUserId
+            });
 
         return InvitationHelper.ToResponse(createdInvitation);
     }

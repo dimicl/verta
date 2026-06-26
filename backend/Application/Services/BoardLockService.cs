@@ -50,7 +50,13 @@ public class BoardLockService : IBoardLockService, IBoardLockPromotionService
         var existingLock = await _lockRepo.GetByBoardIdAsync(boardId);
         if (existingLock != null && existingLock.ExpiresAt < DateTime.UtcNow)
         {
-            await _lockRepo.Delete(existingLock);
+            try
+            {
+                await _lockRepo.Delete(existingLock);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+            }
             existingLock = null;
         }
 

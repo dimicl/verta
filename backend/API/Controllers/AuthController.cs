@@ -16,9 +16,8 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
-        await _authService.Register(request);
-        return Ok(new { message = "User created successfully" });
-        //ovde treba li da se loguje kad se registruje ako da msm da treba da vraca id i token a ne samo komentar
+        var response = await _authService.Register(request);
+        return Ok(response);
     }
     
     [HttpPost("login")]

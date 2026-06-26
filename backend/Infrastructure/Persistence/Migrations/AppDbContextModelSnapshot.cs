@@ -158,10 +158,23 @@ namespace backend.Infrastructure.Persistence.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime?>("CreatedAt")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("CreatedByUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
 
                     b.ToTable("conversations", (string)null);
                 });
@@ -183,8 +196,14 @@ namespace backend.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsMuted")
                         .HasColumnType("boolean");
 
-                    b.Property<DateTime?>("JoinedAt")
+                    b.Property<DateTime>("JoinedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LastReadAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("LastReadMessageId")
+                        .HasColumnType("integer");
 
                     b.Property<int>("UserId")
                         .HasColumnType("integer");
@@ -196,6 +215,40 @@ namespace backend.Infrastructure.Persistence.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("conversation_participants", (string)null);
+                });
+
+            modelBuilder.Entity("DomainEventLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("EventName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("QueueName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("ReceivedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EventName");
+
+                    b.HasIndex("ReceivedAt");
+
+                    b.ToTable("domain_event_logs", (string)null);
                 });
 
             modelBuilder.Entity("Invitation", b =>
@@ -243,8 +296,24 @@ namespace backend.Infrastructure.Persistence.Migrations
                     b.Property<int>("ConversationId")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime?>("CreatedAt")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("EditedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("IsEdited")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
 
                     b.Property<int>("SenderId")
                         .HasColumnType("integer");
@@ -318,9 +387,17 @@ namespace backend.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("IsOnline")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<DateTime?>("LastSeenAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Password")
                         .IsRequired()
@@ -431,6 +508,63 @@ namespace backend.Infrastructure.Persistence.Migrations
                     b.ToTable("work_item_files", (string)null);
                 });
 
+            modelBuilder.Entity("WorkItemLock", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("LockedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("LockedByUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("WorkItemId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LockedByUserId");
+
+                    b.HasIndex("WorkItemId")
+                        .IsUnique();
+
+                    b.ToTable("work_item_locks", (string)null);
+                });
+
+            modelBuilder.Entity("WorkItemLockInterest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("RegisteredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("WorkItemId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("WorkItemId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("work_item_lock_interests", (string)null);
+                });
+
             modelBuilder.Entity("Workspace", b =>
                 {
                     b.Property<int>("Id")
@@ -452,7 +586,8 @@ namespace backend.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("OwnerId");
+                    b.HasIndex("OwnerId")
+                        .IsUnique();
 
                     b.ToTable("workspaces", (string)null);
                 });
@@ -567,6 +702,17 @@ namespace backend.Infrastructure.Persistence.Migrations
                     b.Navigation("WorkItem");
                 });
 
+            modelBuilder.Entity("Conversation", b =>
+                {
+                    b.HasOne("User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CreatedByUser");
+                });
+
             modelBuilder.Entity("ConversationParticipant", b =>
                 {
                     b.HasOne("Conversation", "Conversation")
@@ -672,6 +818,44 @@ namespace backend.Infrastructure.Persistence.Migrations
                         .HasForeignKey("WorkItemId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("WorkItem");
+                });
+
+            modelBuilder.Entity("WorkItemLock", b =>
+                {
+                    b.HasOne("User", "LockedByUser")
+                        .WithMany()
+                        .HasForeignKey("LockedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("WorkItem", "WorkItem")
+                        .WithMany()
+                        .HasForeignKey("WorkItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("LockedByUser");
+
+                    b.Navigation("WorkItem");
+                });
+
+            modelBuilder.Entity("WorkItemLockInterest", b =>
+                {
+                    b.HasOne("User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("WorkItem", "WorkItem")
+                        .WithMany()
+                        .HasForeignKey("WorkItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
 
                     b.Navigation("WorkItem");
                 });
