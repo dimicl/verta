@@ -11,4 +11,8 @@ public class ConversationParticipantRepository: GenericRepository<ConversationPa
     {
         return await _dbSet.Where(p => p.ConversationId == conversationId).Select(p => p.UserId).ToListAsync();
     }
+    public async Task<ConversationParticipant?> GetParticipantAsync(int conversationId, int userId)
+    {
+        return await _dbSet.FirstOrDefaultAsync(p => p.ConversationId == conversationId && p.UserId == userId);
+    }
 }

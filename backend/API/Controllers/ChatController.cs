@@ -1,37 +1,69 @@
 using backend.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace backend.API.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/chat")]
 public class ChatController : ControllerBase
 {
     private readonly IChatService _chatService;
+    private readonly IUserContext _userContext;
 
-    public ChatController(IChatService chatService)
+    public ChatController(IChatService chatService, IUserContext userContext)
     {
         _chatService = chatService;
+        _userContext = userContext;
     }
 
     [HttpPost("messages")]
     public async Task<IActionResult> SendMessage([FromBody] SendMessageRequest request)
     {
-        var message = await _chatService.SendMessage(request.SenderId, request.ReceiverId, request.Content);
+        var senderId = _userContext.GetUserId();
+        var message = await _chatService.SendMessage(senderId, request.ReceiverId, request.Content);
         return Ok(message);
     }
 
     [HttpGet("conversations/{conversationId:int}/messages")]
-    public async Task<IActionResult> GetMessages(int conversationId, [FromQuery] int userId)
+    public async Task<IActionResult> GetMessages(
+        int conversationId,
+        [FromQuery] int? before,
+        [FromQuery] int limit = 50)
     {
-        var messages = await _chatService.GetMessages(conversationId, userId);
+        var userId = _userContext.GetUserId();
+        var messages = await _chatService.GetMessages(conversationId, userId, before, limit);
         return Ok(messages);
+    }
+
+    [HttpPost("conversations/{conversationId:int}/read")]
+    public async Task<IActionResult> MarkAsRead(int conversationId)
+    {
+        var userId = _userContext.GetUserId();
+        await _chatService.MarkAsRead(conversationId, userId);
+        return Ok();
+    }
+
+    [HttpGet("conversations/{conversationId:int}/unread")]
+    public async Task<IActionResult> GetUnreadCount(int conversationId)
+    {
+        var userId = _userContext.GetUserId();
+        var count = await _chatService.GetUnreadCount(conversationId, userId);
+        return Ok(new { conversationId, unreadCount = count });
+    }
+
+    [HttpGet("conversations/my")]
+    public async Task<IActionResult> GetMyConversations()
+    {
+        var userId = _userContext.GetUserId();
+        var conversations = await _chatService.GetMyConversations(userId);
+        return Ok(conversations);
     }
 }
 
 public class SendMessageRequest
 {
-    public int SenderId { get; set; }
     public int ReceiverId { get; set; }
     public string Content { get; set; } = string.Empty;
 }

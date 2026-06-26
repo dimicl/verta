@@ -21,6 +21,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
     public DbSet<BoardLock> BoardLocks => Set<BoardLock>();
     public DbSet<BoardLockQueueEntry> BoardLockQueueEntries => Set<BoardLockQueueEntry>();
+    public DbSet<WorkItemLock> WorkItemLocks => Set<WorkItemLock>();
+    public DbSet<WorkItemLockInterest> WorkItemLockInterests => Set<WorkItemLockInterest>();
+
+    public DbSet<DomainEventLog> DomainEventLogs => Set<DomainEventLog>();
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -37,6 +41,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(e => e.Status).IsRequired().HasConversion<string>();
             entity.Property(e => e.CreatedAt).HasColumnType("timestamp with time zone").IsRequired();
             entity.Property(e => e.UpdatedAt).HasColumnType("timestamp with time zone");
+            entity.Property(e => e.IsOnline).IsRequired().HasDefaultValue(false);
+            entity.Property(e => e.LastSeenAt).HasColumnType("timestamp with time zone");
         });
 
         modelBuilder.Entity<Conversation>(entity =>
@@ -44,7 +50,13 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.ToTable("conversations");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
-            entity.Property(e => e.CreatedAt);
+            entity.Property(e => e.Type).IsRequired().HasConversion<string>();
+            entity.Property(e => e.Name).HasMaxLength(100);
+            entity.Property(e => e.CreatedAt).HasColumnType("timestamp with time zone").IsRequired();
+            entity.HasOne(e => e.CreatedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<ConversationParticipant>(entity =>
@@ -52,16 +64,17 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.ToTable("conversation_participants");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
-
+            entity.Property(e => e.JoinedAt).HasColumnType("timestamp with time zone");
+            entity.Property(e => e.LastReadAt).HasColumnType("timestamp with time zone");
             entity.HasOne(e => e.Conversation)
                 .WithMany(c => c.Participants)
                 .HasForeignKey(e => e.ConversationId)
                 .OnDelete(DeleteBehavior.Cascade);
-
             entity.HasOne(e => e.User)
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(e => e.UserId);
         });
 
         modelBuilder.Entity<Message>(entity =>
@@ -70,12 +83,15 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.Content).IsRequired();
-
+            entity.Property(e => e.IsEdited).IsRequired().HasDefaultValue(false);
+            entity.Property(e => e.IsDeleted).IsRequired().HasDefaultValue(false);
+            entity.Property(e => e.CreatedAt).HasColumnType("timestamp with time zone").IsRequired();
+            entity.Property(e => e.EditedAt).HasColumnType("timestamp with time zone");
+            entity.Property(e => e.DeletedAt).HasColumnType("timestamp with time zone");
             entity.HasOne<Conversation>()
                 .WithMany()
                 .HasForeignKey(e => e.ConversationId)
                 .OnDelete(DeleteBehavior.Cascade);
-
             entity.HasOne<User>()
                 .WithMany()
                 .HasForeignKey(e => e.SenderId)
@@ -100,6 +116,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .WithMany()
                 .HasForeignKey(x => x.OwnerId)
                 .OnDelete(DeleteBehavior.Restrict);
+            
+            entity.HasIndex(x => x.OwnerId).IsUnique();
         });
 
 
@@ -188,6 +206,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.HasKey(x => x.Id);
 
             entity.Property(x => x.LockedAt)
+                .HasColumnType("timestamp with time zone")
                 .IsRequired();
 
             entity.Property(x => x.ExpiresAt)
@@ -268,6 +287,47 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .OnDelete(DeleteBehavior.SetNull);
         });
 
+        modelBuilder.Entity<WorkItemLock>(entity =>
+        {
+            entity.ToTable("work_item_locks");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.LockedAt)
+                .HasColumnType("timestamp with time zone")
+                .IsRequired();
+            entity.Property(x => x.ExpiresAt)
+                .HasColumnType("timestamp with time zone")
+                .IsRequired();
+            entity.HasOne(x => x.WorkItem)
+                .WithMany()
+                .HasForeignKey(x => x.WorkItemId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.LockedByUser)
+                .WithMany()
+                .HasForeignKey(x => x.LockedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasIndex(x => x.WorkItemId)
+                .IsUnique();
+        });
+
+        modelBuilder.Entity<WorkItemLockInterest>(entity =>
+        {
+            entity.ToTable("work_item_lock_interests");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.RegisteredAt)
+                .HasColumnType("timestamp with time zone")
+                .IsRequired();
+            entity.HasOne(x => x.WorkItem)
+                .WithMany()
+                .HasForeignKey(x => x.WorkItemId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(x => new { x.WorkItemId, x.UserId })
+                .IsUnique();
+        });
+
         modelBuilder.Entity<SubWorkItem>(entity =>
         {
             entity.ToTable("sub_work_items");
@@ -339,6 +399,21 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .WithMany(w => w.Files)
                 .HasForeignKey(x => x.WorkItemId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<DomainEventLog>(entity =>
+        {
+            entity.ToTable("domain_event_logs");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
+            entity.Property(x => x.EventName).IsRequired().HasMaxLength(100);
+            entity.Property(x => x.Payload).IsRequired();
+            entity.Property(x => x.QueueName).IsRequired().HasMaxLength(100);
+            entity.Property(x => x.ReceivedAt)
+                .HasColumnType("timestamp with time zone")
+                .IsRequired();
+            entity.HasIndex(x => x.EventName);
+            entity.HasIndex(x => x.ReceivedAt);
         });
     }
 }

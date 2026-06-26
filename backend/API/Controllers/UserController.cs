@@ -19,6 +19,7 @@ public class UserController : ControllerBase
         return Ok(user);
     }
 
+    [Authorize]
     [HttpGet("users/{id}")]
     public async Task<IActionResult> GetUserById(int id)
     {

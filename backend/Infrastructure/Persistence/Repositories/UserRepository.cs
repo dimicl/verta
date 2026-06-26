@@ -1,8 +1,6 @@
 using backend.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace backend.Application.Services;
-
 public class UserRepository: GenericRepository<User>, IUserRepository
 {
     public UserRepository(AppDbContext context): base(context){}

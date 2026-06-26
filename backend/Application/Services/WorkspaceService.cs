@@ -1,7 +1,6 @@
 using backend.Application.Interfaces;
-using backend.Infrastructure.Persistence;
 using backend.Shared.Helpers;
-using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.EntityFrameworkCore;
 
 namespace backend.Application.Services;
 
@@ -39,6 +38,8 @@ public class WorkspaceService : IWorkspaceService
         CreatedAt = DateTime.UtcNow
      };
 
+
+   try{
     var workspaceResponse = await _repo.Add(workspace);
 
     var member = new WorkspaceMember
@@ -51,8 +52,12 @@ public class WorkspaceService : IWorkspaceService
 
     await _memberRepo.Add(member);
      
-     return WorkspaceHelper.ToEntity(workspaceResponse);
-
+    return WorkspaceHelper.ToResponse(workspaceResponse);
+   }
+   catch(DbUpdateException)
+   {
+         throw new Exception("User already has a workspace.");
+   }
    }
 
    public async Task<WorkspaceResponse> GetByOwnerId()
@@ -61,7 +66,7 @@ public class WorkspaceService : IWorkspaceService
       var workspace = await _repo.GetByOwnerIdAsync(userId);
       if(workspace != null)
       {
-         return WorkspaceHelper.ToEntity(workspace);
+         return WorkspaceHelper.ToResponse(workspace);
       }
       throw new Exception("Workspace does not exist.");
    }

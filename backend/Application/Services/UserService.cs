@@ -1,4 +1,3 @@
-using backend.Infrastructure.Persistence;
 using backend.Shared.Helpers;
 
 namespace backend.Application.Services;

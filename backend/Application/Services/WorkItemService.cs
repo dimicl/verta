@@ -11,6 +11,7 @@ public class WorkItemService : IWorkItemService
     private readonly IUserContext _userContext;
     private readonly DomainEventSubject _domainEventSubject;
     private readonly CommandInvoker _commandInvoker;
+    private readonly INotificationService _notificationService;
 
     public WorkItemService(
         IWorkItemRepository workItemRepo,
@@ -18,7 +19,8 @@ public class WorkItemService : IWorkItemService
         IWorkspaceMemberRepository workspaceMemberRepo,
         IUserContext userContext,
         DomainEventSubject domainEventSubject,
-        CommandInvoker commandInvoker)
+        CommandInvoker commandInvoker,
+        INotificationService notificationService)
     {
         _workItemRepo = workItemRepo;
         _boardRepo = boardRepo;
@@ -26,6 +28,7 @@ public class WorkItemService : IWorkItemService
         _userContext = userContext;
         _domainEventSubject = domainEventSubject;
         _commandInvoker = commandInvoker;
+        _notificationService = notificationService;
     }
 
     public async Task<WorkItemResponse> Create(WorkItemRequest request)
@@ -92,6 +95,20 @@ public class WorkItemService : IWorkItemService
                 Priority = created.Priority,
                 Status = created.Status
             });
+
+            if (created.AssignedUserId.HasValue)
+            {
+                await _notificationService.SendToUserAsync(
+                    created.AssignedUserId.Value,
+                    "WorkItemAssigned",
+                    new
+                    {
+                        WorkItemId = created.Id,
+                        Name = created.Name,
+                        BoardId = created.BoardId,
+                        AssignedByUserId = userId
+                    });
+            }
 
             return WorkItemHelper.ToResponse(created);
         });

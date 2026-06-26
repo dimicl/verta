@@ -56,7 +56,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("Frontend", policy =>
     {
-        policy.WithOrigins("http://localhost:4210", "http://localhost:4200")
+        policy.WithOrigins("http://localhost:4210", "http://localhost:4209", "http://localhost:4200")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
@@ -84,16 +84,13 @@ builder.Services.AddAuthentication(options =>
         NameClaimType = JwtRegisteredClaimNames.Sub,
         RoleClaimType = ClaimTypes.Role
     };
-
     options.Events = new JwtBearerEvents
     {
         OnMessageReceived = context =>
         {
             var accessToken = context.Request.Query["access_token"];
-
             var path = context.HttpContext.Request.Path;
-            if (!string.IsNullOrEmpty(accessToken) && 
-                (path.StartsWithSegments("/notifications") || path.StartsWithSegments("/hubs/chat")))
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
             {
                 context.Token = accessToken;
             }
@@ -120,10 +117,11 @@ using (var scope = app.Services.CreateScope())
 
     db.Database.ExecuteSqlRaw("DELETE FROM board_lock_queue");
     db.Database.ExecuteSqlRaw("DELETE FROM board_locks");
+    db.Database.ExecuteSqlRaw("DELETE FROM work_item_lock_interests");
+    db.Database.ExecuteSqlRaw("DELETE FROM work_item_locks");
 }
 
 app.MapControllers();
-app.MapHub<NotificationHub>("/notifications");
 app.MapHub<SystemHub>("/hubs/chat");
 
 app.Run();
