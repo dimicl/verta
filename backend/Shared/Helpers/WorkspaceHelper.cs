@@ -1,6 +1,6 @@
 public static class WorkspaceHelper
 {
-    public static WorkspaceResponse ToEntity(Workspace workspace)
+    public static WorkspaceResponse ToResponse(Workspace workspace)
     {
         return new WorkspaceResponse
         {
@@ -8,28 +8,6 @@ public static class WorkspaceHelper
             Name = workspace.Name,
             OwnerId = workspace.OwnerId,
             CreatedAt = workspace.CreatedAt
-        };
-    }
-
-    public static WorkspaceMemberResponse ToEntityMember(WorkspaceMember member)
-    {
-        return new WorkspaceMemberResponse
-        {
-            Id = member.Id,
-            WorkspaceId = member.WorkspaceId,
-            UserId = member.UserId,
-            Role = member.Role,
-            CreatedAt = member.CreatedAt
-        };
-    }
-
-    public static WorkspaceMemberRequest FromResponseToRequest(WorkspaceResponse response)
-    {
-        return new WorkspaceMemberRequest
-        {
-            WorkspaceId = response.Id,
-            UserId = response.OwnerId,
-            Role = UserRole.Owner
         };
     }
 }

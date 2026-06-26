@@ -34,6 +34,7 @@ public static class DependencyInjection
         services.AddScoped<IConversationParticipantRepository, ConversationParticipantRepository>();
         services.AddScoped<IMessageRepository, MessageRepository>();
         services.AddScoped<INotificationService, SignalRNotificationService>();
+        services.AddSingleton<IRabbitMqConnectionManager, RabbitMqConnectionManager>();
         services.AddScoped<IMessageBus, RabbitMQBus>();
         services.AddScoped<IBoardRepository, BoardRepository>();
         services.AddScoped<IBoardService, BoardService>();
@@ -54,8 +55,17 @@ public static class DependencyInjection
         services.AddScoped<BoardLockService>();
         services.AddScoped<IBoardLockService>(sp => sp.GetRequiredService<BoardLockService>());
         services.AddScoped<IBoardLockPromotionService>(sp => sp.GetRequiredService<BoardLockService>());
+        services.AddScoped<IWorkItemLockRepository, WorkItemLockRepository>();
+        services.AddScoped<IWorkItemLockInterestRepository, WorkItemLockInterestRepository>();
+        services.AddScoped<WorkItemLockService>();
+        services.AddScoped<IWorkItemLockService>(sp => sp.GetRequiredService<WorkItemLockService>());
+        services.AddScoped<IWorkItemLockExpiryService>(sp => sp.GetRequiredService<WorkItemLockService>());
+        services.AddHostedService<WorkItemLockExpiryService>();
         services.AddScoped<CommandInvoker>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IDomainEventLogRepository, DomainEventLogRepository>();
+        services.AddHostedService<DomainEventConsumerService>();
+        services.AddHostedService<UserEventConsumerService>();
 
         services.AddHttpContextAccessor();
 

@@ -50,4 +50,19 @@ public class WorkspaceController : ControllerBase
         }
         
     }
+
+    [Authorize]
+    [HttpGet("workspace/{workspaceId:int}/members")]
+    public async Task<IActionResult> GetMembers(int workspaceId)
+    {
+        try
+        {
+            var result = await memberService.GetMembersByWorkspaceId(workspaceId);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }

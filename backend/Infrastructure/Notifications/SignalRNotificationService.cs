@@ -12,10 +12,6 @@ public class SignalRNotificationService : INotificationService
     {
         _hubContext = hubContext;
     }
-    public Task SendUpdateAsync(string message)
-    {
-        return _hubContext.Clients.All.SendAsync("SystemUpdate", message);
-    }
 
     public Task SendChatMessageAsync(IEnumerable<int> userIds, Message message)
     {
