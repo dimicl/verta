@@ -20,6 +20,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<WorkItemFile> WorkItemFiles => Set<WorkItemFile>();
 
     public DbSet<BoardLock> BoardLocks => Set<BoardLock>();
+    public DbSet<BoardLockQueueEntry> BoardLockQueueEntries => Set<BoardLockQueueEntry>();
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -189,6 +190,11 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(x => x.LockedAt)
                 .IsRequired();
 
+            entity.Property(x => x.ExpiresAt)
+                .HasColumnType("timestamp with time zone")
+                .IsRequired()
+                .HasDefaultValueSql("NOW() + INTERVAL '30 seconds'");
+
             entity.HasOne(x => x.Board)
                 .WithMany()
                 .HasForeignKey(x => x.BoardId)
@@ -201,6 +207,27 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
             entity.HasIndex(x => x.BoardId)
                 .IsUnique();
+        });
+
+        modelBuilder.Entity<BoardLockQueueEntry>(entity =>
+        {
+            entity.ToTable("board_lock_queue");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
+            entity.Property(x => x.JoinedAt)
+                .HasColumnType("timestamp with time zone")
+                .IsRequired();
+            entity.HasOne(x => x.Board)
+                .WithMany()
+                .HasForeignKey(x => x.BoardId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(x => new { x.BoardId, x.UserId })
+                .IsUnique();
+            entity.HasIndex(x => new { x.BoardId, x.JoinedAt });
         });
 
         modelBuilder.Entity<WorkItem>(entity =>

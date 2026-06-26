@@ -4,4 +4,5 @@ public interface INotificationService
 {
     Task SendUpdateAsync(string message);
     Task SendChatMessageAsync(IEnumerable<int> userIds, Message message);
+    Task SendToUserAsync(int userId, string eventName, object payload);
 }

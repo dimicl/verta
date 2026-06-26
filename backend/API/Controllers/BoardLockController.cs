@@ -17,28 +17,21 @@ public class BoardLockController : ControllerBase
     [HttpPost("open/{boardId:int}")]
     public async Task<IActionResult> OpenBoard(int boardId)
     {
-        try
-        {
-            var result = await _boardLockService.OpenBoard(boardId);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _boardLockService.OpenBoard(boardId);
+        return Ok(result);
     }
 
     [HttpPost("close/{boardId:int}")]
     public async Task<IActionResult> CloseBoard(int boardId)
     {
-        try
-        {
-            var result = await _boardLockService.CloseBoard(boardId);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _boardLockService.CloseBoard(boardId);
+        return Ok(result);
+    }
+
+    [HttpPost("heartbeat/{boardId:int}")]
+    public async Task<IActionResult> Heartbeat(int boardId)
+    {
+        var result = await _boardLockService.Heartbeat(boardId);
+        return Ok(result);
     }
 }

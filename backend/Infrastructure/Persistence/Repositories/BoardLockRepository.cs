@@ -14,4 +14,12 @@ public class BoardLockRepository
         return await _dbSet
             .FirstOrDefaultAsync(x => x.BoardId == boardId);
     }
+
+    public async Task<List<BoardLock>> GetExpiredAsync()
+    {
+        var now = DateTime.UtcNow;
+        return await _dbSet
+            .Where(x => x.ExpiresAt < now)
+            .ToListAsync();
+    }
 }

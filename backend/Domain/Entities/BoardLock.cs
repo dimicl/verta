@@ -9,4 +9,5 @@ public class BoardLock
     public User? LockedByUser { get; set; }
 
     public DateTime LockedAt { get; set; } = DateTime.UtcNow;
+    public DateTime ExpiresAt { get; set; }
 }

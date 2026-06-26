@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using backend.API.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -91,6 +92,7 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseCors("Frontend");
+app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -98,6 +100,9 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
+
+    db.Database.ExecuteSqlRaw("DELETE FROM board_lock_queue");
+    db.Database.ExecuteSqlRaw("DELETE FROM board_locks");
 }
 
 app.MapControllers();

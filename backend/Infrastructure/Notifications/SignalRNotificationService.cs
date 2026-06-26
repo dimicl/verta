@@ -22,4 +22,11 @@ public class SignalRNotificationService : INotificationService
         var groups = userIds.Select(SystemHub.UserGroup);
         return _hubContext.Clients.Groups(groups).SendAsync("ChatMessageReceived", message);
     }
+
+    public Task SendToUserAsync(int userId, string eventName, object payload)
+    {
+        return _hubContext.Clients
+            .Group(SystemHub.UserGroup(userId))
+            .SendAsync(eventName, payload);
+    }
 }

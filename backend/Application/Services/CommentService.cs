@@ -11,8 +11,6 @@ public class CommentService : ICommentService
     private readonly IWorkspaceMemberRepository _workspaceMemberRepo;
     private readonly IUserContext _userContext;
     private readonly DomainEventSubject _domainEventSubject;
-    private readonly SignalRDomainEventObserver _signalRObserver;
-    private readonly RabbitMqDomainEventObserver _rabbitMqObserver;
     private readonly CommandInvoker _commandInvoker;
 
     public CommentService(
@@ -22,8 +20,6 @@ public class CommentService : ICommentService
         IWorkspaceMemberRepository workspaceMemberRepo,
         IUserContext userContext,
         DomainEventSubject domainEventSubject,
-        SignalRDomainEventObserver signalRObserver,
-        RabbitMqDomainEventObserver rabbitMqObserver,
         CommandInvoker commandInvoker)
     {
         _commentRepo = commentRepo;
@@ -32,12 +28,7 @@ public class CommentService : ICommentService
         _workspaceMemberRepo = workspaceMemberRepo;
         _userContext = userContext;
         _domainEventSubject = domainEventSubject;
-        _signalRObserver = signalRObserver;
-        _rabbitMqObserver = rabbitMqObserver;
         _commandInvoker = commandInvoker;
-
-        _domainEventSubject.Attach(_signalRObserver);
-        _domainEventSubject.Attach(_rabbitMqObserver);
     }
 
     public async Task<CommentResponse> Create(CommentRequest request)

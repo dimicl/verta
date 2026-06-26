@@ -1,6 +1,11 @@
 public class DomainEventSubject
 {
-    private readonly List<IDomainEventObserver> _observers = new();
+    private readonly List<IDomainEventObserver> _observers;
+
+    public DomainEventSubject(IEnumerable<IDomainEventObserver> observers)
+    {
+        _observers = observers.ToList();
+    }
 
     public void Attach(IDomainEventObserver observer)
     {
