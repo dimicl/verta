@@ -4,6 +4,7 @@ using backend.Infrastructure.Messaging;
 using backend.Infrastructure.Notifications;
 using backend.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using backend.Infrastructure.BackgroundServices;
 
 namespace backend.Infrastructure;
 
@@ -45,11 +46,16 @@ public static class DependencyInjection
         services.AddScoped<IWorkItemFileRepository, WorkItemFileRepository>();
         services.AddScoped<IWorkItemFileService, WorkItemFileService>();
         services.AddScoped<DomainEventSubject>();
-        services.AddScoped<SignalRDomainEventObserver>();
-        services.AddScoped<RabbitMqDomainEventObserver>();
+        services.AddScoped<IDomainEventObserver, SignalRDomainEventObserver>();
+        services.AddScoped<IDomainEventObserver, RabbitMqDomainEventObserver>();
         services.AddScoped<IBoardLockRepository, BoardLockRepository>();
-        services.AddScoped<IBoardLockService, BoardLockService>();
+        services.AddScoped<IBoardLockQueueRepository, BoardLockQueueRepository>();
+        services.AddHostedService<BoardLockExpiryService>();
+        services.AddScoped<BoardLockService>();
+        services.AddScoped<IBoardLockService>(sp => sp.GetRequiredService<BoardLockService>());
+        services.AddScoped<IBoardLockPromotionService>(sp => sp.GetRequiredService<BoardLockService>());
         services.AddScoped<CommandInvoker>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         services.AddHttpContextAccessor();
 
