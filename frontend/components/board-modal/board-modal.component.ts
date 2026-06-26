@@ -6,6 +6,9 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
+import { BoardService, WorkspaceService } from '../../shared/services';
+import { WorkspaceResponse } from '../../shared/interfaces/workspace-response.interface';
+import { BoardRequest } from '../../shared/interfaces/board-request.interface';
 
 @Component({
   selector: 'app-board-modal',
@@ -14,11 +17,28 @@ import {
   styleUrl: './board-modal.component.scss',
 })
 export class BoardModalComponent {
-  public workspaceMember: any | null = null;
+  public workspaceMember: WorkspaceResponse | null = null;
 
   @Output() onEmitOwnerId = new EventEmitter<void>();
+  @Output() closeModal = new EventEmitter<void>();
 
-  constructor() {}
+  constructor(
+    private workspaceService: WorkspaceService,
+    private boardService: BoardService
+  ) {
+    this.getWorkspaceId();
+  }
+
+  private getWorkspaceId() {
+    this.workspaceService.getWorkspace().subscribe({
+      next: (result) => {
+        this.workspaceMember = result;
+      },
+      error: (err) => {
+        console.error(err);
+      },
+    });
+  }
 
   public workspaceNameValidator = (
     control: AbstractControl
@@ -52,8 +72,15 @@ export class BoardModalComponent {
   }
 
   public onCreate() {
-    const request = {
+    const request: BoardRequest = {
       name: this.workspaceName.value,
+      workspaceId: this.workspaceMember?.id ?? -1,
     };
+
+    this.boardService.createBoard(request).subscribe((result) => {});
+  }
+
+  public close(): void {
+    this.closeModal.emit();
   }
 }

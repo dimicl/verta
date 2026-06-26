@@ -1,5 +1,9 @@
 import { Component, OnInit, signal } from '@angular/core';
-import { UserService, WorkspaceService } from '../../shared/services';
+import {
+  BoardService,
+  UserService,
+  WorkspaceService,
+} from '../../shared/services';
 import { CommonModule } from '@angular/common';
 import { InputComponent } from '../../components/input/input.component';
 import { SharedSvgRoutes } from '../../shared/constants/shared-svg-routes';
@@ -94,6 +98,7 @@ export class MainComponent implements OnInit {
   constructor(
     private userService: UserService,
     private workspaceService: WorkspaceService,
+    private boardService: BoardService,
     private modalService: NgbModal
   ) {}
 
@@ -101,7 +106,7 @@ export class MainComponent implements OnInit {
     this.workspaceService.getWorkspace().subscribe({
       next: (result) => {
         this.workspace = result;
-        console.log(this.workspace);
+        this.getBoards();
       },
     });
   }
@@ -130,6 +135,21 @@ export class MainComponent implements OnInit {
     this.modalService.open(TaskModalComponent, {
       backdrop: 'static',
       keyboard: false,
+    });
+  }
+
+  public getBoards(): void {
+    console.log(this.workspace?.id);
+
+    this.boardService.getBoards(this.workspace?.id).subscribe({
+      next: (result) => {
+        this.boards = result;
+        console.log(this.workspace?.id);
+        console.log(this.boards);
+      },
+      error: (err) => {
+        console.error('Greška pri učitavanju tabli:', err);
+      },
     });
   }
 

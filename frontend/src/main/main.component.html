@@ -65,10 +65,11 @@
     </div>
 
     <div class="boards-list">
+      @if(this.boards){ @for (item of boards; track item) {
+      <div class="board-item" ngClass>{{ item.name }}</div>
+      } } @else{
       <div class="empty-state-board">No boards</div>
-      <!-- <div class="board-item active">Project Alpha</div>
-      <div class="board-item">Marketing</div>
-      <div class="board-item">Design</div> -->
+      }
     </div>
   </div>
   }
