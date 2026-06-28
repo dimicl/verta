@@ -21,11 +21,15 @@
       >
         @for(groupItem of groups; track groupItem.id) {
         <ng-container
-          *ngTemplateOutlet="chatTemplate; context: { data: groupItem, group: true }"
+          *ngTemplateOutlet="
+            chatTemplate;
+            context: { data: groupItem, group: true }
+          "
         ></ng-container>
         }
       </div>
     </div>
+
     <div class="chat-sidebar-groups">
       <div class="chat-sidebar-group-header" (click)="onHeaderDirectToggle()">
         <div class="chat-sidebar-group-header-general">
@@ -39,35 +43,64 @@
         <svg-icon
           [src]="sharedSvgRoutes.PLUS_ICON"
           class="plus-icon"
+          (click)="onAddConversationToggle()"
         ></svg-icon>
       </div>
       <div
         class="chat-sidebar-group-content"
         [class.is-collapsed]="!isDirectExpanded"
       >
-        @for(user of directUsers; track user.id) {
+        @if(isAddConversationOpen()) {
+        <div class="chat-sidebar-add-panel">
+          <input
+            class="chat-sidebar-search"
+            type="text"
+            placeholder="Search board members"
+            [value]="searchTerm()"
+            (input)="onSearchTermChange($any($event.target).value)"
+          />
+          @for(member of getFilteredWorkspaceMembers(); track member.id) {
+          <button
+            type="button"
+            class="chat-item chat-item--clickable"
+            (click)="onCreateConversation(member)"
+          >
+            {{ member.firstName }} {{ member.lastName }}
+          </button>
+          }
+          @if(getFilteredWorkspaceMembers().length === 0) {
+          <div class="empty-state">No members found</div>
+          }
+        </div>
+        }
+
+        @for(user of directUsers(); track user.id) {
+
         <button
           type="button"
           class="chat-item chat-item--clickable"
-          [class.chat-item--active]="selectedDirectUser.id === user.id"
+          [class.chat-item--active]="selectedDirectUser?.id === user.id"
           (click)="onDirectUserSelect(user.id)"
-        >
-          <svg-icon
+        >         
+          <span class="chat-item-text"
+            >{{ user.firstName }} {{ user.lastName }}</span
+          >
+           <svg-icon
             [src]="sharedSvgRoutes.DIRECT_ICON"
             class="chat-item-icon"
           ></svg-icon>
-          <span class="chat-item-text">{{ user.firstName }} {{ user.lastName }}</span>
         </button>
         }
       </div>
     </div>
   </aside>
+
   <section class="chat-main">
     <app-chat-bubble
       [currentUserId]="currentUserId"
-      [receiverId]="selectedDirectUser.id"
-      [receiverFirstName]="selectedDirectUser.firstName"
-      [receiverLastName]="selectedDirectUser.lastName"
+      [receiverId]="selectedDirectUser?.id ?? 0"
+      [receiverFirstName]="selectedDirectUser?.firstName ?? ''"
+      [receiverLastName]="selectedDirectUser?.lastName ?? ''"
     ></app-chat-bubble>
   </section>
 </div>

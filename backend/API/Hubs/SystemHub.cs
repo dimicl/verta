@@ -54,4 +54,14 @@ public class SystemHub : Hub
         var value = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         return int.TryParse(value, out var id) ? id : null;
     }
+
+    public async Task JoinUserGroup(int userId)
+    {
+        await Groups.AddToGroupAsync(Context.ConnectionId, userId.ToString());
+    }
+
+    public async Task LeaveUserGroup(int userId)
+    {
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, userId.ToString());
+    }
 }

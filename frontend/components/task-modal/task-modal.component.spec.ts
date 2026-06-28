@@ -20,4 +20,18 @@ describe('TaskModalComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should include the comment in the save payload', () => {
+    component.title = 'Task title';
+    component.description = 'Task description';
+    component.comment = 'Please review this task';
+
+    const closeSpy = spyOn((component as any).activeModal, 'close');
+
+    component.onSave();
+
+    expect(closeSpy).toHaveBeenCalledWith(jasmine.objectContaining({
+      comment: 'Please review this task',
+    }));
+  });
 });

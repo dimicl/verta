@@ -49,10 +49,41 @@ export class ChatBubbleComponent implements OnInit {
 
   constructor() {
     effect(() => {
-      this.receiverId();
+      const currentUserId = this.currentUserId();
+      const receiverId = this.receiverId();
+
+      // Reset ekrana pri promeni korisnika u sidebaru
       this.messages.set([]);
       this.knownMessageIds.clear();
       this.draft.set('');
+
+      if (currentUserId && receiverId) {
+        this.chatService
+          .getConversationId(currentUserId, receiverId)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
+            next: (res) => {
+              const conversationId = res.conversationId;
+              this.chatService
+                .getMessages(conversationId)
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe({
+                  next: (apiMessages) => {
+                    const uiMessages = apiMessages.map((m) =>
+                      this.mapToUiMessage(m)
+                    );
+                    this.messages.set(uiMessages);
+
+                    apiMessages.forEach((m) => this.knownMessageIds.add(m.id));
+                  },
+                  error: (err) =>
+                    console.error('Greška pri učitavanju istorije:', err),
+                });
+            },
+            error: (err) =>
+              console.error('Greška pri pronalaženju konverzacije:', err),
+          });
+      }
     });
   }
 
@@ -80,7 +111,10 @@ export class ChatBubbleComponent implements OnInit {
         }
 
         this.knownMessageIds.add(message.id);
-        this.messages.update((items) => [...items, this.mapToUiMessage(message)]);
+        this.messages.update((items) => [
+          ...items,
+          this.mapToUiMessage(message),
+        ]);
       });
   }
 
@@ -117,6 +151,8 @@ export class ChatBubbleComponent implements OnInit {
 
   public onKeyDown(event: KeyboardEvent): void {
     if (event.key === 'Enter' && !event.shiftKey) {
+      console.log('co');
+
       event.preventDefault();
       const value = this.draft().trim();
       const senderId = this.currentUserId();
@@ -127,7 +163,6 @@ export class ChatBubbleComponent implements OnInit {
 
       this.chatService
         .sendMessage({
-          senderId,
           receiverId,
           content: value,
         })
@@ -144,6 +179,8 @@ export class ChatBubbleComponent implements OnInit {
               this.mapToUiMessage(message),
             ]);
           },
+          error: (err) =>
+            console.error('Greška pri slanju poruke:', err),
         });
 
       this.draft.set('');
@@ -151,7 +188,9 @@ export class ChatBubbleComponent implements OnInit {
   }
 
   private mapToUiMessage(message: ChatApiMessage): ChatMessage {
-    const timestamp = message.createdAt ? new Date(message.createdAt) : new Date();
+    const timestamp = message.createdAt
+      ? new Date(message.createdAt)
+      : new Date();
     const senderId = message.senderId;
 
     return {
@@ -186,7 +225,9 @@ export class ChatBubbleComponent implements OnInit {
     const todayKey = `${today.getFullYear()}-${(today.getMonth() + 1)
       .toString()
       .padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
-    const yesterdayKey = `${yesterday.getFullYear()}-${(yesterday.getMonth() + 1)
+    const yesterdayKey = `${yesterday.getFullYear()}-${(
+      yesterday.getMonth() + 1
+    )
       .toString()
       .padStart(2, '0')}-${yesterday.getDate().toString().padStart(2, '0')}`;
 

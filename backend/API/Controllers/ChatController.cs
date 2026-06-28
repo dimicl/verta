@@ -60,7 +60,15 @@ public class ChatController : ControllerBase
         var conversations = await _chatService.GetMyConversations(userId);
         return Ok(conversations);
     }
-}
+
+    [HttpGet("conversations/search")]
+    public async Task<IActionResult> GetOrCreateConversation([FromQuery] int receiverId)
+    {
+        var senderId = _userContext.GetUserId();
+        var conversationId = await _chatService.GetOrCreateDirectConversationId(senderId, receiverId);
+        return Ok(new { conversationId });
+    }
+    }
 
 public class SendMessageRequest
 {

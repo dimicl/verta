@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { InputComponent } from '../input/input.component';
 import { FormControl, Validators } from '@angular/forms';
+import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { WorkspaceService } from '../../shared/services';
 
 @Component({
@@ -16,7 +17,10 @@ export class InviteModalComponent {
   ]);
   public workspaceId: number | null = null;
 
-  constructor(private workspaceService: WorkspaceService) {}
+  constructor(
+    private workspaceService: WorkspaceService,
+    private activeModal: NgbActiveModal
+  ) {}
 
   public onInput(event: string) {
     this.invitedEmail.setValue(event);
@@ -31,6 +35,10 @@ export class InviteModalComponent {
     this.workspaceService.inviteUser(request).subscribe({
       next: (result) => {
         console.log(result);
+        this.activeModal.close(result);
+      },
+      error: (err) => {
+        console.error('Invite failed:', err);
       },
     });
   }

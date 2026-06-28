@@ -8,4 +8,6 @@ public interface IChatService
     Task MarkAsRead(int conversationId, int userId);
     Task<int> GetUnreadCount(int conversationId, int userId);
     Task<List<ConversationResponse>> GetMyConversations(int userId);
+
+    Task<int> GetOrCreateDirectConversationId(int senderId, int receiverId);
 }

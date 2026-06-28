@@ -215,4 +215,98 @@ public class WorkItemService : IWorkItemService
 
         return await _commandInvoker.ExecuteAsync(command);
     }
+
+    public async Task<WorkItemResponse> Update(int workItemId, WorkItemRequest request)
+    {
+        if (request == null)
+            throw new Exception("Request not found.");
+
+        if (string.IsNullOrWhiteSpace(request.Name))
+            throw new Exception("Work item name is required.");
+
+        if (string.IsNullOrWhiteSpace(request.Description))
+            throw new Exception("Work item description is required.");
+
+        var userId = _userContext.GetUserId();
+
+        var workItem = await _workItemRepo.GetById(workItemId);
+        if (workItem == null)
+            throw new Exception("Work item does not exist.");
+
+        var board = await _boardRepo.GetById(workItem.BoardId);
+        if (board == null)
+            throw new Exception("Board does not exist.");
+
+        var member = await _workspaceMemberRepo.GetByWorkspaceAndUserIdAsync(
+            board.WorkspaceId,
+            userId
+        );
+
+        if (member == null)
+            throw new Exception("You are not member of this workspace.");
+
+        if (member.Role == UserRole.Guest)
+            throw new Exception("Guest cannot update work item.");
+
+        if (request.AssignedUserId.HasValue)
+        {
+            var assignedMember = await _workspaceMemberRepo.GetByWorkspaceAndUserIdAsync(
+                board.WorkspaceId,
+                request.AssignedUserId.Value
+            );
+
+            if (assignedMember == null)
+                throw new Exception("Assigned user is not member of this workspace.");
+        }
+
+        workItem.Name = request.Name;
+        workItem.Description = request.Description;
+        workItem.AssignedUserId = request.AssignedUserId;
+        workItem.Priority = request.Priority;
+        workItem.UpdatedAt = DateTime.UtcNow;
+
+        await _workItemRepo.Update(workItem);
+
+        await _domainEventSubject.NotifyAsync("WorkItemUpdated", new
+        {
+            WorkItemId = workItem.Id,
+            BoardId = workItem.BoardId,
+            UpdatedByUserId = userId
+        });
+
+        return WorkItemHelper.ToResponse(workItem);
+    }
+
+    public async Task Delete(int workItemId)
+    {
+        var userId = _userContext.GetUserId();
+
+        var workItem = await _workItemRepo.GetById(workItemId);
+        if (workItem == null)
+            throw new Exception("Work item does not exist.");
+
+        var board = await _boardRepo.GetById(workItem.BoardId);
+        if (board == null)
+            throw new Exception("Board does not exist.");
+
+        var member = await _workspaceMemberRepo.GetByWorkspaceAndUserIdAsync(
+            board.WorkspaceId,
+            userId
+        );
+
+        if (member == null)
+            throw new Exception("You are not member of this workspace.");
+
+        if (member.Role == UserRole.Guest)
+            throw new Exception("Guest cannot delete work item.");
+
+        await _workItemRepo.Delete(workItem);
+
+        await _domainEventSubject.NotifyAsync("WorkItemDeleted", new
+        {
+            WorkItemId = workItem.Id,
+            BoardId = workItem.BoardId,
+            DeletedByUserId = userId
+        });
+    }
 }

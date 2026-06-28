@@ -1,3 +1,4 @@
+using backend.Application.Exceptions;
 using backend.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -60,9 +61,17 @@ public class WorkspaceController : ControllerBase
             var result = await memberService.GetMembersByWorkspaceId(workspaceId);
             return Ok(result);
         }
+        catch (NotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (ForbiddenException)
+        {
+            return Forbid();
+        }
         catch (Exception ex)
         {
-            return BadRequest(new { message = ex.Message });
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = ex.Message });
         }
     }
 }
