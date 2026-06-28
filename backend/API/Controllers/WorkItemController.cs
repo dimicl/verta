@@ -71,4 +71,34 @@ public class WorkItemController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+
+    [HttpPut("{workItemId:int}")]
+    public async Task<IActionResult> Update(
+        int workItemId,
+        [FromBody] WorkItemRequest request)
+    {
+        try
+        {
+            var result = await _workItemService.Update(workItemId, request);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpDelete("{workItemId:int}")]
+    public async Task<IActionResult> Delete(int workItemId)
+    {
+        try
+        {
+            await _workItemService.Delete(workItemId);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }

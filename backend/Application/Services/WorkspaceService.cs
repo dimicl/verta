@@ -1,3 +1,4 @@
+using System.Linq;
 using backend.Application.Interfaces;
 using backend.Shared.Helpers;
 using Microsoft.EntityFrameworkCore;
@@ -63,11 +64,25 @@ public class WorkspaceService : IWorkspaceService
    public async Task<WorkspaceResponse> GetByOwnerId()
    {
       var userId = _userContext.GetUserId();
-      var workspace = await _repo.GetByOwnerIdAsync(userId);
-      if(workspace != null)
+
+      var memberships = await _memberRepo.GetByUserIdAsync(userId);
+      var invitedMembership = memberships.FirstOrDefault(member => member.Role != UserRole.Owner);
+
+      if (invitedMembership != null)
       {
-         return WorkspaceHelper.ToResponse(workspace);
+          var invitedWorkspace = await _repo.GetById(invitedMembership.WorkspaceId);
+          if (invitedWorkspace != null)
+          {
+              return WorkspaceHelper.ToResponse(invitedWorkspace);
+          }
       }
+
+      var ownerWorkspace = await _repo.GetByOwnerIdAsync(userId);
+      if (ownerWorkspace != null)
+      {
+         return WorkspaceHelper.ToResponse(ownerWorkspace);
+      }
+
       throw new Exception("Workspace does not exist.");
    }
 

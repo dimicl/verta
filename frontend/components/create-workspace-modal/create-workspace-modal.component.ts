@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { WorkspaceService } from '../../shared/services';
 /* import { WorkspaceService } from '../services/workspace.service';
  */
 @Component({
@@ -20,7 +21,7 @@ export class CreateWorkspaceModalComponent {
   @Output() closeModal = new EventEmitter<void>();
   @Output() created = new EventEmitter<any>();
 
-  constructor() {}
+  constructor(private workspaceService: WorkspaceService) {}
 
   public close(): void {
     this.closeModal.emit();
@@ -36,7 +37,7 @@ export class CreateWorkspaceModalComponent {
       ownerId: this.getCurrentUserId(),
     };
 
-    /* this.workspaceService.createWorkspace(payload).subscribe({
+    this.workspaceService.createWorkspace(payload).subscribe({
       next: (res) => {
         this.isLoading = false;
         this.created.emit(res);
@@ -46,7 +47,7 @@ export class CreateWorkspaceModalComponent {
         console.error('Create workspace failed', err);
         this.isLoading = false;
       },
-    }); */
+    });
   }
 
   private getCurrentUserId(): number {

@@ -162,15 +162,58 @@ public class ChatService : IChatService
             var unread = participant != null
                 ? await _messageRepository.GetUnreadCountAsync(c.Id, participant.LastReadMessageId)
                 : 0;
+
+            var participants = c.Participants.Select(p => new ConversationParticipantResponse
+            {
+                Id = p.Id,
+                UserId = p.UserId,
+                FirstName = p.User?.FirstName ?? string.Empty,
+                LastName = p.User?.LastName ?? string.Empty
+            }).ToList();
+
             result.Add(new ConversationResponse
             {
                 Id = c.Id,
                 Type = c.Type.ToString(),
                 Name = c.Name,
                 CreatedAt = c.CreatedAt,
-                UnreadCount = unread
+                UnreadCount = unread,
+                Participants = participants
             });
         }
+
         return result;
+    }
+
+    public async Task<int> GetOrCreateDirectConversationId(int senderId, int receiverId)
+    {
+        var conversation = await _conversationRepository.GetDirectConversation(senderId, receiverId);
+        
+        if (conversation == null)
+        {
+            conversation = new Conversation
+            {
+                CreatedAt = DateTime.UtcNow,
+                Participants = new List<ConversationParticipant>()
+            };
+
+            await _conversationRepository.Add(conversation);
+
+            await _participantRepository.Add(new ConversationParticipant
+            {
+                ConversationId = conversation.Id,
+                UserId = senderId,
+                JoinedAt = DateTime.UtcNow
+            });
+
+            await _participantRepository.Add(new ConversationParticipant
+            {
+                ConversationId = conversation.Id,
+                UserId = receiverId,
+                JoinedAt = DateTime.UtcNow
+            });
+        }
+
+        return conversation.Id;
     }
 }

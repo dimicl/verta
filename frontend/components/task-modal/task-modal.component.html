@@ -1,6 +1,10 @@
 <div class="modal-container">
   <div class="modal-header">
-    <div><span class="modal-header-title">Add Task</span></div>
+    <div>
+      <span class="modal-header-title">
+        {{ isEditMode ? 'Edit Task' : 'Add Task' }}
+      </span>
+    </div>
     <div
       class="modal-header-actions"
       ngbTooltip="Close"
@@ -15,6 +19,7 @@
       ></svg-icon>
     </div>
   </div>
+
   <div class="modal-body">
     <div class="title-part">
       <div class="title-header">Title</div>
@@ -22,6 +27,7 @@
         class="title-input"
         type="text"
         placeholder="Enter task title..."
+        [(ngModel)]="title"
       />
     </div>
 
@@ -31,7 +37,38 @@
         class="description-textarea"
         rows="4"
         placeholder="Enter description..."
+        [(ngModel)]="description"
       ></textarea>
+    </div>
+
+    <div class="comment-part">
+      <div class="comment-header">Comment</div>
+      <textarea
+        class="comment-textarea"
+        rows="3"
+        placeholder="Write a comment for this task..."
+        [(ngModel)]="comment"
+      ></textarea>
+    </div>
+
+    <div class="fields-row">
+      <div class="field-group">
+        <div class="field-label">Status</div>
+        <select class="field-select" [(ngModel)]="status">
+          <option *ngFor="let option of statusOptions" [value]="option">
+            {{ option }}
+          </option>
+        </select>
+      </div>
+      <div class="field-group">
+        <div class="field-label">Points</div>
+        <input
+          class="field-input"
+          type="number"
+          min="0"
+          [(ngModel)]="points"
+        />
+      </div>
     </div>
 
     <div class="attachments">
@@ -44,7 +81,10 @@
       <app-drop-zone></app-drop-zone>
     </div>
   </div>
+
   <div class="modal-footer">
-    <div class="action-button">Save</div>
+    <div class="action-button" (click)="onSave()">
+      {{ isEditMode ? 'Save changes' : 'Create task' }}
+    </div>
   </div>
 </div>

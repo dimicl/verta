@@ -171,7 +171,6 @@ export class AuthComponent implements OnInit {
       this.authService
         .register(this.registerForm.value)
         .subscribe((response) => {
-          console.log(response);
           localStorage.setItem('user_id', response.user.id);
           localStorage.setItem('token', response.token);
           this.registerForm.reset();

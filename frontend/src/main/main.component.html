@@ -5,73 +5,78 @@
     </div>
   </aside>
 
-  @if(this.workspace){
-  <div class="main-container">
-    <header class="header">
-      <ng-container *ngTemplateOutlet="headerTemplate"></ng-container>
-    </header>
-    <div class="main">
-      @switch(selectedToolbarTab()) { @case('Chat') {
-      <ng-container *ngTemplateOutlet="chatTemplate"></ng-container>
-      } @case('Board') {
-      <ng-container *ngTemplateOutlet="boardTemplate"></ng-container>
-      } @case('Backlog') {
-      <ng-container *ngTemplateOutlet="backlogTemplate"></ng-container>
-      } }
+  <ng-container *ngIf="boards?.length > 0; else noBoards">
+    <div class="main-container">
+      <header class="header">
+        <ng-container *ngTemplateOutlet="headerTemplate"></ng-container>
+      </header>
+      <div class="main">
+        <div [ngSwitch]="selectedToolbarTab()">
+          <ng-container *ngSwitchCase="'Chat'">
+            <ng-container *ngTemplateOutlet="chatTemplate"></ng-container>
+          </ng-container>
+          <ng-container *ngSwitchCase="'Board'">
+            <ng-container *ngTemplateOutlet="boardTemplate"></ng-container>
+          </ng-container>
+          <ng-container *ngSwitchCase="'Backlog'">
+            <ng-container *ngTemplateOutlet="backlogTemplate"></ng-container>
+          </ng-container>
+        </div>
+      </div>
     </div>
-  </div>
-  }@else {
-  <div class="main-empty-state">There is no active board</div>
-  }
+  </ng-container>
+  <ng-template #noBoards>
+    <div class="main-empty-state">No boards</div>
+  </ng-template>
 </div>
 
 <ng-template #sidebarTemplate>
   <div class="workspace">
-    @if(this.workspace?.id){
-    <div class="workspace-info">
-      <div class="workspace-avatar">V</div>
-      <div class="workspace-name">
-        {{ workspace?.name }}
+    <ng-container *ngIf="workspace?.id; else createWorkspace">
+      <div class="workspace-info">
+        <div class="workspace-avatar">V</div>
+        <div class="workspace-name">{{ workspace?.name }}</div>
       </div>
-    </div>
-    } @else{
-    <div class="workspace-actions">
-      <div class="invite-btn" (click)="onOpenCreateModal()">
-        Create Workspace
+      <div class="workspace-actions">
+        <div class="invite-btn" (click)="onOpenInviteModal()">Invite</div>
       </div>
-    </div>
-    } @if(this.workspace){
-    <div class="workspace-actions">
-      <div class="invite-btn" (click)="onOpenInviteModal()">Invite</div>
-    </div>
-    }
+    </ng-container>
+    <ng-template #createWorkspace>
+      <div class="workspace-actions">
+        <div class="invite-btn" (click)="onOpenCreateModal()">Create Workspace</div>
+      </div>
+    </ng-template>
   </div>
 
   <!-- BOARDS -->
-  @if(this.workspace){
-  <div class="boards-section">
-    <div class="boards-header">
-      <span>Boards</span>
-      <div
-        class="add-board-btn"
-        ngbTooltip="Add Board"
-        triggers="hover"
-        container="body"
-        placement="bottom"
-        (click)="onAddBoard()"
-      >
-        <svg-icon class="add-icon" [src]="sharedSvgRoutes.PLUS_ICON" />
+  <ng-container *ngIf="workspace">
+    <div class="boards-section">
+      <div class="boards-header">
+        <span>Boards</span>
+        <div
+          class="add-board-btn"
+          ngbTooltip="Add Board"
+          triggers="hover"
+          container="body"
+          placement="bottom"
+          (click)="onAddBoard()"
+        >
+          <svg-icon class="add-icon" [src]="sharedSvgRoutes.PLUS_ICON" />
+        </div>
+      </div>
+
+      <div class="boards-list">
+        <ng-container *ngIf="boards?.length > 0; else noBoardItems">
+          <div class="board-item" *ngFor="let item of boards">
+            {{ item.name }}
+          </div>
+        </ng-container>
+        <ng-template #noBoardItems>
+          <div class="empty-state-board">No boards</div>
+        </ng-template>
       </div>
     </div>
-
-    <div class="boards-list">
-      <div class="empty-state-board">No boards</div>
-      <!-- <div class="board-item active">Project Alpha</div>
-      <div class="board-item">Marketing</div>
-      <div class="board-item">Design</div> -->
-    </div>
-  </div>
-  }
+  </ng-container>
 </ng-template>
 
 <ng-template #headerTemplate>
@@ -83,16 +88,14 @@
           [style.left]="getToolbarSliderLeft()"
           [style.width]="getToolbarSliderWidth()"
         ></div>
-        @for (item of toolbarItems; track item) {
         <div
-          type="button"
           class="toolbar-item"
+          *ngFor="let item of toolbarItems"
           [class.toolbar-item--active]="selectedToolbarTab() === item"
           (click)="onToolbarTabSelect(item)"
         >
           <span class="toolbar-item-text">{{ item }}</span>
         </div>
-        }
       </div>
     </div>
     <div class="input">
@@ -116,8 +119,8 @@
       ></svg-icon>
     </div>
     <div class="users-container">
-      @for (user of users; track user.id) {
       <app-avatar
+        *ngFor="let user of workspaceMembers"
         [firstName]="user.firstName"
         [lastName]="user.lastName"
         [width]="18"
@@ -125,8 +128,7 @@
         [dashboardType]="true"
         [isSelected]="selectedUser() === user.id"
         (click)="onUserSelect(user.id)"
-      />
-      }
+      ></app-avatar>
       <app-ve-extra-members></app-ve-extra-members>
     </div>
   </div>
@@ -137,15 +139,12 @@
 </ng-template>
 
 <ng-template #boardTemplate>
-  @let phases = [ "ToDo", "In Progress", "PR", "Testing", "Done" ];
   <div class="main-content">
     <div class="phases-container">
-      @for (phase of phases; track phase) {
-      <div class="phase-container" [class.empty-state]="true">
+      <div class="phase-container" *ngFor="let phase of backlogPhases" [class.empty-state]="true">
         <span class="phase-title">{{ phase }}</span>
         <div class="phase-content"></div>
       </div>
-      }
     </div>
   </div>
 </ng-template>
@@ -156,8 +155,13 @@
 
 <ng-template #backlogTemplate>
   <div class="backlog-container">
-    @for (sprint of sprints; track sprint.id){
-    <div class="sprint-container" [class.is-expanded]="isGroupsExpanded">
+    <div class="lock-toast" *ngIf="showLockToast">{{ stickyLockMessage }}</div>
+
+    <div
+      class="sprint-container"
+      *ngFor="let group of boardTaskGroups"
+      [class.is-expanded]="isGroupsExpanded"
+    >
       <div
         class="sprint-header"
         [class.is-collapsed]="!isGroupsExpanded"
@@ -169,22 +173,84 @@
             class="sprint-header-icon"
             [class.is-expanded]="isGroupsExpanded"
           ></svg-icon>
-          <span class="sprint-header-text">{{ sprint.name }}</span>
-        </div>
-      </div>
-      <div class="task-group" [class.is-collapsed]="!isGroupsExpanded">
-        @let names = ["Luka", "Pera", "Zika"]; @for(name of names; track name) {
-        <div class="task-item">
-          <input type="checkbox" class="checkbox" />
-          <span class="task-title">{{ name }} </span>
-          <app-ve-status></app-ve-status>
-          <div class="points-container">
-            <span class="points-label">{{ "-" }}</span>
+          <div>
+            <span class="sprint-header-text">{{ group.name }}</span>
           </div>
         </div>
-        }
+      </div>
+
+      <div class="task-group" [class.is-collapsed]="!isGroupsExpanded">
+        <ng-container *ngIf="group.tasks.length > 0; else noTasks">
+          <div
+            class="task-item"
+            *ngFor="let task of group.tasks"
+            [class.is-locked]="activeWorkItemId === task.id"
+          >
+            <div class="task-left" (click)="onOpenTask(task)">
+              <input type="checkbox" class="checkbox" />
+              <div class="task-main">
+                <span class="task-title">{{ task.name }}</span>
+                <span class="task-description">{{ task.description }}</span>
+              </div>
+            </div>
+
+            <div class="task-middle">
+              <span class="task-assignee">
+                {{ task.assignedUserId ? ('User ' + task.assignedUserId) : 'Unassigned' }}
+              </span>
+            </div>
+
+            <div class="task-right">
+              <select
+                class="status-select"
+                [value]="task.status"
+                (change)="onTaskStatusChange(task, $any($event.target).value)"
+              >
+                <option *ngFor="let status of statusOptions" [value]="status">
+                  {{ status }}
+                </option>
+              </select>
+              <div class="points-container">
+                <span class="points-label">{{ task.priority }}</span>
+              </div>
+           <div class="task-menu" 
+     [ngbPopover]="taskOptionsPopover" 
+     placement="left"
+     triggers="click">
+  ⋮
+</div>
+
+<ng-template #taskOptionsPopover>
+  <div class="task-options">
+    <button type="button" (click)="onEditTask(task)">Edit</button>
+    <button type="button" (click)="onDeleteTask(task)">Delete</button>
+    
+    <button type="button" 
+            *ngIf="activeWorkItemId === task.id" 
+            (click)="onReleaseTask(task)">
+      Release
+    </button>
+  </div>
+</ng-template>
+              <!-- <div class="task-options" *ngIf="taskMenuOpenId === task.id">
+                <button type="button" (click)="onEditTask(task)">Edit</button>
+                <button type="button" (click)="onDeleteTask(task)">Delete</button>
+                <button
+                  type="button"
+                  *ngIf="activeWorkItemId === task.id"
+                  (click)="onReleaseTask(task)"
+                >
+                  Release
+                </button>
+              </div> -->
+            </div>
+          </div>
+        </ng-container>
+
+        <ng-template #noTasks>
+          <div class="empty-state-board">No tasks found for this sprint.</div>
+        </ng-template>
       </div>
     </div>
-    }
   </div>
 </ng-template>

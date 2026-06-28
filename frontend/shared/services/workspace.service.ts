@@ -36,4 +36,15 @@ export class WorkspaceService {
       },
     });
   }
+
+  public getMembers(workspaceId: number) {
+    return this.http.get<any>(
+      `${this.API_URL}/workspace/${workspaceId}/members`,
+      {
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+        },
+      }
+    );
+  }
 }

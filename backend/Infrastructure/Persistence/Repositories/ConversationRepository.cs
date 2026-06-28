@@ -7,6 +7,7 @@ public class ConversationRepository: GenericRepository<Conversation>, IConversat
     {
         return await _dbSet
             .Include(c => c.Participants)
+                .ThenInclude(p => p.User)
             .FirstOrDefaultAsync(c =>
                 c.Type == ConversationType.Direct &&
                 c.Participants.Any(p => p.UserId == senderId) &&
@@ -17,6 +18,7 @@ public class ConversationRepository: GenericRepository<Conversation>, IConversat
     {
         return await _dbSet
             .Include(c => c.Participants)
+                .ThenInclude(p => p.User)
             .Where(c => c.Participants.Any(p => p.UserId == userId))
             .OrderByDescending(c => c.CreatedAt)
             .ToListAsync();

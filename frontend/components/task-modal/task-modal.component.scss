@@ -64,6 +64,15 @@
   }
 }
 
+.fields-row{
+  display: flex;
+  width: 100%;
+  align-items: start;
+  flex-direction: column;
+
+
+}
+
 .modal-footer {
   .action-button {
     display: flex;
@@ -92,7 +101,8 @@
 }
 
 .title-part,
-.description-part {
+.description-part,
+.comment-part {
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -100,7 +110,8 @@
 }
 
 .title-header,
-.description-header {
+.description-header,
+.comment-header {
   font-size: 14px;
   font-weight: 600;
   color: #555;
@@ -117,7 +128,8 @@
   transition: border-color 0.2s;
 }
 
-.description-textarea {
+.description-textarea,
+.comment-textarea {
   padding: 8px 10px;
   border: 1px solid #ccc;
   border-radius: 6px;

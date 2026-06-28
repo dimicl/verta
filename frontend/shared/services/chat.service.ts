@@ -12,7 +12,6 @@ export interface ChatApiMessage {
 }
 
 interface SendMessageRequest {
-  senderId: number;
   receiverId: number;
   content: string;
 }
@@ -86,10 +85,23 @@ export class ChatService {
     );
   }
 
-  public getMessages(conversationId: number, userId: number) {
+  public getMessages(conversationId: number) {
     return this.httpClient.get<ChatApiMessage[]>(
-      `${this.apiUrl}/conversations/${conversationId}/messages`,
-      { params: { userId } }
+      `${this.apiUrl}/conversations/${conversationId}/messages`
     );
+  }
+
+  public getConversationId(
+    senderId: number,
+    receiverId: number
+  ): Observable<{ conversationId: number }> {
+    return this.httpClient.get<{ conversationId: number }>(
+      `${this.apiUrl}/conversations/search`,
+      { params: { senderId, receiverId } }
+    );
+  }
+
+  public getMyConversations(): Observable<any[]> {
+    return this.httpClient.get<any[]>(`${this.apiUrl}/conversations/my`);
   }
 }

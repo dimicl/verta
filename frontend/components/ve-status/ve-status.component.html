@@ -1,4 +1,4 @@
-<div class="status-container">
+<div class="status-container" (click)="onToggleStatus()">
   <span class="status-label">{{ taskStatus }}</span>
   <svg-icon
     [src]="sharedSvgRoutes.ARROW_DOWN_ICON"

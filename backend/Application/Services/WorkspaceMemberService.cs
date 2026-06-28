@@ -37,7 +37,9 @@ public class WorkspaceMemberService : IWorkspaceMemberService
             WorkspaceId = m.WorkspaceId,
             UserId = m.UserId,
             Role = m.Role,
-            CreatedAt = m.CreatedAt
+            CreatedAt = m.CreatedAt,
+            FirstName = m.User?.FirstName ?? string.Empty,
+            LastName = m.User?.LastName ?? string.Empty
         }).ToList();
     }
 }
