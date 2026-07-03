@@ -4,4 +4,10 @@ export interface WorkItemLockResponse {
   mode: 'WRITE' | 'READ_ONLY' | 'UNLOCKED' | 'NO_LOCK';
   lockedAt?: string;
   expiresAt?: string;
+  queuePosition?: number;
+}
+
+export interface WorkItemWriteAccessPayload {
+  workItemId: number;
+  expiresAt?: string;
 }

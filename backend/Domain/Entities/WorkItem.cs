@@ -11,6 +11,9 @@ public class WorkItem
     public int BoardId { get; set; }
     public Board? Board { get; set; }
 
+    public int? SprintId { get; set; }
+    public Sprint? Sprint { get; set; }
+
     public int CreatedByUserId { get; set; }
     public User? CreatedByUser { get; set; }
 

@@ -10,9 +10,18 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AvatarComponent } from '../avatar/avatar.component';
-import { ChatApiMessage, ChatService } from '../../shared/services';
+import {
+  ChatApiMessage,
+  ChatService,
+  SignalRService,
+} from '../../shared/services';
 
 type MessageSender = 'me' | 'them' | 'system';
+
+export interface ChatParticipant {
+  firstName: string;
+  lastName: string;
+}
 
 interface ChatMessage {
   id: number;
@@ -20,6 +29,8 @@ interface ChatMessage {
   text: string;
   time: string;
   senderId: number;
+  senderFirstName: string;
+  senderLastName: string;
   conversationId: number;
   createdAt: Date;
 }
@@ -41,45 +52,41 @@ export class ChatBubbleComponent implements OnInit {
   public readonly receiverId = input<number>(0);
   public readonly receiverFirstName = input<string>('User');
   public readonly receiverLastName = input<string>('');
+  public readonly conversationId = input<number | null>(null);
+  public readonly isGroup = input<boolean>(false);
+  public readonly groupName = input<string>('');
+  public readonly participants = input<Record<number, ChatParticipant>>({});
   public readonly draft = signal('');
   public readonly messages = signal<ChatMessage[]>([]);
   private readonly destroyRef = inject(DestroyRef);
   private readonly chatService = inject(ChatService);
+  private readonly signalRService = inject(SignalRService);
   private readonly knownMessageIds = new Set<number>();
+  private activeConversationId: number | null = null;
 
   constructor() {
     effect(() => {
       const currentUserId = this.currentUserId();
       const receiverId = this.receiverId();
+      const conversationId = this.conversationId();
+      const isGroup = this.isGroup();
 
-      // Reset ekrana pri promeni korisnika u sidebaru
       this.messages.set([]);
       this.knownMessageIds.clear();
       this.draft.set('');
+      this.activeConversationId = null;
+
+      if (isGroup && conversationId) {
+        this.loadConversation(conversationId);
+        return;
+      }
 
       if (currentUserId && receiverId) {
         this.chatService
-          .getConversationId(currentUserId, receiverId)
+          .getConversationId(receiverId)
           .pipe(takeUntilDestroyed(this.destroyRef))
           .subscribe({
-            next: (res) => {
-              const conversationId = res.conversationId;
-              this.chatService
-                .getMessages(conversationId)
-                .pipe(takeUntilDestroyed(this.destroyRef))
-                .subscribe({
-                  next: (apiMessages) => {
-                    const uiMessages = apiMessages.map((m) =>
-                      this.mapToUiMessage(m)
-                    );
-                    this.messages.set(uiMessages);
-
-                    apiMessages.forEach((m) => this.knownMessageIds.add(m.id));
-                  },
-                  error: (err) =>
-                    console.error('Greška pri učitavanju istorije:', err),
-                });
-            },
+            next: (res) => this.loadConversation(res.conversationId),
             error: (err) =>
               console.error('Greška pri pronalaženju konverzacije:', err),
           });
@@ -88,23 +95,25 @@ export class ChatBubbleComponent implements OnInit {
   }
 
   public async ngOnInit(): Promise<void> {
-    const userId = this.currentUserId();
-    if (userId) {
-      await this.chatService.connect(userId);
-    }
+    await this.signalRService.connect();
 
-    this.chatService.messageReceived$
+    this.signalRService.chatMessage$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((message) => {
         const currentUserId = this.currentUserId();
         const selectedReceiverId = this.receiverId();
-        if (!currentUserId || !selectedReceiverId) {
+        const isGroup = this.isGroup();
+
+        if (!currentUserId) {
           return;
         }
 
         const isCurrentConversation =
-          message.senderId === selectedReceiverId ||
-          message.senderId === currentUserId;
+          message.conversationId === this.activeConversationId ||
+          (!isGroup &&
+            (message.senderId === selectedReceiverId ||
+              (message.senderId === currentUserId &&
+                message.conversationId === this.activeConversationId)));
 
         if (!isCurrentConversation || this.knownMessageIds.has(message.id)) {
           return;
@@ -115,14 +124,27 @@ export class ChatBubbleComponent implements OnInit {
           ...items,
           this.mapToUiMessage(message),
         ]);
+
+        if (
+          this.activeConversationId &&
+          message.senderId !== currentUserId
+        ) {
+          this.chatService.markAsRead(this.activeConversationId).subscribe();
+        }
       });
   }
 
-  public firstName(): string {
+  public displayFirstName(): string {
+    if (this.isGroup()) {
+      return this.groupName() || 'Group';
+    }
     return this.receiverFirstName();
   }
 
-  public lastName(): string {
+  public displayLastName(): string {
+    if (this.isGroup()) {
+      return '';
+    }
     return this.receiverLastName();
   }
 
@@ -151,21 +173,30 @@ export class ChatBubbleComponent implements OnInit {
 
   public onKeyDown(event: KeyboardEvent): void {
     if (event.key === 'Enter' && !event.shiftKey) {
-      console.log('co');
-
       event.preventDefault();
       const value = this.draft().trim();
       const senderId = this.currentUserId();
-      const receiverId = this.receiverId();
-      if (!value || !senderId || !receiverId) {
+      if (!value || !senderId) {
         return;
       }
 
-      this.chatService
-        .sendMessage({
-          receiverId,
-          content: value,
-        })
+      const send$ = this.isGroup() && this.activeConversationId
+        ? this.chatService.sendMessageToConversation(
+            this.activeConversationId,
+            value
+          )
+        : this.receiverId()
+          ? this.chatService.sendMessage({
+              receiverId: this.receiverId(),
+              content: value,
+            })
+          : null;
+
+      if (!send$) {
+        return;
+      }
+
+      send$
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (message) => {
@@ -173,6 +204,7 @@ export class ChatBubbleComponent implements OnInit {
               return;
             }
 
+            this.activeConversationId = message.conversationId;
             this.knownMessageIds.add(message.id);
             this.messages.update((items) => [
               ...items,
@@ -187,21 +219,59 @@ export class ChatBubbleComponent implements OnInit {
     }
   }
 
+  private loadConversation(conversationId: number): void {
+    this.activeConversationId = conversationId;
+    this.chatService.markAsRead(conversationId).subscribe();
+
+    this.chatService
+      .getMessages(conversationId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (apiMessages) => {
+          const uiMessages = apiMessages.map((m) => this.mapToUiMessage(m));
+          this.messages.set(uiMessages);
+          apiMessages.forEach((m) => this.knownMessageIds.add(m.id));
+        },
+        error: (err) =>
+          console.error('Greška pri učitavanju istorije:', err),
+      });
+  }
+
   private mapToUiMessage(message: ChatApiMessage): ChatMessage {
     const timestamp = message.createdAt
       ? new Date(message.createdAt)
       : new Date();
     const senderId = message.senderId;
+    const isMe = senderId === this.currentUserId();
+    const participant = this.participants()[senderId];
+
+    let firstName = participant?.firstName ?? '';
+    let lastName = participant?.lastName ?? '';
+
+    if (!firstName && !isMe) {
+      firstName = this.receiverFirstName() ?? 'User';
+      lastName = this.receiverLastName() ?? '';
+    }
+
+    if (!firstName && isMe) {
+      firstName = 'You';
+    }
 
     return {
       id: message.id,
-      from: senderId === this.currentUserId() ? 'me' : 'them',
+      from: isMe ? 'me' : 'them',
       text: message.content,
       time: this.toTimeLabel(timestamp),
       senderId,
+      senderFirstName: firstName,
+      senderLastName: lastName,
       conversationId: message.conversationId,
       createdAt: timestamp,
     };
+  }
+
+  public senderLabel(message: ChatMessage): string {
+    return `${message.senderFirstName} ${message.senderLastName}`.trim();
   }
 
   private toTimeLabel(date: Date): string {

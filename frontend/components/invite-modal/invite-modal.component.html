@@ -1,6 +1,8 @@
 <div class="invite-modal">
   <div class="invite-modal-header">
-    <span class="invite-modal-header-text">Invite Members</span>
+    <span class="invite-modal-header-text">
+      {{ boardId ? "Invite to Board" : "Invite to Workspace" }}
+    </span>
   </div>
 
   <div class="invite-modal-body">
@@ -8,14 +10,16 @@
       <app-input
         [label]="'Email'"
         [type]="'email'"
+        [modelValue]="emailValue"
         (onGetValue)="onInput($event)"
       />
     </div>
+    <p class="invite-error" *ngIf="inviteError()">{{ inviteError() }}</p>
   </div>
 
   <div class="invite-modal-footer">
     <div class="invite-btn invite-btn--primary" (click)="onInviteUser()">
-      Create
+      Invite
     </div>
   </div>
 </div>

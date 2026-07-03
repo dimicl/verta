@@ -51,7 +51,7 @@ public class WorkItemLockExpiryService : BackgroundService
             try
             {
                 await lockRepo.Delete(expiredLock);
-                await expiryService.NotifyAndClearInterestsAsync(expiredLock.WorkItemId);
+                await expiryService.PromoteNextInterestedAsync(expiredLock.WorkItemId);
 
                 _logger.LogInformation(
                     "Expired work item lock released for WorkItem {WorkItemId}.", expiredLock.WorkItemId);

@@ -55,4 +55,32 @@ public class BoardController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+
+    [HttpPost("invite")]
+    public async Task<IActionResult> InviteToBoard([FromBody] BoardInviteRequest request)
+    {
+        try
+        {
+            await _boardService.InviteToBoard(request);
+            return Ok(new { message = "User invited to board." });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpGet("{boardId:int}/members")]
+    public async Task<IActionResult> GetMembers(int boardId)
+    {
+        try
+        {
+            var result = await _boardService.GetMembersByBoardId(boardId);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }

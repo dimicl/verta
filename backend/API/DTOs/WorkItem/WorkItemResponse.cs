@@ -9,6 +9,7 @@ public record WorkItemResponse
     public required Priority Priority { get; set; }
 
     public required int BoardId { get; set; }
+    public int? SprintId { get; set; }
 
     public required int CreatedByUserId { get; set; }
     public int? AssignedUserId { get; set; }

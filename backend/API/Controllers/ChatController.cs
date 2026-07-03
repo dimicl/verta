@@ -68,10 +68,45 @@ public class ChatController : ControllerBase
         var conversationId = await _chatService.GetOrCreateDirectConversationId(senderId, receiverId);
         return Ok(new { conversationId });
     }
+
+    [HttpPost("conversations/group")]
+    public async Task<IActionResult> CreateGroupConversation([FromBody] CreateGroupConversationRequest request)
+    {
+        var creatorId = _userContext.GetUserId();
+        var conversation = await _chatService.CreateGroupConversation(
+            creatorId,
+            request.Name,
+            request.MemberIds ?? []);
+        return Ok(conversation);
+    }
+
+    [HttpPost("conversations/{conversationId:int}/messages")]
+    public async Task<IActionResult> SendMessageToConversation(
+        int conversationId,
+        [FromBody] SendConversationMessageRequest request)
+    {
+        var senderId = _userContext.GetUserId();
+        var message = await _chatService.SendMessageToConversation(
+            senderId,
+            conversationId,
+            request.Content);
+        return Ok(message);
+    }
     }
 
 public class SendMessageRequest
 {
     public int ReceiverId { get; set; }
     public string Content { get; set; } = string.Empty;
+}
+
+public class SendConversationMessageRequest
+{
+    public string Content { get; set; } = string.Empty;
+}
+
+public class CreateGroupConversationRequest
+{
+    public string Name { get; set; } = string.Empty;
+    public List<int>? MemberIds { get; set; }
 }

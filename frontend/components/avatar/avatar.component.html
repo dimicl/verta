@@ -1,13 +1,13 @@
-@let tooltipText = firstName + ' ' + lastName;
+@let tooltipText = firstName() + ' ' + lastName();
 <div
   class="avatar"
   [class]="colorClass()"
   [class.avatar--placeholder]="showPlaceholder()"
-  [class.is-selected]="dashboardType && isSelected"
-  [class.on-zoom]="dashboardType"
-  [style.width.px]="width"
-  [style.height.px]="height"
-  [ngbTooltip]="dashboardType ? tooltipText : null"
+  [class.is-selected]="dashboardType() && isSelected()"
+  [class.on-zoom]="dashboardType()"
+  [style.width.px]="width()"
+  [style.height.px]="height()"
+  [ngbTooltip]="dashboardType() ? tooltipText : null"
   [tooltipClass]="'avatar-tooltip'"
   [animation]="true"
   placement="bottom"

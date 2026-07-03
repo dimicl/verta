@@ -1,11 +1,14 @@
+import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { NgbModule, NgbPopover } from '@ng-bootstrap/ng-bootstrap';
 import { SvgIconComponent } from 'angular-svg-icon';
 import { SharedSvgRoutes } from '../../shared/constants/shared-svg-routes';
+import { getAllowedNextStatuses } from '../../shared/helpers/task-status.helper';
 import { TaskStatus } from '../../shared/types';
 
 @Component({
   selector: 'app-ve-status',
-  imports: [SvgIconComponent],
+  imports: [SvgIconComponent, CommonModule, NgbModule],
   templateUrl: './ve-status.component.html',
   styleUrl: './ve-status.component.scss',
 })
@@ -15,18 +18,18 @@ export class VeStatusComponent {
   @Input() public taskStatus: TaskStatus = 'ToDo';
   @Output() public statusChange = new EventEmitter<TaskStatus>();
 
-  public statusOrder: TaskStatus[] = [
-    'ToDo',
-    'InProgress',
-    'PR',
-    'Testing',
-    'Done',
-  ];
+  public get allowedStatuses(): TaskStatus[] {
+    return getAllowedNextStatuses(this.taskStatus);
+  }
 
-  public onToggleStatus(): void {
-    const currentIndex = this.statusOrder.indexOf(this.taskStatus);
-    const nextIndex = (currentIndex + 1) % this.statusOrder.length;
-    this.taskStatus = this.statusOrder[nextIndex];
-    this.statusChange.emit(this.taskStatus);
+  public onSelectStatus(status: TaskStatus, popover: NgbPopover): void {
+    if (status === this.taskStatus) {
+      popover.close();
+      return;
+    }
+
+    this.taskStatus = status;
+    this.statusChange.emit(status);
+    popover.close();
   }
 }

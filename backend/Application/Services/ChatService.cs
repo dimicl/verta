@@ -168,7 +168,8 @@ public class ChatService : IChatService
                 Id = p.Id,
                 UserId = p.UserId,
                 FirstName = p.User?.FirstName ?? string.Empty,
-                LastName = p.User?.LastName ?? string.Empty
+                LastName = p.User?.LastName ?? string.Empty,
+                IsOnline = p.User?.IsOnline ?? false
             }).ToList();
 
             result.Add(new ConversationResponse
@@ -193,6 +194,8 @@ public class ChatService : IChatService
         {
             conversation = new Conversation
             {
+                Type = ConversationType.Direct,
+                CreatedByUserId = senderId,
                 CreatedAt = DateTime.UtcNow,
                 Participants = new List<ConversationParticipant>()
             };
@@ -215,5 +218,100 @@ public class ChatService : IChatService
         }
 
         return conversation.Id;
+    }
+
+    public async Task<MessageResponse> SendMessageToConversation(int senderId, int conversationId, string content)
+    {
+        var conversation = await _conversationRepository.GetByIdWithParticipants(conversationId);
+        if (conversation == null)
+            throw new NotFoundException("Conversation not found.");
+
+        var isSenderParticipant = await _participantRepository.IsParticipant(conversationId, senderId);
+        if (!isSenderParticipant)
+            throw new ForbiddenException("You are not a participant in this conversation.");
+
+        var message = new Message
+        {
+            ConversationId = conversationId,
+            SenderId = senderId,
+            Content = content,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await _messageRepository.Add(message);
+
+        var participantUserIds = await _participantRepository.GetUserIds(conversationId);
+        await _notificationService.SendChatMessageAsync(participantUserIds, message);
+
+        return ToResponse(message);
+    }
+
+    public async Task<ConversationResponse> CreateGroupConversation(int creatorId, string name, List<int> memberIds)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Group name is required.");
+
+        var uniqueMemberIds = memberIds
+            .Where(id => id != creatorId)
+            .Distinct()
+            .ToList();
+
+        var creatorWorkspaces = await _workspaceMemberRepo.GetByUserIdAsync(creatorId);
+        var creatorWorkspaceIds = creatorWorkspaces.Select(m => m.WorkspaceId).ToHashSet();
+
+        foreach (var memberId in uniqueMemberIds)
+        {
+            var memberWorkspaces = await _workspaceMemberRepo.GetByUserIdAsync(memberId);
+            var hasCommonWorkspace = memberWorkspaces.Any(m => creatorWorkspaceIds.Contains(m.WorkspaceId));
+            if (!hasCommonWorkspace)
+                throw new ForbiddenException("You can only add users from your workspace to a group.");
+        }
+
+        var conversation = new Conversation
+        {
+            Type = ConversationType.Group,
+            Name = name.Trim(),
+            CreatedByUserId = creatorId,
+            CreatedAt = DateTime.UtcNow,
+            Participants = new List<ConversationParticipant>()
+        };
+
+        await _conversationRepository.Add(conversation);
+
+        var allMemberIds = new List<int> { creatorId };
+        allMemberIds.AddRange(uniqueMemberIds);
+
+        foreach (var memberId in allMemberIds)
+        {
+            await _participantRepository.Add(new ConversationParticipant
+            {
+                ConversationId = conversation.Id,
+                UserId = memberId,
+                JoinedAt = DateTime.UtcNow
+            });
+        }
+
+        var created = await _conversationRepository.GetByIdWithParticipants(conversation.Id);
+        if (created == null)
+            throw new InvalidOperationException("Failed to create group conversation.");
+
+        var participants = created.Participants.Select(p => new ConversationParticipantResponse
+        {
+            Id = p.Id,
+            UserId = p.UserId,
+            FirstName = p.User?.FirstName ?? string.Empty,
+            LastName = p.User?.LastName ?? string.Empty,
+            IsOnline = p.User?.IsOnline ?? false
+        }).ToList();
+
+        return new ConversationResponse
+        {
+            Id = created.Id,
+            Type = created.Type.ToString(),
+            Name = created.Name,
+            CreatedAt = created.CreatedAt,
+            UnreadCount = 0,
+            Participants = participants
+        };
     }
 }

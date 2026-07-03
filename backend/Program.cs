@@ -112,6 +112,15 @@ app.UseSwagger();
 app.UseSwaggerUI();
 app.UseCors("Frontend");
 app.UseMiddleware<GlobalExceptionMiddleware>();
+
+var uploadsPath = Path.Combine(app.Environment.ContentRootPath, "uploads");
+Directory.CreateDirectory(uploadsPath);
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsPath),
+    RequestPath = "/uploads",
+});
+
 app.UseAuthentication();
 app.UseAuthorization();
 

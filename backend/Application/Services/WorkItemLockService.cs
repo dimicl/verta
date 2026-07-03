@@ -12,26 +12,29 @@ public class WorkItemLockService : IWorkItemLockService, IWorkItemLockExpiryServ
     private readonly IWorkItemLockInterestRepository _interestRepo;
     private readonly IWorkItemRepository _workItemRepo;
     private readonly IBoardRepository _boardRepo;
-    private readonly IWorkspaceMemberRepository _workspaceMemberRepo;
+    private readonly IBoardAccessService _boardAccessService;
     private readonly IUserContext _userContext;
-    private readonly INotificationService _notificationService;
+    private readonly DomainEventSubject _domainEventSubject;
+    private readonly IUnitOfWork _unitOfWork;
 
     public WorkItemLockService(
         IWorkItemLockRepository lockRepo,
         IWorkItemLockInterestRepository interestRepo,
         IWorkItemRepository workItemRepo,
         IBoardRepository boardRepo,
-        IWorkspaceMemberRepository workspaceMemberRepo,
+        IBoardAccessService boardAccessService,
         IUserContext userContext,
-        INotificationService notificationService)
+        DomainEventSubject domainEventSubject,
+        IUnitOfWork unitOfWork)
     {
         _lockRepo = lockRepo;
         _interestRepo = interestRepo;
         _workItemRepo = workItemRepo;
         _boardRepo = boardRepo;
-        _workspaceMemberRepo = workspaceMemberRepo;
+        _boardAccessService = boardAccessService;
         _userContext = userContext;
-        _notificationService = notificationService;
+        _domainEventSubject = domainEventSubject;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<WorkItemLockResponse> OpenWorkItem(int workItemId)
@@ -44,8 +47,14 @@ public class WorkItemLockService : IWorkItemLockService, IWorkItemLockExpiryServ
         var board = await _boardRepo.GetById(workItem.BoardId);
         if (board == null) throw new NotFoundException("Board does not exist.");
 
-        var member = await _workspaceMemberRepo.GetByWorkspaceAndUserIdAsync(board.WorkspaceId, userId);
-        if (member == null) throw new ForbiddenException("You are not a member of this workspace.");
+        try
+        {
+            await _boardAccessService.EnsureBoardAccessAsync(board);
+        }
+        catch (Exception ex)
+        {
+            throw new ForbiddenException(ex.Message);
+        }
 
         var existingLock = await _lockRepo.GetByWorkItemIdAsync(workItemId);
 
@@ -75,6 +84,13 @@ public class WorkItemLockService : IWorkItemLockService, IWorkItemLockExpiryServ
             try
             {
                 var created = await _lockRepo.Add(workItemLock);
+                await _domainEventSubject.NotifyAsync(DomainEventNames.WorkItemLocked, new
+                {
+                    WorkItemId = workItemId,
+                    LockedByUserId = userId,
+                    Mode = "WRITE"
+                });
+
                 return new WorkItemLockResponse
                 {
                     WorkItemId = workItemId,
@@ -106,6 +122,7 @@ public class WorkItemLockService : IWorkItemLockService, IWorkItemLockExpiryServ
         }
 
         await _interestRepo.RegisterInterestAsync(workItemId, userId);
+        var position = await _interestRepo.GetPositionAsync(workItemId, userId);
 
         return new WorkItemLockResponse
         {
@@ -113,7 +130,8 @@ public class WorkItemLockService : IWorkItemLockService, IWorkItemLockExpiryServ
             UserId = userId,
             Mode = "READ_ONLY",
             LockedAt = existingLock.LockedAt,
-            ExpiresAt = existingLock.ExpiresAt
+            ExpiresAt = existingLock.ExpiresAt,
+            QueuePosition = position
         };
     }
 
@@ -126,7 +144,7 @@ public class WorkItemLockService : IWorkItemLockService, IWorkItemLockExpiryServ
         if (existingLock != null && existingLock.LockedByUserId == userId)
         {
             await _lockRepo.Delete(existingLock);
-            await NotifyAndClearInterestsAsync(workItemId);
+            await PromoteNextInterestedAsync(workItemId);
 
             return new WorkItemLockResponse
             {
@@ -171,18 +189,72 @@ public class WorkItemLockService : IWorkItemLockService, IWorkItemLockExpiryServ
         };
     }
 
-    public async Task NotifyAndClearInterestsAsync(int workItemId)
+    public async Task EnsureUserHasWriteLockAsync(int workItemId)
     {
-        var interestedUserIds = await _interestRepo.GetInterestedUserIdsAsync(workItemId);
+        var userId = _userContext.GetUserId();
+        var existingLock = await _lockRepo.GetByWorkItemIdAsync(workItemId);
 
-        foreach (var interestedUserId in interestedUserIds)
+        if (existingLock == null || existingLock.ExpiresAt < DateTime.UtcNow)
+            throw new ForbiddenException("You must open the work item for editing before making changes.");
+
+        if (existingLock.LockedByUserId != userId)
+            throw new ForbiddenException("This work item is locked by another user.");
+    }
+
+    public async Task PromoteNextInterestedAsync(int workItemId)
+    {
+        var next = await _interestRepo.GetFirstAsync(workItemId);
+
+        if (next == null)
         {
-            await _notificationService.SendToUserAsync(interestedUserId, "WorkItemUnlocked", new
+            var interestedUserIds = await _interestRepo.GetInterestedUserIdsAsync(workItemId);
+
+            await _domainEventSubject.NotifyAsync(DomainEventNames.WorkItemUnlocked, new
             {
-                WorkItemId = workItemId
+                WorkItemId = workItemId,
+                TargetUserIds = interestedUserIds
             });
+            return;
         }
 
-        await _interestRepo.RemoveAllAsync(workItemId);
+        var now = DateTime.UtcNow;
+        var newLock = new WorkItemLock
+        {
+            WorkItemId = workItemId,
+            LockedByUserId = next.UserId,
+            LockedAt = now,
+            ExpiresAt = now.Add(LockDuration)
+        };
+
+        await _unitOfWork.BeginTransactionAsync();
+        try
+        {
+            await _lockRepo.Add(newLock);
+            await _interestRepo.RemoveEntryAsync(next);
+            await _unitOfWork.CommitAsync();
+        }
+        catch (DbUpdateException)
+        {
+            await _unitOfWork.RollbackAsync();
+            return;
+        }
+        catch
+        {
+            await _unitOfWork.RollbackAsync();
+            throw;
+        }
+
+        await _domainEventSubject.NotifyAsync(DomainEventNames.YouNowHaveWriteAccess, new
+        {
+            TargetUserId = next.UserId,
+            WorkItemId = workItemId,
+            ExpiresAt = newLock.ExpiresAt
+        });
+
+        await _domainEventSubject.NotifyAsync(DomainEventNames.WorkItemLockTransferred, new
+        {
+            WorkItemId = workItemId,
+            NewLockedByUserId = next.UserId
+        });
     }
 }

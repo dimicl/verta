@@ -1,7 +1,32 @@
-<div class="status-container" (click)="onToggleStatus()">
+<div
+  class="status-container"
+  [ngbPopover]="statusPopoverTemplate"
+  #statusPopoverRef="ngbPopover"
+  triggers="click"
+  placement="bottom"
+  container="body"
+  (click)="$event.stopPropagation()"
+>
   <span class="status-label">{{ taskStatus }}</span>
   <svg-icon
     [src]="sharedSvgRoutes.ARROW_DOWN_ICON"
     class="arrow-icon"
   ></svg-icon>
 </div>
+
+<ng-template #statusPopoverTemplate>
+  <div class="status-options">
+    <div class="status-options-current">{{ taskStatus }}</div>
+    <button
+      type="button"
+      class="status-option"
+      *ngFor="let status of allowedStatuses"
+      (click)="onSelectStatus(status, statusPopoverRef)"
+    >
+      {{ status }}
+    </button>
+    <div class="status-options-empty" *ngIf="allowedStatuses.length === 0">
+      No transitions available
+    </div>
+  </div>
+</ng-template>

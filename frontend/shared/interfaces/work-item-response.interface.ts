@@ -7,6 +7,7 @@ export interface WorkItemResponse {
   status: TaskStatus;
   priority: string;
   boardId: number;
+  sprintId?: number;
   createdByUserId: number;
   assignedUserId?: number;
   createdAt: string;

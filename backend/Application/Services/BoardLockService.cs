@@ -11,29 +11,26 @@ public class BoardLockService : IBoardLockService, IBoardLockPromotionService
     private readonly IBoardLockRepository _lockRepo;
     private readonly IBoardLockQueueRepository _queueRepo;
     private readonly IBoardRepository _boardRepo;
-    private readonly IWorkspaceMemberRepository _workspaceMemberRepo;
+    private readonly IBoardAccessService _boardAccessService;
     private readonly IUserContext _userContext;
     private readonly DomainEventSubject _domainEventSubject;
-    private readonly INotificationService _notificationService;
     private readonly IUnitOfWork _unitOfWork;
 
     public BoardLockService(
         IBoardLockRepository lockRepo,
         IBoardLockQueueRepository queueRepo,
         IBoardRepository boardRepo,
-        IWorkspaceMemberRepository workspaceMemberRepo,
+        IBoardAccessService boardAccessService,
         IUserContext userContext,
         DomainEventSubject domainEventSubject,
-        INotificationService notificationService,
         IUnitOfWork unitOfWork)
     {
         _lockRepo = lockRepo;
         _queueRepo = queueRepo;
         _boardRepo = boardRepo;
-        _workspaceMemberRepo = workspaceMemberRepo;
+        _boardAccessService = boardAccessService;
         _userContext = userContext;
         _domainEventSubject = domainEventSubject;
-        _notificationService = notificationService;
         _unitOfWork = unitOfWork;
     }
 
@@ -44,8 +41,14 @@ public class BoardLockService : IBoardLockService, IBoardLockPromotionService
         var board = await _boardRepo.GetById(boardId);
         if (board == null) throw new NotFoundException("Board does not exist.");
 
-        var member = await _workspaceMemberRepo.GetByWorkspaceAndUserIdAsync(board.WorkspaceId, userId);
-        if (member == null) throw new ForbiddenException("You are not a member of this workspace.");
+        try
+        {
+            await _boardAccessService.EnsureBoardAccessAsync(board);
+        }
+        catch (Exception ex)
+        {
+            throw new ForbiddenException(ex.Message);
+        }
 
         var existingLock = await _lockRepo.GetByBoardIdAsync(boardId);
         if (existingLock != null && existingLock.ExpiresAt < DateTime.UtcNow)
@@ -74,7 +77,7 @@ public class BoardLockService : IBoardLockService, IBoardLockPromotionService
             try
             {
                 var createdLock = await _lockRepo.Add(boardLock);
-                await _domainEventSubject.NotifyAsync("BoardLocked",
+                await _domainEventSubject.NotifyAsync(DomainEventNames.BoardLocked,
                     new { BoardId = boardId, LockedByUserId = userId, Mode = "WRITE" });
 
                 return new BoardLockResponse
@@ -183,7 +186,7 @@ public class BoardLockService : IBoardLockService, IBoardLockPromotionService
 
         if (next == null)
         {
-            await _domainEventSubject.NotifyAsync("BoardUnlocked", new { BoardId = boardId });
+            await _domainEventSubject.NotifyAsync(DomainEventNames.BoardUnlocked, new { BoardId = boardId });
             return;
         }
 
@@ -215,13 +218,14 @@ public class BoardLockService : IBoardLockService, IBoardLockPromotionService
             throw;
         }
 
-        await _notificationService.SendToUserAsync(next.UserId, "YouNowHaveWriteAccess", new
+        await _domainEventSubject.NotifyAsync(DomainEventNames.YouNowHaveWriteAccess, new
         {
+            TargetUserId = next.UserId,
             BoardId = boardId,
             ExpiresAt = newLock.ExpiresAt
         });
 
-        await _domainEventSubject.NotifyAsync("BoardLockTransferred", new
+        await _domainEventSubject.NotifyAsync(DomainEventNames.BoardLockTransferred, new
         {
             BoardId = boardId,
             NewLockedByUserId = next.UserId

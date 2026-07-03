@@ -1,0 +1,36 @@
+<div class="sprint-modal">
+  <div class="sprint-modal-header">
+    <span class="sprint-modal-header-text">Add Sprint</span>
+  </div>
+
+  <div class="sprint-modal-body">
+    <div class="sprint-form-group">
+      <app-input
+        [label]="'Sprint name'"
+        (onGetValue)="onNameInput($event)"
+      />
+    </div>
+    <div class="sprint-form-group">
+      <app-input
+        [label]="'Start date'"
+        [type]="'date'"
+        [modelValue]="startDateValue"
+        (onGetValue)="onStartDateInput($event)"
+      />
+    </div>
+    <div class="sprint-form-group">
+      <app-input
+        [label]="'End date'"
+        [type]="'date'"
+        [modelValue]="endDateValue"
+        (onGetValue)="onEndDateInput($event)"
+      />
+    </div>
+    <p class="sprint-error" *ngIf="createError()">{{ createError() }}</p>
+  </div>
+
+  <div class="sprint-modal-footer">
+    <div class="sprint-btn sprint-btn--secondary" (click)="onClose()">Cancel</div>
+    <div class="sprint-btn sprint-btn--primary" (click)="onCreate()">Create</div>
+  </div>
+</div>

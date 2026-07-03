@@ -69,8 +69,31 @@
   width: 100%;
   align-items: start;
   flex-direction: column;
+  gap: 12px;
+}
 
+.field-group {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 6px;
+}
 
+.field-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #555;
+}
+
+.field-select,
+.field-input {
+  height: 36px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+  border: 1px solid #e0e0e0;
+  background: #fff;
 }
 
 .modal-footer {

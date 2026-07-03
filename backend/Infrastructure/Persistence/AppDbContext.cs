@@ -14,6 +14,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<Invitation> Invitations => Set<Invitation>();
 
     public DbSet<Board> Boards => Set<Board>();
+    public DbSet<BoardMember> BoardMembers => Set<BoardMember>();
+    public DbSet<Sprint> Sprints => Set<Sprint>();
     public DbSet<WorkItem> WorkItems => Set<WorkItem>();
     public DbSet<SubWorkItem> SubWorkItems => Set<SubWorkItem>();
     public DbSet<Comment> Comments => Set<Comment>();
@@ -199,6 +201,55 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        modelBuilder.Entity<BoardMember>(entity =>
+        {
+            entity.ToTable("board_members");
+
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
+
+            entity.Property(x => x.CreatedAt)
+                .IsRequired();
+
+            entity.HasOne(x => x.Board)
+                .WithMany()
+                .HasForeignKey(x => x.BoardId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(x => new { x.BoardId, x.UserId })
+                .IsUnique();
+        });
+
+        modelBuilder.Entity<Sprint>(entity =>
+        {
+            entity.ToTable("sprints");
+
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Name)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(x => x.StartDate)
+                .HasColumnType("timestamp with time zone");
+
+            entity.Property(x => x.EndDate)
+                .HasColumnType("timestamp with time zone");
+
+            entity.Property(x => x.CreatedAt)
+                .IsRequired();
+
+            entity.HasOne(x => x.Board)
+                .WithMany(b => b.Sprints)
+                .HasForeignKey(x => x.BoardId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
         modelBuilder.Entity<BoardLock>(entity =>
         {
             entity.ToTable("board_locks");
@@ -284,6 +335,11 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.HasOne(x => x.AssignedUser)
                 .WithMany()
                 .HasForeignKey(x => x.AssignedUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(x => x.Sprint)
+                .WithMany(s => s.WorkItems)
+                .HasForeignKey(x => x.SprintId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
 

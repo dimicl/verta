@@ -13,19 +13,85 @@
         <svg-icon
           [src]="sharedSvgRoutes.PLUS_ICON"
           class="plus-icon"
+          (click)="onAddGroupToggle($event)"
         ></svg-icon>
       </div>
       <div
         class="chat-sidebar-group-content"
         [class.is-collapsed]="!isGroupsExpanded"
       >
-        @for(groupItem of groups; track groupItem.id) {
-        <ng-container
-          *ngTemplateOutlet="
-            chatTemplate;
-            context: { data: groupItem, group: true }
-          "
-        ></ng-container>
+        @if(isAddGroupOpen()) {
+        <div class="chat-sidebar-add-panel">
+          <input
+            class="chat-sidebar-search"
+            type="text"
+            placeholder="Group name"
+            [value]="newGroupName()"
+            (input)="onNewGroupNameChange($any($event.target).value)"
+          />
+          <input
+            class="chat-sidebar-search"
+            type="text"
+            placeholder="Search members"
+            [value]="groupSearchTerm()"
+            (input)="onGroupSearchTermChange($any($event.target).value)"
+          />
+
+          @if(getSelectedGroupMembers().length > 0) {
+          <div class="chat-group-chips">
+            @for(member of getSelectedGroupMembers(); track member.id) {
+            <button
+              type="button"
+              class="chat-group-chip"
+              (click)="onToggleGroupMember(member.id)"
+            >
+              {{ member.firstName }} {{ member.lastName }}
+              <span class="chat-group-chip-remove">×</span>
+            </button>
+            }
+          </div>
+          }
+
+          @for(member of getFilteredGroupMembers(); track member.id) {
+          <button
+            type="button"
+            class="chat-item chat-item--clickable"
+            [class.chat-item--selected]="isGroupMemberSelected(member.id)"
+            (click)="onToggleGroupMember(member.id)"
+          >
+            {{ member.firstName }} {{ member.lastName }}
+          </button>
+          }
+          @if(groupSearchTerm().trim() && getFilteredGroupMembers().length === 0) {
+          <div class="empty-state">No members found</div>
+          }
+          <button
+            type="button"
+            class="chat-create-group-btn"
+            [disabled]="!newGroupName().trim() || selectedGroupMemberIds().size === 0"
+            (click)="onCreateGroup()"
+          >
+            Create group
+          </button>
+        </div>
+        }
+
+        @for(groupItem of groups(); track groupItem.id) {
+        <button
+          type="button"
+          class="chat-item chat-item--clickable"
+          [class.chat-item--active]="isGroupChatSelected(groupItem.id)"
+          (click)="onGroupSelect(groupItem.id)"
+        >
+          <svg-icon
+            [src]="sharedSvgRoutes.GROUP_ICON"
+            class="chat-item-icon"
+          ></svg-icon>
+          <span class="chat-item-text">{{ groupItem.name }}</span>
+          <span class="unread-badge" *ngIf="groupItem.unreadCount > 0">
+            {{ groupItem.unreadCount }}
+          </span>
+        </button>
         }
       </div>
     </div>
@@ -43,7 +109,7 @@
         <svg-icon
           [src]="sharedSvgRoutes.PLUS_ICON"
           class="plus-icon"
-          (click)="onAddConversationToggle()"
+          (click)="onAddConversationToggle($event)"
         ></svg-icon>
       </div>
       <div
@@ -75,17 +141,24 @@
         }
 
         @for(user of directUsers(); track user.id) {
-
         <button
           type="button"
           class="chat-item chat-item--clickable"
-          [class.chat-item--active]="selectedDirectUser?.id === user.id"
+          [class.chat-item--active]="isDirectSelected(user.id)"
           (click)="onDirectUserSelect(user.id)"
-        >         
+        >
+          <span
+            class="presence-dot"
+            [class.is-online]="user.isOnline"
+            [class.is-offline]="!user.isOnline"
+          ></span>
           <span class="chat-item-text"
             >{{ user.firstName }} {{ user.lastName }}</span
           >
-           <svg-icon
+          <span class="unread-badge" *ngIf="(user.unreadCount ?? 0) > 0">
+            {{ user.unreadCount }}
+          </span>
+          <svg-icon
             [src]="sharedSvgRoutes.DIRECT_ICON"
             class="chat-item-icon"
           ></svg-icon>
@@ -96,21 +169,22 @@
   </aside>
 
   <section class="chat-main">
+    @if (selectedGroup(); as groupChat) {
     <app-chat-bubble
       [currentUserId]="currentUserId"
-      [receiverId]="selectedDirectUser?.id ?? 0"
-      [receiverFirstName]="selectedDirectUser?.firstName ?? ''"
-      [receiverLastName]="selectedDirectUser?.lastName ?? ''"
+      [conversationId]="groupChat.id"
+      [isGroup]="true"
+      [groupName]="groupChat.name"
+      [participants]="participants()"
     ></app-chat-bubble>
+    }
+    @if (!selectedGroup() && selectedDirectUser(); as directUser) {
+    <app-chat-bubble
+      [currentUserId]="currentUserId"
+      [receiverId]="directUser.id"
+      [receiverFirstName]="directUser.firstName"
+      [receiverLastName]="directUser.lastName"
+    ></app-chat-bubble>
+    }
   </section>
 </div>
-
-<ng-template #chatTemplate let-data="data" let-group="group">
-  <div class="chat-item">
-    <svg-icon
-      [src]="group ? sharedSvgRoutes.GROUP_ICON : sharedSvgRoutes.DIRECT_ICON"
-      class="chat-item-icon"
-    ></svg-icon>
-    <span class="chat-item-text">{{ data.name }}</span>
-  </div>
-</ng-template>

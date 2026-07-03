@@ -8,7 +8,7 @@ public class SubWorkItemService : ISubWorkItemService
     private readonly ISubWorkItemRepository _subRepo;
     private readonly IWorkItemRepository _workItemRepo;
     private readonly IBoardRepository _boardRepo;
-    private readonly IWorkspaceMemberRepository _workspaceMemberRepo;
+    private readonly IBoardAccessService _boardAccessService;
     private readonly IUserContext _userContext;
     private readonly DomainEventSubject _domainEventSubject;
     private readonly CommandInvoker _commandInvoker;
@@ -17,7 +17,7 @@ public class SubWorkItemService : ISubWorkItemService
         ISubWorkItemRepository subRepo,
         IWorkItemRepository workItemRepo,
         IBoardRepository boardRepo,
-        IWorkspaceMemberRepository workspaceMemberRepo,
+        IBoardAccessService boardAccessService,
         IUserContext userContext,
         DomainEventSubject domainEventSubject,
         CommandInvoker commandInvoker)
@@ -25,7 +25,7 @@ public class SubWorkItemService : ISubWorkItemService
         _subRepo = subRepo;
         _workItemRepo = workItemRepo;
         _boardRepo = boardRepo;
-        _workspaceMemberRepo = workspaceMemberRepo;
+        _boardAccessService = boardAccessService;
         _userContext = userContext;
         _domainEventSubject = domainEventSubject;
         _commandInvoker = commandInvoker;
@@ -52,16 +52,7 @@ public class SubWorkItemService : ISubWorkItemService
         if (board == null)
             throw new Exception("Board does not exist.");
 
-        var member = await _workspaceMemberRepo.GetByWorkspaceAndUserIdAsync(
-            board.WorkspaceId,
-            userId
-        );
-
-        if (member == null)
-            throw new Exception("You are not member of this workspace.");
-
-        if (member.Role == UserRole.Guest)
-            throw new Exception("Guest cannot create sub work item.");
+        await _boardAccessService.EnsureBoardAccessAsync(board);
 
         var subWorkItem = new SubWorkItem
         {
@@ -77,7 +68,7 @@ public class SubWorkItemService : ISubWorkItemService
         {
             var created = await _subRepo.Add(subWorkItem);
 
-            await _domainEventSubject.NotifyAsync("SubWorkItemCreated", new
+            await _domainEventSubject.NotifyAsync(DomainEventNames.SubWorkItemCreated, new
             {
                 SubWorkItemId = created.Id,
                 WorkItemId = created.WorkItemId,
@@ -103,13 +94,7 @@ public class SubWorkItemService : ISubWorkItemService
         if (board == null)
             throw new Exception("Board does not exist.");
 
-        var member = await _workspaceMemberRepo.GetByWorkspaceAndUserIdAsync(
-            board.WorkspaceId,
-            userId
-        );
-
-        if (member == null)
-            throw new Exception("You are not member of this workspace.");
+        await _boardAccessService.EnsureBoardAccessAsync(board);
 
         var subItems = await _subRepo.GetByWorkItemIdAsync(workItemId);
 
@@ -137,16 +122,7 @@ public class SubWorkItemService : ISubWorkItemService
         if (board == null)
             throw new Exception("Board does not exist.");
 
-        var member = await _workspaceMemberRepo.GetByWorkspaceAndUserIdAsync(
-            board.WorkspaceId,
-            userId
-        );
-
-        if (member == null)
-            throw new Exception("You are not member of this workspace.");
-
-        if (member.Role == UserRole.Guest)
-            throw new Exception("Guest cannot change sub work item status.");
+        await _boardAccessService.EnsureBoardAccessAsync(board);
 
         var currentState = WorkItemStateFactory.Create(subWorkItem.Status);
 
@@ -164,7 +140,7 @@ public class SubWorkItemService : ISubWorkItemService
 
             await _subRepo.Update(subWorkItem);
 
-            await _domainEventSubject.NotifyAsync("SubWorkItemStatusChanged", new
+            await _domainEventSubject.NotifyAsync(DomainEventNames.SubWorkItemStatusChanged, new
             {
                 SubWorkItemId = subWorkItem.Id,
                 WorkItemId = subWorkItem.WorkItemId,

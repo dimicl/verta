@@ -10,7 +10,8 @@ public class InvitationService : IInvitationService
     private readonly IWorkspaceMemberRepository _workspaceMemberRepo;
     private readonly IUserContext _userContext;
     private readonly IUserRepository _userRepository;
-    private readonly INotificationService _notificationService;
+    private readonly DomainEventSubject _domainEventSubject;
+    private readonly IBoardMemberSyncService _boardMemberSyncService;
 
     public InvitationService(
         IInvitationRepository invitationRepo,
@@ -18,7 +19,8 @@ public class InvitationService : IInvitationService
         IWorkspaceMemberRepository workspaceMemberRepo,
         IUserContext userContext,
         IUserRepository userRepository,
-        INotificationService notificationService
+        DomainEventSubject domainEventSubject,
+        IBoardMemberSyncService boardMemberSyncService
     )
     {
         _invitationRepo = invitationRepo;
@@ -26,7 +28,8 @@ public class InvitationService : IInvitationService
         _workspaceMemberRepo = workspaceMemberRepo;
         _userContext = userContext;
         _userRepository = userRepository;
-        _notificationService = notificationService;
+        _domainEventSubject = domainEventSubject;
+        _boardMemberSyncService = boardMemberSyncService;
     }
 
     public async Task<InvitationResponse> InviteUser(InvitationRequest request)
@@ -101,16 +104,18 @@ public class InvitationService : IInvitationService
         };
 
         await _workspaceMemberRepo.Add(member);
+        await _boardMemberSyncService.AddUserToAllWorkspaceBoardsAsync(
+            workspace.Id,
+            invitedUser.Id
+        );
 
-        await _notificationService.SendToUserAsync(
-            invitedUser.Id,
-            "WorkspaceInvitation",
-            new
-            {
-                WorkspaceId = workspace.Id,
-                WorkspaceName = workspace.Name,
-                InvitedByUserId = currentUserId
-            });
+        await _domainEventSubject.NotifyAsync(DomainEventNames.WorkspaceInvitation, new
+        {
+            TargetUserId = invitedUser.Id,
+            WorkspaceId = workspace.Id,
+            WorkspaceName = workspace.Name,
+            InvitedByUserId = currentUserId
+        });
 
         return InvitationHelper.ToResponse(createdInvitation);
     }

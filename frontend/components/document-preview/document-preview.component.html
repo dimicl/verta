@@ -1,0 +1,59 @@
+@let current = file();
+@let type = fileType;
+@let preview = previewUrl;
+
+<div class="document" [class.document--no-preview]="!preview">
+  <div class="document-image-container">
+    @if (preview) {
+    <img [src]="preview" class="document-image" [alt]="current.fileName" />
+    } @else {
+    <div
+      class="document-placeholder"
+      [class.document-placeholder--pdf]="isPdf"
+      [class.document-placeholder--video]="isVideo"
+      [class.document-placeholder--image]="isImage"
+    >
+      {{ type | uppercase }}
+    </div>
+    }
+
+    <div class="document-badges">
+      <span
+        class="badge file-type"
+        [class.pdf]="isPdf"
+        [class.video]="isVideo"
+        [class.image]="isImage"
+      >
+        {{ type }}
+      </span>
+      <span class="badge file-size">{{ current.size | bytesToHumanReadable }}</span>
+    </div>
+
+    @if (showDeleteModal()) {
+    <div class="delete-modal">
+      <p class="delete-modal__text">Delete this file?</p>
+      <div class="delete-modal__actions">
+        <button type="button" class="delete-modal__btn delete-modal__btn--danger" (click)="confirmDelete()">
+          Delete
+        </button>
+        <button type="button" class="delete-modal__btn" (click)="cancelDelete()">Cancel</button>
+      </div>
+    </div>
+    }
+  </div>
+
+  <div class="document-name" [title]="current.fileName">
+    <p class="file-name">{{ current.fileName }}</p>
+  </div>
+
+  <div class="document-actions">
+    <button
+      type="button"
+      class="document-actions__btn"
+      (click)="handleDelete($event)"
+      title="Delete"
+    >
+      <svg-icon class="icon" [src]="sharedSvgRoutes.DELETE_ICON"></svg-icon>
+    </button>
+  </div>
+</div>

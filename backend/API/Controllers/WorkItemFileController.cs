@@ -14,6 +14,23 @@ public class WorkItemFileController : ControllerBase
         _fileService = fileService;
     }
 
+    [HttpPost("upload")]
+    [RequestSizeLimit(104_857_600)]
+    public async Task<IActionResult> Upload(
+        [FromForm] int workItemId,
+        [FromForm] IFormFile file)
+    {
+        try
+        {
+            var result = await _fileService.Upload(workItemId, file);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] WorkItemFileRequest request)
     {

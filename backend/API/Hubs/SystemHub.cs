@@ -29,6 +29,11 @@ public class SystemHub : Hub
                 await _userRepository.Update(user);
             }
             await Groups.AddToGroupAsync(Context.ConnectionId, UserGroup(userId.Value));
+            await Clients.Others.SendAsync("UserPresenceChanged", new
+            {
+                UserId = userId.Value,
+                IsOnline = true
+            });
         }
         await base.OnConnectedAsync();
     }
@@ -45,6 +50,12 @@ public class SystemHub : Hub
                 user.LastSeenAt = DateTime.UtcNow;
                 await _userRepository.Update(user);
             }
+
+            await Clients.Others.SendAsync("UserPresenceChanged", new
+            {
+                UserId = userId.Value,
+                IsOnline = false
+            });
         }
         await base.OnDisconnectedAsync(exception);
     }

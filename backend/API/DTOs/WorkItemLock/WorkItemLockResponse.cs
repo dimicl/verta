@@ -5,4 +5,5 @@ public record WorkItemLockResponse
     public required string Mode { get; set; }
     public DateTime? LockedAt { get; set; }
     public DateTime? ExpiresAt { get; set; }
+    public int? QueuePosition { get; set; }
 }

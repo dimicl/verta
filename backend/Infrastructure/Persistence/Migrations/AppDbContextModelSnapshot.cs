@@ -117,6 +117,33 @@ namespace backend.Infrastructure.Persistence.Migrations
                     b.ToTable("board_lock_queue", (string)null);
                 });
 
+            modelBuilder.Entity("BoardMember", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BoardId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("BoardId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("board_members", (string)null);
+                });
+
             modelBuilder.Entity("Comment", b =>
                 {
                     b.Property<int>("Id")
@@ -327,6 +354,41 @@ namespace backend.Infrastructure.Persistence.Migrations
                     b.ToTable("messages", (string)null);
                 });
 
+            modelBuilder.Entity("Sprint", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BoardId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("StartDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BoardId");
+
+                    b.ToTable("sprints", (string)null);
+                });
+
             modelBuilder.Entity("SubWorkItem", b =>
                 {
                     b.Property<int>("Id")
@@ -451,6 +513,9 @@ namespace backend.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int?>("SprintId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");
@@ -465,6 +530,8 @@ namespace backend.Infrastructure.Persistence.Migrations
                     b.HasIndex("BoardId");
 
                     b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("SprintId");
 
                     b.ToTable("work_items", (string)null);
                 });
@@ -683,6 +750,25 @@ namespace backend.Infrastructure.Persistence.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("BoardMember", b =>
+                {
+                    b.HasOne("Board", "Board")
+                        .WithMany()
+                        .HasForeignKey("BoardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Board");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Comment", b =>
                 {
                     b.HasOne("User", "User")
@@ -766,6 +852,17 @@ namespace backend.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Sprint", b =>
+                {
+                    b.HasOne("Board", "Board")
+                        .WithMany("Sprints")
+                        .HasForeignKey("BoardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Board");
+                });
+
             modelBuilder.Entity("SubWorkItem", b =>
                 {
                     b.HasOne("User", "User")
@@ -804,11 +901,18 @@ namespace backend.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Sprint", "Sprint")
+                        .WithMany("WorkItems")
+                        .HasForeignKey("SprintId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("AssignedUser");
 
                     b.Navigation("Board");
 
                     b.Navigation("CreatedByUser");
+
+                    b.Navigation("Sprint");
                 });
 
             modelBuilder.Entity("WorkItemFile", b =>
@@ -892,12 +996,19 @@ namespace backend.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Board", b =>
                 {
+                    b.Navigation("Sprints");
+
                     b.Navigation("WorkItems");
                 });
 
             modelBuilder.Entity("Conversation", b =>
                 {
                     b.Navigation("Participants");
+                });
+
+            modelBuilder.Entity("Sprint", b =>
+                {
+                    b.Navigation("WorkItems");
                 });
 
             modelBuilder.Entity("WorkItem", b =>

@@ -2,6 +2,7 @@ export interface WorkItemRequest {
   name: string;
   description: string;
   boardId: number;
-  assignedUserId?: number;
+  sprintId?: number;
+  assignedUserId?: number | null;
   priority?: string;
 }

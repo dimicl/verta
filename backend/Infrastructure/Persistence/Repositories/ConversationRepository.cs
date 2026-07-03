@@ -23,4 +23,12 @@ public class ConversationRepository: GenericRepository<Conversation>, IConversat
             .OrderByDescending(c => c.CreatedAt)
             .ToListAsync();
     }
+
+    public async Task<Conversation?> GetByIdWithParticipants(int id)
+    {
+        return await _dbSet
+            .Include(c => c.Participants)
+                .ThenInclude(p => p.User)
+            .FirstOrDefaultAsync(c => c.Id == id);
+    }
 }
