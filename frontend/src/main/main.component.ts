@@ -1,7 +1,11 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { forkJoin } from 'rxjs';
 import {
   BoardService,
+  CommentService,
+  WorkItemFileService,
+  SignalRService,
+  SprintService,
   TaskService,
   UserService,
   WorkspaceService,
@@ -10,28 +14,42 @@ import { CommonModule } from '@angular/common';
 import { InputComponent } from '../../components/input/input.component';
 import { SharedSvgRoutes } from '../../shared/constants/shared-svg-routes';
 import { SvgIconComponent } from 'angular-svg-icon';
-import { NgbModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
+import { NgbModal, NgbModule, NgbPopover } from '@ng-bootstrap/ng-bootstrap';
 import { AvatarComponent } from '../../components/avatar/avatar.component';
 import { ChatComponent } from '../chat/chat.component';
 import { VeNotificationComponent } from '../../components/ve-notification/ve-notification.component';
 import { TaskModalComponent } from '../../components/task-modal/task-modal.component';
+import { SprintModalComponent } from '../../components/sprint-modal/sprint-modal.component';
 import { VeExtraMembersComponent } from '../../components/ve-extra-members/ve-extra-members.component';
 import { WorkspaceModalComponent } from '../../components/workspace-modal/workspace-modal.component';
 import { WorkspaceResponse } from '../../shared/interfaces/workspace-response.interface';
 import {
   BoardResponse,
-  WorkItemLockResponse,
+  SprintResponse,
   WorkItemRequest,
   WorkItemResponse,
 } from '../../shared/interfaces';
 import { InviteModalComponent } from '../../components/invite-modal/invite-modal.component';
 import { VeProfileComponent } from '../../components/ve-profile/ve-profile.component';
 import { VeStatusComponent } from '../../components/ve-status/ve-status.component';
+import { TaskAssigneeComponent } from '../../components/task-assignee/task-assignee.component';
+import { TaskPriorityComponent } from '../../components/task-priority/task-priority.component';
 import { BoardModalComponent } from '../../components/board-modal/board-modal.component';
 import { TaskStatus } from '../../shared/types/task-status.type';
+import { TaskPriority } from '../../shared/types/task-priority.type';
+import {
+  BOARD_COLUMNS,
+  getAllowedNextStatuses,
+} from '../../shared/helpers/task-status.helper';
+import {
+  CdkDragDrop,
+  DragDropModule,
+  moveItemInArray,
+  transferArrayItem,
+} from '@angular/cdk/drag-drop';
 
-interface BoardTaskGroup {
-  id: number;
+interface SprintTaskGroup {
+  id: number | null;
   name: string;
   tasks: WorkItemResponse[];
 }
@@ -52,51 +70,103 @@ interface BoardTaskGroup {
     WorkspaceModalComponent,
     VeProfileComponent,
     VeStatusComponent,
+    TaskAssigneeComponent,
+    TaskPriorityComponent,
+    DragDropModule,
   ],
 })
-export class MainComponent implements OnInit {
+export class MainComponent implements OnInit, OnDestroy {
   public sharedSvgRoutes = SharedSvgRoutes;
   public readonly toolbarItems = ['Backlog', 'Board', 'Chat'] as const;
   public readonly selectedToolbarTab =
     signal<(typeof this.toolbarItems)[number]>('Backlog');
 
   public workspace: WorkspaceResponse | null = null;
-  public boards: any | null = null;
+  public boards: BoardResponse[] | null = null;
+  public selectedBoardId = signal<number | null>(null);
 
-  public workspaceMembers: Array<{ id: number; firstName: string; lastName: string }> = [];
+  public workspaceMembers: Array<{
+    id: number;
+    firstName: string;
+    lastName: string;
+  }> = [];
 
-  public boardTaskGroups: BoardTaskGroup[] = [];
-  public statusOptions: TaskStatus[] = [
-    'ToDo',
-    'InProgress',
-    'PR',
-    'Testing',
-    'Done',
-  ];
+  public currentUser: {
+    id: number;
+    firstName: string;
+    lastName: string;
+  } | null = null;
 
-  public backlogPhases = ['ToDo', 'In Progress', 'PR', 'Testing', 'Done'] as const;
+  public boardMembers: Array<{
+    id: number;
+    firstName: string;
+    lastName: string;
+  }> = [];
+
+  private readonly maxVisibleBoardMembers = 5;
+
+  public sprintTaskGroups: SprintTaskGroup[] = [];
+  public sprints: SprintResponse[] = [];
+  public showStatusErrorToast = false;
+  public statusErrorMessage = '';
+
+  public readonly boardColumns = BOARD_COLUMNS;
+
+  public boardTasksByStatus: Record<TaskStatus, WorkItemResponse[]> = {
+    ToDo: [],
+    InProgress: [],
+    PR: [],
+    Testing: [],
+    Done: [],
+  };
 
   public taskMenuOpenId: number | null = null;
   public activeWorkItemId: number | null = null;
   public stickyLockMessage = '';
-  public isGroupsExpanded = true;
+  public collapsedGroupKeys = signal<Set<string>>(new Set());
   public showLockToast = false;
+
+  private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+  private lockToastTimer: ReturnType<typeof setTimeout> | null = null;
 
   selectedUser = signal<number | null>(null);
 
   public ngOnInit(): void {
-    this.userService.getUserById().subscribe((response) => {
-      console.log(response);
+    this.userService.getUserById().subscribe({
+      next: (response: any) => {
+        this.currentUser = {
+          id: Number(response?.id ?? 0),
+          firstName: response?.firstName ?? 'User',
+          lastName: response?.lastName ?? '',
+        };
+      },
+      error: (err) => console.error('Greška pri učitavanju korisnika:', err),
     });
 
+    void this.signalRService.connect();
+
     this.getWorkspace();
+  }
+
+  public ngOnDestroy(): void {
+    this.stopHeartbeat();
+    if (this.lockToastTimer) {
+      clearTimeout(this.lockToastTimer);
+    }
+    if (this.activeWorkItemId !== null) {
+      this.taskService.closeWorkItem(this.activeWorkItemId).subscribe();
+    }
   }
 
   constructor(
     private userService: UserService,
     private workspaceService: WorkspaceService,
     private boardService: BoardService,
+    private sprintService: SprintService,
     private taskService: TaskService,
+    private commentService: CommentService,
+    private workItemFileService: WorkItemFileService,
+    private signalRService: SignalRService,
     private modalService: NgbModal
   ) {}
 
@@ -112,14 +182,20 @@ export class MainComponent implements OnInit {
     });
   }
 
+  private mapMembers(
+    members: Array<{ userId: number; firstName?: string; lastName?: string }>
+  ) {
+    return members.map((member) => ({
+      id: member.userId,
+      firstName: member.firstName || 'User',
+      lastName: member.lastName || '',
+    }));
+  }
+
   private getWorkspaceMembers(workspaceId: number): void {
     this.workspaceService.getMembers(workspaceId).subscribe({
       next: (members) => {
-        this.workspaceMembers = members.map((member: any) => ({
-          id: member.userId,
-          firstName: member.firstName || 'User',
-          lastName: member.lastName || '',
-        }));
+        this.workspaceMembers = this.mapMembers(members);
       },
       error: (err) => {
         console.error('Greška pri učitavanju članova radnog prostora:', err);
@@ -127,23 +203,145 @@ export class MainComponent implements OnInit {
     });
   }
 
-  private loadWorkItems(boards: BoardResponse[]): void {
-    if (!boards || boards.length === 0) {
-      this.boardTaskGroups = [];
+  private getBoardMembers(boardId: number): void {
+    this.boardService.getBoardMembers(boardId).subscribe({
+      next: (members) => {
+        this.boardMembers = this.mapMembers(members);
+      },
+      error: (err) => {
+        console.error('Greška pri učitavanju članova table:', err);
+        this.boardMembers = [];
+      },
+    });
+  }
+
+  private loadBacklog(boardId: number): void {
+    this.getBoardMembers(boardId);
+
+    forkJoin({
+      sprints: this.sprintService.getByBoardId(boardId),
+      tasks: this.taskService.getByBoardId(boardId),
+    }).subscribe({
+      next: ({ sprints, tasks }) => {
+        this.sprints = sprints;
+
+        const groups: SprintTaskGroup[] = sprints.map((sprint) => ({
+          id: sprint.id,
+          name: sprint.name,
+          tasks: tasks.filter((task) => task.sprintId === sprint.id),
+        }));
+
+        const backlogTasks = tasks.filter((task) => !task.sprintId);
+        groups.push({
+          id: null,
+          name: 'Backlog',
+          tasks: backlogTasks,
+        });
+
+        this.sprintTaskGroups = groups;
+        this.rebuildBoardTasks(tasks);
+      },
+      error: (err) => {
+        console.error('Greška pri učitavanju backloga:', err);
+        this.sprintTaskGroups = [];
+        this.sprints = [];
+        this.clearBoardTasks();
+      },
+    });
+  }
+
+  private clearBoardTasks(): void {
+    this.boardTasksByStatus = {
+      ToDo: [],
+      InProgress: [],
+      PR: [],
+      Testing: [],
+      Done: [],
+    };
+  }
+
+  private rebuildBoardTasks(tasks: WorkItemResponse[]): void {
+    const grouped: Record<TaskStatus, WorkItemResponse[]> = {
+      ToDo: [],
+      InProgress: [],
+      PR: [],
+      Testing: [],
+      Done: [],
+    };
+
+    for (const task of tasks) {
+      grouped[task.status].push(task);
+    }
+
+    this.boardTasksByStatus = grouped;
+  }
+
+  public get boardColumnIds(): TaskStatus[] {
+    return this.boardColumns.map((column) => column.status);
+  }
+
+  public getAssigneeName(task: WorkItemResponse): string {
+    if (!task.assignedUserId) {
+      return 'Unassigned';
+    }
+
+    const member = this.boardMembers.find((m) => m.id === task.assignedUserId);
+    if (!member) {
+      return 'Unassigned';
+    }
+
+    return `${member.firstName} ${member.lastName}`.trim();
+  }
+
+  public onBoardDrop(
+    event: CdkDragDrop<WorkItemResponse[]>,
+    targetStatus: TaskStatus
+  ): void {
+    if (event.previousContainer === event.container) {
+      moveItemInArray(
+        event.container.data,
+        event.previousIndex,
+        event.currentIndex
+      );
       return;
     }
 
-    forkJoin(boards.map((board) => this.taskService.getByBoardId(board.id))).subscribe({
-      next: (taskLists) => {
-        this.boardTaskGroups = boards.map((board, index) => ({
-          id: board.id,
-          name: board.name,
-          tasks: taskLists[index] ?? [],
-        }));
+    const task = event.previousContainer.data[event.previousIndex];
+    const previousStatus = task.status;
+
+    if (!getAllowedNextStatuses(previousStatus).includes(targetStatus)) {
+      this.showStatusError('Invalid status transition.');
+      return;
+    }
+
+    transferArrayItem(
+      event.previousContainer.data,
+      event.container.data,
+      event.previousIndex,
+      event.currentIndex
+    );
+
+    task.status = targetStatus;
+
+    this.taskService.changeStatus(task.id, targetStatus).subscribe({
+      next: (updated) => {
+        task.status = updated.status;
       },
       error: (err) => {
-        console.error('Greška pri učitavanju taskova:', err);
-        this.boardTaskGroups = [];
+        transferArrayItem(
+          event.container.data,
+          event.previousContainer.data,
+          event.currentIndex,
+          event.previousIndex
+        );
+        task.status = previousStatus;
+
+        console.error('Greška pri promeni statusa taska:', err);
+        if (err.status === 403) {
+          this.showTaskOccupiedToast();
+          return;
+        }
+        this.showStatusError(err.error?.message ?? err.message);
       },
     });
   }
@@ -168,11 +366,40 @@ export class MainComponent implements OnInit {
     this.selectedUser.set(userId);
   }
 
+  public get visibleBoardMembers(): Array<{
+    id: number;
+    firstName: string;
+    lastName: string;
+  }> {
+    return this.boardMembers.slice(0, this.maxVisibleBoardMembers);
+  }
+
+  public get hiddenBoardMembers(): Array<{
+    id: number;
+    firstName: string;
+    lastName: string;
+  }> {
+    return this.boardMembers.slice(this.maxVisibleBoardMembers);
+  }
+
+  public get extraBoardMembersCount(): number {
+    return Math.max(
+      0,
+      this.boardMembers.length - this.maxVisibleBoardMembers
+    );
+  }
+
   public onAddTask(): void {
     const modalRef = this.modalService.open(TaskModalComponent, {
       backdrop: 'static',
       keyboard: false,
     });
+
+    modalRef.componentInstance.sprints = this.sprints;
+    modalRef.componentInstance.members = this.boardMembers;
+    modalRef.componentInstance.assignedUserId = null;
+    modalRef.componentInstance.workItemId = null;
+    this.setModalCurrentUser(modalRef.componentInstance);
 
     modalRef.result.then(
       (result) => {
@@ -184,14 +411,70 @@ export class MainComponent implements OnInit {
     );
   }
 
+  private getSelectedBoard(): BoardResponse | null {
+    if (!this.boards?.length) {
+      return null;
+    }
+
+    const selectedId = this.selectedBoardId();
+    if (selectedId) {
+      return this.boards.find((board) => board.id === selectedId) ?? this.boards[0];
+    }
+
+    return this.boards[0];
+  }
+
+  public onSelectBoard(board: BoardResponse): void {
+    this.selectedBoardId.set(board.id);
+    this.loadBacklog(board.id);
+  }
+
+  public isBoardSelected(board: BoardResponse): boolean {
+    return this.selectedBoardId() === board.id;
+  }
+
+  public onAddSprint(): void {
+    const board = this.getSelectedBoard();
+    if (!board) {
+      return;
+    }
+
+    const modalRef = this.modalService.open(SprintModalComponent, {
+      backdrop: 'static',
+      keyboard: false,
+    });
+
+    modalRef.componentInstance.boardId = board.id;
+
+    modalRef.result.then(
+      () => {
+        const board = this.getSelectedBoard();
+        if (board) {
+          this.loadBacklog(board.id);
+        }
+      },
+      () => {}
+    );
+  }
+
+  private refreshBacklog(): void {
+    const board = this.getSelectedBoard();
+    if (board) {
+      this.loadBacklog(board.id);
+    }
+  }
+
   private createTask(result: {
     title: string;
     description: string;
-    comment?: string;
+    comments?: string[];
+    pendingFiles?: File[];
     status: TaskStatus;
     points: number | null;
+    sprintId?: number | null;
+    assignedUserId?: number | null;
   }): void {
-    const board = (this.boards as BoardResponse[])[0];
+    const board = this.getSelectedBoard();
     if (!board) {
       return;
     }
@@ -201,36 +484,80 @@ export class MainComponent implements OnInit {
       description: result.description,
       boardId: board.id,
       priority: 'Medium',
+      sprintId: result.sprintId ?? undefined,
+      assignedUserId: result.assignedUserId,
     };
 
     this.taskService.create(request).subscribe({
       next: (createdTask) => {
-        const comment = result.comment?.trim();
-        const completeSave = () => {
-          if (result.status !== 'ToDo') {
-            this.taskService.changeStatus(createdTask.id, result.status).subscribe({
-              next: () => this.loadWorkItems(this.boards as BoardResponse[]),
+        const comments = (result.comments ?? [])
+          .map((content) => content.trim())
+          .filter((content) => content.length > 0);
+        const pendingFiles = result.pendingFiles ?? [];
+        const runPostCreateActions = () => {
+          const completeSave = () => {
+            if (result.status !== createdTask.status) {
+              this.taskService
+                .changeStatus(createdTask.id, result.status)
+                .subscribe({
+                  next: () => {
+                    this.closeTask(createdTask.id);
+                    this.refreshBacklog();
+                  },
+                  error: (err) => {
+                    console.error('Greška pri promeni statusa taska:', err);
+                    this.showStatusError(err.error?.message ?? err.message);
+                    this.closeTask(createdTask.id);
+                    this.refreshBacklog();
+                  },
+                });
+            } else {
+              this.closeTask(createdTask.id);
+              this.refreshBacklog();
+            }
+          };
+
+          const uploads = [
+            ...comments.map((content) =>
+              this.commentService.create({
+                workItemId: createdTask.id,
+                content,
+              })
+            ),
+            ...pendingFiles.map((file) =>
+              this.workItemFileService.upload(createdTask.id, file)
+            ),
+          ];
+
+          if (uploads.length > 0) {
+            forkJoin(uploads).subscribe({
+              next: () => completeSave(),
               error: (err) => {
-                console.error('Greška pri promeni statusa taska:', err);
-                this.loadWorkItems(this.boards as BoardResponse[]);
+                console.error('Greška pri čuvanju komentara/fajlova:', err);
+                completeSave();
               },
             });
           } else {
-            this.loadWorkItems(this.boards as BoardResponse[]);
+            completeSave();
           }
         };
 
-        if (comment) {
-          this.taskService.createComment({ workItemId: createdTask.id, content: comment }).subscribe({
-            next: () => completeSave(),
-            error: (err) => {
-              console.error('Greška pri kreiranju komentara:', err);
-              completeSave();
-            },
-          });
-        } else {
-          completeSave();
-        }
+        this.taskService.openWorkItem(createdTask.id).subscribe({
+          next: (lock) => {
+            if (lock.mode !== 'WRITE') {
+              this.refreshBacklog();
+              return;
+            }
+
+            this.activeWorkItemId = createdTask.id;
+            this.startHeartbeat(createdTask.id);
+            runPostCreateActions();
+          },
+          error: (err) => {
+            console.error('Greška pri zaključavanju novog taska:', err);
+            this.refreshBacklog();
+          },
+        });
       },
       error: (err) => {
         console.error('Greška pri kreiranju taska:', err);
@@ -243,14 +570,115 @@ export class MainComponent implements OnInit {
       return;
     }
 
+    const previousStatus = task.status;
+
     this.taskService.changeStatus(task.id, status).subscribe({
       next: (updated) => {
         task.status = updated.status;
+        this.moveTaskInBoard(task, previousStatus, updated.status);
       },
       error: (err) => {
         console.error('Greška pri promeni statusa taska:', err);
+        if (err.status === 403) {
+          this.showTaskOccupiedToast();
+          return;
+        }
+        this.showStatusError(err.error?.message ?? err.message);
       },
     });
+  }
+
+  private moveTaskInBoard(
+    task: WorkItemResponse,
+    fromStatus: TaskStatus,
+    toStatus: TaskStatus
+  ): void {
+    if (fromStatus === toStatus) {
+      return;
+    }
+
+    const fromList = this.boardTasksByStatus[fromStatus];
+    const toList = this.boardTasksByStatus[toStatus];
+    const index = fromList.findIndex((item) => item.id === task.id);
+
+    if (index === -1) {
+      return;
+    }
+
+    fromList.splice(index, 1);
+    toList.push(task);
+  }
+
+  public onTaskAssigneeChange(
+    task: WorkItemResponse,
+    assignedUserId: number | null
+  ): void {
+    this.taskService.changeAssignee(task.id, assignedUserId).subscribe({
+      next: (updated) => {
+        task.assignedUserId = updated.assignedUserId;
+      },
+      error: (err) => {
+        console.error('Greška pri dodeli taska:', err);
+      },
+    });
+  }
+
+  public onTaskPriorityChange(
+    task: WorkItemResponse,
+    priority: TaskPriority
+  ): void {
+    this.taskService.changePriority(task.id, priority).subscribe({
+      next: (updated) => {
+        task.priority = updated.priority;
+      },
+      error: (err) => {
+        console.error('Greška pri promeni prioriteta taska:', err);
+      },
+    });
+  }
+
+  private showTaskOccupiedToast(): void {
+    this.stickyLockMessage = 'Task je trenutno zauzet.';
+    this.showLockToast = true;
+
+    if (this.lockToastTimer) {
+      clearTimeout(this.lockToastTimer);
+    }
+
+    this.lockToastTimer = setTimeout(() => {
+      this.showLockToast = false;
+    }, 3000);
+  }
+
+  private startHeartbeat(workItemId: number): void {
+    this.stopHeartbeat();
+    this.heartbeatTimer = setInterval(() => {
+      this.taskService.heartbeatWorkItem(workItemId).subscribe({
+        error: (err) => {
+          console.error('Greška pri heartbeat zaključavanja:', err);
+          this.stopHeartbeat();
+          if (this.activeWorkItemId === workItemId) {
+            this.activeWorkItemId = null;
+          }
+        },
+      });
+    }, 15000);
+  }
+
+  private stopHeartbeat(): void {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
+  }
+
+  private showStatusError(message: string): void {
+    this.statusErrorMessage =
+      message || 'Invalid status transition.';
+    this.showStatusErrorToast = true;
+    setTimeout(() => {
+      this.showStatusErrorToast = false;
+    }, 3000);
   }
 
   public onToggleTaskOptions(taskId: number): void {
@@ -262,23 +690,27 @@ export class MainComponent implements OnInit {
       next: (lock) => {
         if (lock.mode === 'WRITE') {
           this.activeWorkItemId = task.id;
-          this.stickyLockMessage = '';
+          this.startHeartbeat(task.id);
           this.openTaskModal(task, true);
-        } else {
-          this.stickyLockMessage =
-            'Task je trenutno zaključan.';
-          this.showLockToast = true;
-          setTimeout(() => {
-            this.showLockToast = false;
-          }, 2500);
+          return;
         }
+
+        this.showTaskOccupiedToast();
       },
       error: (err) => {
         console.error('Greška pri otvaranju taska:', err);
-        this.stickyLockMessage =
-          'Došlo je do greške pri otvaranju taska. Pokušajte ponovo.';
       },
     });
+  }
+
+  private setModalCurrentUser(modal: TaskModalComponent): void {
+    if (!this.currentUser) {
+      return;
+    }
+
+    modal.currentUserId = this.currentUser.id;
+    modal.currentUserFirstName = this.currentUser.firstName;
+    modal.currentUserLastName = this.currentUser.lastName;
   }
 
   private openTaskModal(task: WorkItemResponse, isEditMode: boolean): void {
@@ -289,16 +721,20 @@ export class MainComponent implements OnInit {
     });
 
     modalRef.componentInstance.isEditMode = isEditMode;
+    modalRef.componentInstance.workItemId = isEditMode ? task.id : null;
     modalRef.componentInstance.title = task.name;
     modalRef.componentInstance.description = task.description;
-    modalRef.componentInstance.comment = '';
     modalRef.componentInstance.status = task.status;
     modalRef.componentInstance.points = null;
+    modalRef.componentInstance.sprintId = task.sprintId ?? null;
+    modalRef.componentInstance.members = this.boardMembers;
+    modalRef.componentInstance.assignedUserId = task.assignedUserId ?? null;
+    this.setModalCurrentUser(modalRef.componentInstance);
 
     modalRef.result.then(
       (result) => {
         if (result && isEditMode) {
-          this.updateTask(task.id, result, task.boardId);
+          this.updateTask(task.id, result, task.boardId, task.status, task.priority);
         }
         this.closeTask(task.id);
       },
@@ -309,6 +745,7 @@ export class MainComponent implements OnInit {
   }
 
   private closeTask(taskId: number): void {
+    this.stopHeartbeat();
     this.taskService.closeWorkItem(taskId).subscribe({
       next: () => {
         if (this.activeWorkItemId === taskId) {
@@ -325,6 +762,26 @@ export class MainComponent implements OnInit {
     this.onOpenTask(task);
   }
 
+  public onEditTaskFromMenu(
+    task: WorkItemResponse,
+    popover: NgbPopover,
+    event: Event
+  ): void {
+    event.stopPropagation();
+    popover.close();
+    this.onEditTask(task);
+  }
+
+  public onDeleteTaskFromMenu(
+    task: WorkItemResponse,
+    popover: NgbPopover,
+    event: Event
+  ): void {
+    event.stopPropagation();
+    popover.close();
+    this.onDeleteTask(task);
+  }
+
   public onDeleteTask(task: WorkItemResponse): void {
     if (!confirm('Želite li sigurno da obrišete ovaj task?')) {
       return;
@@ -332,10 +789,13 @@ export class MainComponent implements OnInit {
 
     this.taskService.delete(task.id).subscribe({
       next: () => {
-        this.loadWorkItems(this.boards as BoardResponse[]);
+        this.refreshBacklog();
       },
       error: (err) => {
         console.error('Greška pri brisanju taska:', err);
+        if (err.status === 403) {
+          this.showTaskOccupiedToast();
+        }
       },
     });
   }
@@ -348,51 +808,56 @@ export class MainComponent implements OnInit {
     this.closeTask(task.id);
   }
 
-  private updateTask(workItemId: number, result: {
-    title: string;
-    description: string;
-    comment?: string;
-    status: TaskStatus;
-    points: number | null;
-  }, boardId: number): void {
+  private updateTask(
+    workItemId: number,
+    result: {
+      title: string;
+      description: string;
+      comment?: string;
+      status: TaskStatus;
+      points: number | null;
+      sprintId?: number | null;
+      assignedUserId?: number | null;
+    },
+    boardId: number,
+    previousStatus: TaskStatus,
+    priority: string
+  ): void {
     const request: WorkItemRequest = {
       name: result.title,
       description: result.description,
       boardId,
-      priority: 'Medium',
+      sprintId: result.sprintId ?? undefined,
+      priority,
+      assignedUserId: result.assignedUserId,
     };
 
     this.taskService.update(workItemId, request).subscribe({
-      next: (updatedTask) => {
-        const comment = result.comment?.trim();
+      next: () => {
         const completeSave = () => {
-          if (result.status !== 'ToDo') {
-            this.taskService.changeStatus(updatedTask.id, result.status).subscribe({
-              next: () => this.loadWorkItems(this.boards as BoardResponse[]),
-              error: (err) => {
-                console.error('Greška pri promeni statusa taska:', err);
-                this.loadWorkItems(this.boards as BoardResponse[]);
-              },
-            });
+          if (result.status !== previousStatus) {
+            this.taskService
+              .changeStatus(workItemId, result.status)
+              .subscribe({
+                next: () => this.refreshBacklog(),
+                error: (err) => {
+                  console.error('Greška pri promeni statusa taska:', err);
+                  this.showStatusError(err.error?.message ?? err.message);
+                  this.refreshBacklog();
+                },
+              });
           } else {
-            this.loadWorkItems(this.boards as BoardResponse[]);
+            this.refreshBacklog();
           }
         };
 
-        if (comment) {
-          this.taskService.createComment({ workItemId: updatedTask.id, content: comment }).subscribe({
-            next: () => completeSave(),
-            error: (err) => {
-              console.error('Greška pri kreiranju komentara:', err);
-              completeSave();
-            },
-          });
-        } else {
-          completeSave();
-        }
+        completeSave();
       },
       error: (err) => {
         console.error('Greška pri ažuriranju taska:', err);
+        if (err.status === 403) {
+          this.showTaskOccupiedToast();
+        }
       },
     });
   }
@@ -405,7 +870,20 @@ export class MainComponent implements OnInit {
     this.boardService.getBoards(this.workspace.id).subscribe({
       next: (result) => {
         this.boards = result;
-        this.loadWorkItems(result);
+        if (result.length > 0) {
+          const selectedId = this.selectedBoardId();
+          const board =
+            selectedId !== null
+              ? result.find((item) => item.id === selectedId) ?? result[0]
+              : result[0];
+          this.selectedBoardId.set(board.id);
+          this.loadBacklog(board.id);
+        } else {
+          this.selectedBoardId.set(null);
+          this.boardMembers = [];
+          this.sprintTaskGroups = [];
+          this.sprints = [];
+        }
       },
       error: (err) => {
         console.error('Greška pri učitavanju tabli:', err);
@@ -413,8 +891,25 @@ export class MainComponent implements OnInit {
     });
   }
 
-  public onHeaderGroupsToggle(): void {
-    this.isGroupsExpanded = !this.isGroupsExpanded;
+  public onHeaderGroupsToggle(group: SprintTaskGroup): void {
+    const key = this.getGroupKey(group);
+    this.collapsedGroupKeys.update((keys) => {
+      const next = new Set(keys);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }
+
+  public isGroupExpanded(group: SprintTaskGroup): boolean {
+    return !this.collapsedGroupKeys().has(this.getGroupKey(group));
+  }
+
+  private getGroupKey(group: SprintTaskGroup): string {
+    return group.id === null ? 'backlog' : String(group.id);
   }
 
   public hasWorkspaceId = signal<boolean>(false);
@@ -427,10 +922,31 @@ export class MainComponent implements OnInit {
     this.modalService.open(WorkspaceModalComponent, {});
   }
 
+  public onOpenBoardInviteModal(): void {
+    const board = this.getSelectedBoard();
+    if (!board) {
+      return;
+    }
+
+    const modalRef = this.modalService.open(InviteModalComponent, {
+      backdrop: 'static',
+      keyboard: true,
+    });
+    modalRef.componentInstance.boardId = board.id;
+    modalRef.componentInstance.boardName = board.name;
+
+    modalRef.result.then(
+      () => {
+        this.getBoardMembers(board.id);
+      },
+      () => {}
+    );
+  }
+
   public onOpenInviteModal() {
     const modalRef = this.modalService.open(InviteModalComponent, {
       backdrop: 'static',
-      keyboard: false,
+      keyboard: true,
     });
     modalRef.componentInstance.workspaceId = this.workspace?.id;
 
@@ -448,6 +964,16 @@ export class MainComponent implements OnInit {
   }
 
   public onAddBoard() {
-    this.modalService.open(BoardModalComponent, {});
+    const modalRef = this.modalService.open(BoardModalComponent, {
+      backdrop: 'static',
+      keyboard: true,
+    });
+
+    modalRef.result.then(
+      () => {
+        this.getBoards();
+      },
+      () => {}
+    );
   }
 }

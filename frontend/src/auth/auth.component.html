@@ -49,6 +49,7 @@
       (onInputBlur)="onFieldBlur('password')"
     />
   </form>
+  <p class="auth-error" *ngIf="loginError()">{{ loginError() }}</p>
 </ng-template>
 
 <ng-template #registerTemplate>

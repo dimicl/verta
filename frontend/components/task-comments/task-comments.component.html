@@ -1,0 +1,120 @@
+<section class="task-comments">
+  <div class="task-comments__header">
+    <span class="task-comments__title">Comments</span>
+    <span class="task-comments__count" *ngIf="comments().length > 0">{{
+      comments().length
+    }}</span>
+  </div>
+
+  <div class="task-comments__loading" *ngIf="workItemId && isLoading()">
+    Loading comments...
+  </div>
+
+  <div class="task-comments__list" *ngIf="comments().length > 0">
+    @for (comment of comments(); track comment.id) {
+    <article class="task-comment">
+      <app-avatar
+        class="task-comment__avatar"
+        [firstName]="comment.firstName"
+        [lastName]="comment.lastName"
+        [width]="32"
+        [height]="32"
+      />
+
+      <div class="task-comment__body">
+        @if (editingCommentId() === comment.id) {
+        <textarea
+          class="task-comment__edit-input"
+          rows="3"
+          [value]="editDraft()"
+          (input)="onEditDraftInput($any($event.target).value)"
+        ></textarea>
+        <div class="task-comment__actions">
+          <button
+            type="button"
+            class="task-comment__btn task-comment__btn--primary"
+            [disabled]="isSubmitting() || !editDraft().trim()"
+            (click)="onSaveEdit(comment)"
+          >
+            Save
+          </button>
+          <button
+            type="button"
+            class="task-comment__btn"
+            [disabled]="isSubmitting()"
+            (click)="onCancelEdit()"
+          >
+            Cancel
+          </button>
+        </div>
+        } @else {
+        <div class="task-comment__meta">
+          <span class="task-comment__author">{{ authorName(comment) }}</span>
+          <span class="task-comment__time">{{
+            formatTimestamp(comment.createdAt)
+          }}</span>
+          @if (comment.updatedAt) {
+          <span class="task-comment__edited">edited</span>
+          }
+        </div>
+        <p class="task-comment__content">{{ comment.content }}</p>
+        @if (isOwnComment(comment)) {
+        <div class="task-comment__actions">
+          <button
+            type="button"
+            class="task-comment__btn"
+            [disabled]="isSubmitting()"
+            (click)="onStartEdit(comment)"
+          >
+            Edit
+          </button>
+          <button
+            type="button"
+            class="task-comment__btn task-comment__btn--danger"
+            [disabled]="isSubmitting()"
+            (click)="onDelete(comment)"
+          >
+            Delete
+          </button>
+        </div>
+        } }
+      </div>
+    </article>
+    }
+  </div>
+
+  <div class="task-comments__compose">
+    <app-avatar
+      class="task-comments__compose-avatar"
+      [firstName]="currentUserFirstName"
+      [lastName]="currentUserLastName"
+      [width]="32"
+      [height]="32"
+    />
+
+    <div class="task-comments__compose-box">
+      <textarea
+        class="task-comments__input"
+        rows="3"
+        placeholder="Write a comment..."
+        [value]="draft()"
+        (input)="onDraftInput($any($event.target).value)"
+        (keydown)="onKeyDown($event)"
+      ></textarea>
+      <div class="task-comments__compose-footer">
+        <button
+          type="button"
+          class="task-comments__send"
+          [disabled]="isSubmitting() || !draft().trim()"
+          (click)="onSend()"
+        >
+          Send
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="task-comments__error" *ngIf="errorMessage()">
+    {{ errorMessage() }}
+  </div>
+</section>

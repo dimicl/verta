@@ -56,6 +56,20 @@ public class WorkItemController : ControllerBase
         }
     }
 
+    [HttpGet("sprint/{sprintId:int}")]
+    public async Task<IActionResult> GetBySprintId(int sprintId)
+    {
+        try
+        {
+            var result = await _workItemService.GetBySprintId(sprintId);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpPatch("{workItemId:int}/status")]
     public async Task<IActionResult> ChangeStatus(
         int workItemId,
@@ -64,6 +78,38 @@ public class WorkItemController : ControllerBase
         try
         {
             var result = await _workItemService.ChangeStatus(workItemId, request);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPatch("{workItemId:int}/priority")]
+    public async Task<IActionResult> ChangePriority(
+        int workItemId,
+        [FromBody] ChangeWorkItemPriorityRequest request)
+    {
+        try
+        {
+            var result = await _workItemService.ChangePriority(workItemId, request);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPatch("{workItemId:int}/assignee")]
+    public async Task<IActionResult> ChangeAssignee(
+        int workItemId,
+        [FromBody] ChangeWorkItemAssigneeRequest request)
+    {
+        try
+        {
+            var result = await _workItemService.ChangeAssignee(workItemId, request);
             return Ok(result);
         }
         catch (Exception ex)

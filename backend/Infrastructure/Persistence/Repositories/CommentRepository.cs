@@ -12,8 +12,16 @@ public class CommentRepository
     public async Task<List<Comment>> GetByWorkItemIdAsync(int workItemId)
     {
         return await _dbSet
+            .Include(x => x.User)
             .Where(x => x.WorkItemId == workItemId)
             .OrderBy(x => x.CreatedAt)
             .ToListAsync();
+    }
+
+    public async Task<Comment?> GetByIdWithUserAsync(int id)
+    {
+        return await _dbSet
+            .Include(x => x.User)
+            .FirstOrDefaultAsync(x => x.Id == id);
     }
 }

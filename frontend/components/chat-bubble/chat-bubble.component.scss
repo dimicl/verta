@@ -1,8 +1,16 @@
 @use "../../assets/styles/scrollbar.scss" as *;
 
+:host {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
 .chat-card {
   display: flex;
   flex-direction: column;
+  flex: 1;
   height: 100%;
   min-height: 0;
   background: linear-gradient(180deg, #f8f9fa 0%, #f1f3f5 100%);
@@ -44,8 +52,6 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-height: 550px;
-  overflow-y: auto;
   background: linear-gradient(180deg, #f5f6f8 0%, #eceff2 100%);
 }
 
@@ -68,14 +74,35 @@
 
 .msg {
   display: flex;
+  align-items: flex-end;
+  gap: 8px;
   width: 100%;
+}
+
+.msg-avatar {
+  flex-shrink: 0;
+}
+
+.msg-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-width: min(560px, 80%);
+}
+
+.msg-sender {
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 12px;
+  color: #4a4f57;
+  margin-bottom: 2px;
+  padding-left: 2px;
 }
 
 .msg-bubble {
   display: inline-flex;
   flex-direction: column;
   gap: 4px;
-  max-width: min(560px, 80%);
   border-radius: 12px;
   padding: 9px 11px;
   box-shadow: 0 2px 8px rgba(44, 47, 53, 0.08);
@@ -96,7 +123,11 @@
 }
 
 .msg--me {
-  justify-content: flex-end;
+  flex-direction: row-reverse;
+
+  .msg-content {
+    align-items: flex-end;
+  }
 
   .msg-bubble {
     background: linear-gradient(135deg, #5b616a 0%, #4a4f57 100%);
@@ -109,6 +140,8 @@
 }
 
 .msg--them {
+  display: flex;
+  align-items: center;
   justify-content: flex-start;
 
   .msg-bubble {

@@ -1,19 +1,25 @@
-<div class="board-modal-overlay">
-  <div class="board-modal">
-    <div class="board-modal-header">
-      <span class="board-modal-header-text">Create Board</span>
-    </div>
+<div class="board-modal">
+  <div class="board-modal-header">
+    <span class="board-modal-header-text">Create Board</span>
+  </div>
 
-    <div class="board-modal-body">
-      <div class="board-form-group">
-        <app-input [label]="'Board name'" (onGetValue)="onInput($event)" />
-      </div>
+  <div class="board-modal-body">
+    <div class="board-form-group">
+      <app-input
+        [label]="'Board name'"
+        [modelValue]="boardNameValue"
+        (onGetValue)="onBoardNameInput($event)"
+      />
     </div>
+    <p class="board-error" *ngIf="createError()">{{ createError() }}</p>
+  </div>
 
-    <div class="board-modal-footer">
-      <button class="board-btn board-btn--primary" (click)="onCreate()">
-        {{ "Create" }}
-      </button>
-    </div>
+  <div class="board-modal-footer">
+    <button class="board-btn board-btn--secondary" type="button" (click)="close()">
+      Cancel
+    </button>
+    <button class="board-btn board-btn--primary" type="button" (click)="onCreate()">
+      Create
+    </button>
   </div>
 </div>

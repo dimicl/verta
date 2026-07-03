@@ -1,0 +1,181 @@
+.document {
+  width: 148px;
+  height: 178px;
+  padding: 4px;
+  background: #f3f4f6;
+  border-radius: 4px;
+  position: relative;
+
+  &:hover {
+    background: #e5e7eb;
+
+    .document-actions {
+      opacity: 1;
+    }
+  }
+}
+
+.document-image-container {
+  position: relative;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.document-image {
+  max-width: 140px;
+  max-height: 140px;
+  object-fit: cover;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.15);
+}
+
+.document-placeholder {
+  width: 140px;
+  height: 140px;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  background: #9ca3af;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.15);
+
+  &--pdf {
+    background: #dc2626;
+  }
+
+  &--video {
+    background: #7c3aed;
+  }
+
+  &--image {
+    background: #2563eb;
+  }
+}
+
+.document-badges {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  display: flex;
+  gap: 4px;
+}
+
+.badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  padding: 2px 4px;
+  border-radius: 2px;
+  background: rgba(66, 66, 66, 0.7);
+  text-transform: uppercase;
+
+  &.pdf {
+    background: rgba(220, 38, 38, 0.85);
+  }
+
+  &.video {
+    background: rgba(124, 58, 237, 0.85);
+  }
+
+  &.image {
+    background: rgba(37, 99, 235, 0.85);
+  }
+}
+
+.document-name {
+  margin-top: 4px;
+  background: #eee;
+  border-radius: 2px;
+}
+
+.file-name {
+  margin: 0;
+  padding: 4px 6px;
+  font-size: 12px;
+  line-height: 16px;
+  color: #374151;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.document-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.document-actions__btn {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 4px;
+  background: rgba(47, 47, 47, 0.9);
+  color: #fff;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+
+  .icon {
+    width: 16px;
+    height: 16px;
+    display: flex;
+
+    ::ng-deep svg {
+      width: 16px;
+      height: 16px;
+
+      path {
+        fill: #fff;
+      }
+    }
+  }
+}
+
+.delete-modal {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.95);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px;
+  z-index: 2;
+}
+
+.delete-modal__text {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  color: #2f2f2f;
+}
+
+.delete-modal__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.delete-modal__btn {
+  border: 0;
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  background: #e5e7eb;
+  color: #374151;
+
+  &--danger {
+    background: #dc2626;
+    color: #fff;
+  }
+}

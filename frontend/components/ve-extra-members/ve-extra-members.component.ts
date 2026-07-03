@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, signal } from '@angular/core';
+import { Component, Input, signal } from '@angular/core';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 
 @Component({
@@ -9,5 +9,20 @@ import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
   imports: [CommonModule, NgbModule],
 })
 export class VeExtraMembersComponent {
+  @Input() members: Array<{
+    id: number;
+    firstName: string;
+    lastName: string;
+  }> = [];
+
+  @Input() extraCount = 0;
+
   public onNotificationShown = signal<boolean>(false);
+
+  public getMemberName(member: {
+    firstName: string;
+    lastName: string;
+  }): string {
+    return `${member.firstName} ${member.lastName}`.trim();
+  }
 }

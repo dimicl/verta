@@ -41,24 +41,36 @@
       ></textarea>
     </div>
 
-    <div class="comment-part">
-      <div class="comment-header">Comment</div>
-      <textarea
-        class="comment-textarea"
-        rows="3"
-        placeholder="Write a comment for this task..."
-        [(ngModel)]="comment"
-      ></textarea>
-    </div>
+    <app-task-comments
+      [workItemId]="workItemId"
+      [currentUserId]="currentUserId"
+      [currentUserFirstName]="currentUserFirstName"
+      [currentUserLastName]="currentUserLastName"
+    ></app-task-comments>
 
     <div class="fields-row">
-      <div class="field-group">
-        <div class="field-label">Status</div>
-        <select class="field-select" [(ngModel)]="status">
-          <option *ngFor="let option of statusOptions" [value]="option">
-            {{ option }}
+      <div class="field-group" *ngIf="!isEditMode">
+        <div class="field-label">Sprint</div>
+        <select class="field-select" [(ngModel)]="sprintId">
+          <option [ngValue]="null">No sprint (Backlog)</option>
+          <option *ngFor="let sprint of sprints" [ngValue]="sprint.id">
+            {{ sprint.name }}
           </option>
         </select>
+      </div>
+      <div class="field-group">
+        <div class="field-label">Assigned</div>
+        <app-task-assignee
+          [members]="members"
+          [(assignedUserId)]="assignedUserId"
+        ></app-task-assignee>
+      </div>
+      <div class="field-group" *ngIf="isEditMode">
+        <div class="field-label">Status</div>
+        <app-ve-status
+          [taskStatus]="status"
+          (statusChange)="status = $event"
+        ></app-ve-status>
       </div>
       <div class="field-group">
         <div class="field-label">Points</div>
@@ -75,10 +87,10 @@
       <div class="attachments-header">
         <span class="attachments-title">Attachments</span>
         <div class="attachments-counter">
-          <span class="files-counter">0</span>
+          <span class="files-counter">{{ dropZone?.fileCount ?? 0 }}</span>
         </div>
       </div>
-      <app-drop-zone></app-drop-zone>
+      <app-drop-zone [workItemId]="workItemId"></app-drop-zone>
     </div>
   </div>
 

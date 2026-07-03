@@ -1,4 +1,5 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Component, signal } from '@angular/core';
 import { InputComponent } from '../input/input.component';
 import {
   AbstractControl,
@@ -6,39 +7,21 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
+import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { BoardService, WorkspaceService } from '../../shared/services';
 import { WorkspaceResponse } from '../../shared/interfaces/workspace-response.interface';
 import { BoardRequest } from '../../shared/interfaces/board-request.interface';
 
 @Component({
   selector: 'app-board-modal',
-  imports: [InputComponent],
+  imports: [CommonModule, InputComponent],
   templateUrl: './board-modal.component.html',
   styleUrl: './board-modal.component.scss',
 })
 export class BoardModalComponent {
   public workspaceMember: WorkspaceResponse | null = null;
-
-  @Output() onEmitOwnerId = new EventEmitter<void>();
-  @Output() closeModal = new EventEmitter<void>();
-
-  constructor(
-    private workspaceService: WorkspaceService,
-    private boardService: BoardService
-  ) {
-    this.getWorkspaceId();
-  }
-
-  private getWorkspaceId() {
-    this.workspaceService.getWorkspace().subscribe({
-      next: (result) => {
-        this.workspaceMember = result;
-      },
-      error: (err) => {
-        console.error(err);
-      },
-    });
-  }
+  public boardNameValue = '';
+  public createError = signal('');
 
   public workspaceNameValidator = (
     control: AbstractControl
@@ -67,20 +50,57 @@ export class BoardModalComponent {
     validators: [Validators.required, this.workspaceNameValidator],
   });
 
-  public onInput(event: string) {
-    this.workspaceName.setValue(event);
+  constructor(
+    private workspaceService: WorkspaceService,
+    private boardService: BoardService,
+    private activeModal: NgbActiveModal
+  ) {
+    this.getWorkspaceId();
+  }
+
+  private getWorkspaceId() {
+    this.workspaceService.getWorkspace().subscribe({
+      next: (result) => {
+        this.workspaceMember = result;
+      },
+      error: (err) => {
+        console.error(err);
+      },
+    });
+  }
+
+  public onBoardNameInput(value: string) {
+    this.workspaceName.setValue(value);
+    this.boardNameValue = value;
+    this.createError.set('');
   }
 
   public onCreate() {
+    if (this.workspaceName.invalid) {
+      this.createError.set('Please enter a valid board name.');
+      return;
+    }
+
     const request: BoardRequest = {
       name: this.workspaceName.value,
       workspaceId: this.workspaceMember?.id ?? -1,
     };
 
-    this.boardService.createBoard(request).subscribe((result) => {});
+    this.createError.set('');
+
+    this.boardService.createBoard(request).subscribe({
+      next: (result) => {
+        this.activeModal.close(result);
+      },
+      error: (err) => {
+        this.createError.set(
+          err.error?.message ?? 'Board creation failed. Please try again.'
+        );
+      },
+    });
   }
 
   public close(): void {
-    this.closeModal.emit();
+    this.activeModal.dismiss();
   }
 }

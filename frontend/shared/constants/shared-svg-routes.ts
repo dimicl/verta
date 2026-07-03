@@ -10,5 +10,8 @@ export class SharedSvgRoutes {
   static PLUS_ICON = '/icons/plus.svg';
   static CLOSE_ICON = '/icons/close.svg';
   static UPLOAD_ICON = '/icons/upload.svg';
+  static DELETE_ICON = '/icons/delete.svg';
+  static LEFT_ARROW_ICON = '/icons/left-arrow.svg';
+  static RIGHT_ARROW_ICON = '/icons/right-arrow.svg';
   static PROFILE_ICON = '/icons/profile.svg';
 }

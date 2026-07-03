@@ -5,6 +5,8 @@ public record WorkItemRequest
 
     public required int BoardId { get; set; }
 
+    public int? SprintId { get; set; }
+
     public int? AssignedUserId { get; set; }
 
     public Priority Priority { get; set; } = Priority.Medium;

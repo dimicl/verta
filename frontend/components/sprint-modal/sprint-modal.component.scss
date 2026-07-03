@@ -1,0 +1,68 @@
+.sprint-modal {
+  padding: 4px;
+}
+
+.sprint-modal-header {
+  margin-bottom: 20px;
+
+  .sprint-modal-header-text {
+    font-size: 20px;
+    font-weight: 700;
+    color: #2b2b2b;
+  }
+}
+
+.sprint-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sprint-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sprint-error {
+  margin: 0;
+  font-size: 13px;
+  line-height: 18px;
+  color: #dc2626;
+  text-align: center;
+}
+
+.sprint-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.sprint-btn {
+  padding: 6px 12px;
+  border-radius: 3px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: 0.2s ease;
+
+  &--primary {
+    background: #4f5cff;
+    color: white;
+
+    &:hover {
+      background: #3f4de0;
+    }
+  }
+
+  &--secondary {
+    background: #ececec;
+    color: #333;
+
+    &:hover {
+      background: #dcdcdc;
+    }
+  }
+}

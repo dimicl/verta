@@ -1,0 +1,26 @@
+<div
+  class="priority-trigger"
+  [ngbPopover]="priorityPopoverTemplate"
+  #priorityPopoverRef="ngbPopover"
+  triggers="click"
+  placement="bottom"
+  container="body"
+  (click)="$event.stopPropagation()"
+>
+  <span class="priority-label">{{ normalizedPriority }}</span>
+</div>
+
+<ng-template #priorityPopoverTemplate>
+  <div class="priority-options">
+    <div class="priority-options-current">{{ normalizedPriority }}</div>
+    <button
+      type="button"
+      class="priority-option"
+      *ngFor="let option of priorities"
+      [class.is-active]="normalizedPriority === option"
+      (click)="onSelectPriority(option, priorityPopoverRef)"
+    >
+      {{ option }}
+    </button>
+  </div>
+</ng-template>

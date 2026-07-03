@@ -1,0 +1,49 @@
+<div
+  class="assignee-trigger"
+  [ngbPopover]="assigneePopoverTemplate"
+  #assigneePopoverRef="ngbPopover"
+  triggers="click"
+  placement="bottom"
+  container="body"
+  (click)="$event.stopPropagation()"
+>
+  <app-avatar
+    *ngIf="assignedMember; else unassigned"
+    [firstName]="assignedMember.firstName"
+    [lastName]="assignedMember.lastName"
+    [width]="22"
+    [height]="22"
+  ></app-avatar>
+  <ng-template #unassigned>
+    <span class="assignee-placeholder">?</span>
+  </ng-template>
+  <span class="assignee-label">{{ assigneeLabel }}</span>
+</div>
+
+<ng-template #assigneePopoverTemplate>
+  <div class="assignee-options">
+    <button
+      type="button"
+      class="assignee-option"
+      [class.is-active]="assignedUserId === null"
+      (click)="onSelectMember(null, assigneePopoverRef)"
+    >
+      Unassigned
+    </button>
+    <button
+      type="button"
+      class="assignee-option"
+      *ngFor="let member of members"
+      [class.is-active]="assignedUserId === member.id"
+      (click)="onSelectMember(member.id, assigneePopoverRef)"
+    >
+      <app-avatar
+        [firstName]="member.firstName"
+        [lastName]="member.lastName"
+        [width]="20"
+        [height]="20"
+      ></app-avatar>
+      <span>{{ member.firstName }} {{ member.lastName }}</span>
+    </button>
+  </div>
+</ng-template>

@@ -41,4 +41,34 @@ public class CommentController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+
+    [HttpPut("{commentId:int}")]
+    public async Task<IActionResult> Update(
+        int commentId,
+        [FromBody] UpdateCommentRequest request)
+    {
+        try
+        {
+            var result = await _commentService.Update(commentId, request);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpDelete("{commentId:int}")]
+    public async Task<IActionResult> Delete(int commentId)
+    {
+        try
+        {
+            await _commentService.Delete(commentId);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }

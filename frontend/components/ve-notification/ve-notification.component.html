@@ -6,8 +6,8 @@
   triggers="click"
   [autoClose]="true"
   container="body"
-  (shown)="onNotificationShown.set(true)"
-  (hidden)="onNotificationShown.set(false)"
+  (shown)="onPopoverShown()"
+  (hidden)="onPopoverHidden()"
 >
   <div
     ngbTooltip="Notification"
@@ -21,9 +21,26 @@
       class="notification-icon"
       [src]="sharedSvgRoutes.NOTIFICATION_ICON"
     ></svg-icon>
+    <span class="notification-badge" *ngIf="unreadCount() > 0">
+      {{ unreadCount() }}
+    </span>
   </div>
 </div>
 
 <ng-template #notificationPopover>
-  <p class="popover-title">Notification</p>
+  <div class="notification-popover">
+    <p class="popover-title">Notifications</p>
+    <ng-container *ngIf="notifications().length > 0; else emptyNotifications">
+      <div class="notification-item" *ngFor="let item of notifications()">
+        <div class="notification-item-title">{{ item.title }}</div>
+        <div class="notification-item-message">{{ item.message }}</div>
+        <div class="notification-item-time">
+          {{ item.createdAt | date: 'short' }}
+        </div>
+      </div>
+    </ng-container>
+    <ng-template #emptyNotifications>
+      <div class="notification-empty">No notifications yet</div>
+    </ng-template>
+  </div>
 </ng-template>

@@ -1,7 +1,73 @@
-<div class="drop-zone-container">
-  <div class="drop-zone" (click)="fileInput.click()">
-    <svg-icon class="drop-zone-icon" [src]="sharedSvgRoutes.UPLOAD_ICON" />
-    <span class="drop-zone-text">UPLOAD FILE</span>
+<div class="drop-zone-wrapper" #dropZoneContainer>
+  @if (unsupported()) {
+  <div class="drop-zone-message drop-zone-message--error">
+    <span>Unsupported file type.</span>
+    <button type="button" (click)="cancelUnsupported()">Dismiss</button>
+  </div>
+  }
+
+  @if (invalidFileSize()) {
+  <div class="drop-zone-message drop-zone-message--error">
+    <span>File exceeds 100 MB limit.</span>
+    <button type="button" (click)="cancelUnsupported()">Dismiss</button>
+  </div>
+  }
+
+  @if (errorMessage()) {
+  <div class="drop-zone-message drop-zone-message--error">
+    <span>{{ errorMessage() }}</span>
+  </div>
+  }
+
+  <div class="drop-zone-row" [class.drop-zone-row--with-files]="docs().length > 0">
+    @if (docs().length > 0) {
+    <div class="drop-zone-carousel">
+      @if (canCarouselLeft()) {
+      <button
+        type="button"
+        class="carousel-btn carousel-btn--left"
+        (click)="carouselLeft($event)"
+        aria-label="Previous files"
+      >
+        <svg-icon class="carousel-btn__icon" [src]="sharedSvgRoutes.LEFT_ARROW_ICON" />
+      </button>
+      }
+
+      <div class="carousel-viewport" [style.width.px]="carouselViewportWidth()">
+        <div class="carousel-track" [style.transform]="carouselTransform()">
+          @for (doc of docs(); track doc.fileId) {
+          <app-document-preview [file]="doc" (onDelete)="handleDelete($event)" />
+          }
+        </div>
+      </div>
+
+      @if (canCarouselRight()) {
+      <button
+        type="button"
+        class="carousel-btn carousel-btn--right"
+        (click)="carouselRight($event)"
+        aria-label="Next files"
+      >
+        <svg-icon class="carousel-btn__icon" [src]="sharedSvgRoutes.RIGHT_ARROW_ICON" />
+      </button>
+      }
+    </div>
+    }
+
+    <div
+      class="drop-zone"
+      [class.drop-zone--with-files]="docs().length > 0"
+      [class.drop-zone--active]="onDragover()"
+      (click)="handleClickToAdd()"
+      (drop)="onDrop($event)"
+      (dragover)="onDragOver($event)"
+      (dragleave)="onDragLeave($event)"
+    >
+      <svg-icon class="drop-zone-icon" [src]="sharedSvgRoutes.UPLOAD_ICON" />
+      <span class="drop-zone-text">
+        {{ isUploading() ? 'Uploading...' : 'UPLOAD FILE' }}
+      </span>
+    </div>
   </div>
 
   <input
@@ -10,6 +76,7 @@
     multiple
     type="file"
     hidden
+    accept=".pdf,.png,.jpg,.jpeg,.gif,.avi,.mov,.mp4"
     (input)="onInput($event)"
   />
 </div>

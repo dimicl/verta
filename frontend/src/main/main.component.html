@@ -5,7 +5,7 @@
     </div>
   </aside>
 
-  <ng-container *ngIf="boards?.length > 0; else noBoards">
+  <ng-container *ngIf="(boards?.length ?? 0) > 0; else noBoards">
     <div class="main-container">
       <header class="header">
         <ng-container *ngTemplateOutlet="headerTemplate"></ng-container>
@@ -38,12 +38,16 @@
         <div class="workspace-name">{{ workspace?.name }}</div>
       </div>
       <div class="workspace-actions">
-        <div class="invite-btn" (click)="onOpenInviteModal()">Invite</div>
+        <div class="invite-btn" (click)="onOpenInviteModal()">
+          Invite to Workspace
+        </div>
       </div>
     </ng-container>
     <ng-template #createWorkspace>
       <div class="workspace-actions">
-        <div class="invite-btn" (click)="onOpenCreateModal()">Create Workspace</div>
+        <div class="invite-btn" (click)="onOpenCreateModal()">
+          Create Workspace
+        </div>
       </div>
     </ng-template>
   </div>
@@ -66,9 +70,14 @@
       </div>
 
       <div class="boards-list">
-        <ng-container *ngIf="boards?.length > 0; else noBoardItems">
-          <div class="board-item" *ngFor="let item of boards">
-            {{ item.name }}
+        <ng-container *ngIf="(boards?.length ?? 0) > 0; else noBoardItems">
+          <div
+            class="board-item"
+            *ngFor="let item of boards"
+            [class.board-item--active]="isBoardSelected(item)"
+            (click)="onSelectBoard(item)"
+          >
+            <span class="board-item-name">{{ item.name }}</span>
           </div>
         </ng-container>
         <ng-template #noBoardItems>
@@ -105,32 +114,60 @@
         [icon]="sharedSvgRoutes.SEARCH_ICON"
       />
     </div>
-    <div
-      class="users-container-add-button"
-      ngbTooltip="Create"
-      triggers="hover"
-      container="body"
-      placement="bottom"
-      (click)="onAddTask()"
-    >
-      <svg-icon
-        [src]="sharedSvgRoutes.PLUS_ICON"
-        class="users-container-add-button-icon"
-      ></svg-icon>
-    </div>
-    <div class="users-container">
-      <app-avatar
-        *ngFor="let user of workspaceMembers"
-        [firstName]="user.firstName"
-        [lastName]="user.lastName"
-        [width]="18"
-        [height]="18"
-        [dashboardType]="true"
-        [isSelected]="selectedUser() === user.id"
-        (click)="onUserSelect(user.id)"
-      ></app-avatar>
-      <app-ve-extra-members></app-ve-extra-members>
-    </div>
+    <ng-container *ngIf="selectedToolbarTab() !== 'Chat'">
+      <div class="board-actions">
+        <div
+          class="users-container-add-button add-sprint-btn"
+          ngbTooltip="Add Sprint"
+          triggers="hover"
+          container="body"
+          placement="bottom"
+          (click)="onAddSprint()"
+        >
+          Add Sprint
+        </div>
+        <div
+          class="users-container-add-button invite-board-btn"
+          ngbTooltip="Invite to Board"
+          triggers="hover"
+          container="body"
+          placement="bottom"
+          (click)="onOpenBoardInviteModal()"
+        >
+          Invite to Board
+        </div>
+        <div class="users-container">
+          <app-avatar
+            *ngFor="let user of visibleBoardMembers"
+            [firstName]="user.firstName"
+            [lastName]="user.lastName"
+            [width]="18"
+            [height]="18"
+            [dashboardType]="true"
+            [isSelected]="selectedUser() === user.id"
+            (click)="onUserSelect(user.id)"
+          ></app-avatar>
+          <app-ve-extra-members
+            *ngIf="extraBoardMembersCount > 0"
+            [members]="hiddenBoardMembers"
+            [extraCount]="extraBoardMembersCount"
+          ></app-ve-extra-members>
+        </div>
+        <div
+          class="users-container-add-button"
+          ngbTooltip="Create Task"
+          triggers="hover"
+          container="body"
+          placement="bottom"
+          (click)="onAddTask()"
+        >
+          <svg-icon
+            [src]="sharedSvgRoutes.PLUS_ICON"
+            class="users-container-add-button-icon"
+          ></svg-icon>
+        </div>
+      </div>
+    </ng-container>
   </div>
   <div class="header-actions">
     <app-ve-notification></app-ve-notification>
@@ -139,11 +176,89 @@
 </ng-template>
 
 <ng-template #boardTemplate>
-  <div class="main-content">
+  <div class="board-view">
+    <div class="lock-toast" *ngIf="showLockToast">{{ stickyLockMessage }}</div>
+    <div class="lock-toast lock-toast--error" *ngIf="showStatusErrorToast">
+      {{ statusErrorMessage }}
+    </div>
+
     <div class="phases-container">
-      <div class="phase-container" *ngFor="let phase of backlogPhases" [class.empty-state]="true">
-        <span class="phase-title">{{ phase }}</span>
-        <div class="phase-content"></div>
+      <div class="phase-container" *ngFor="let column of boardColumns">
+        <span class="phase-title">{{ column.label }}</span>
+        <div
+          class="phase-content"
+          cdkDropList
+          [id]="column.status"
+          [cdkDropListData]="boardTasksByStatus[column.status]"
+          [cdkDropListConnectedTo]="boardColumnIds"
+          (cdkDropListDropped)="onBoardDrop($event, column.status)"
+        >
+          <div
+            class="board-card"
+            *ngFor="let task of boardTasksByStatus[column.status]"
+            cdkDrag
+          >
+            <div class="board-card-header">
+              <div class="board-card-body" (click)="onOpenTask(task)">
+                <span class="task-title">{{ task.name }}</span>
+                <span class="task-description">{{ task.description }}</span>
+              </div>
+              <div
+                class="task-menu"
+                [ngbPopover]="boardTaskMenuTpl"
+                #boardTaskMenuPopover="ngbPopover"
+                triggers="click"
+                placement="left"
+                container="body"
+                popoverClass="task-menu-popover"
+                autoClose="outside"
+                (click)="$event.stopPropagation()"
+              >
+                ⋮
+              </div>
+            </div>
+            <div class="board-card-footer" (click)="$event.stopPropagation()">
+              <app-task-assignee
+                [members]="boardMembers"
+                [assignedUserId]="task.assignedUserId ?? null"
+                (assignedUserIdChange)="onTaskAssigneeChange(task, $event)"
+              ></app-task-assignee>
+
+              <app-ve-status
+                [taskStatus]="task.status"
+                (statusChange)="onTaskStatusChange(task, $event)"
+              ></app-ve-status>
+
+              <app-task-priority
+                [priority]="task.priority"
+                (priorityChange)="onTaskPriorityChange(task, $event)"
+              ></app-task-priority>
+
+              <ng-template #boardTaskMenuTpl>
+                <div class="task-options">
+                  <button
+                    type="button"
+                    class="task-option task-option--edit"
+                    (click)="
+                      onEditTaskFromMenu(task, boardTaskMenuPopover, $event)
+                    "
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    class="task-option task-option--delete"
+                    (click)="
+                      onDeleteTaskFromMenu(task, boardTaskMenuPopover, $event)
+                    "
+                  >
+                    Delete
+                  </button>
+                </div>
+              </ng-template>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -156,22 +271,25 @@
 <ng-template #backlogTemplate>
   <div class="backlog-container">
     <div class="lock-toast" *ngIf="showLockToast">{{ stickyLockMessage }}</div>
+    <div class="lock-toast lock-toast--error" *ngIf="showStatusErrorToast">
+      {{ statusErrorMessage }}
+    </div>
 
     <div
       class="sprint-container"
-      *ngFor="let group of boardTaskGroups"
-      [class.is-expanded]="isGroupsExpanded"
+      *ngFor="let group of sprintTaskGroups"
+      [class.is-expanded]="isGroupExpanded(group)"
     >
       <div
         class="sprint-header"
-        [class.is-collapsed]="!isGroupsExpanded"
-        (click)="onHeaderGroupsToggle()"
+        [class.is-collapsed]="!isGroupExpanded(group)"
+        (click)="onHeaderGroupsToggle(group)"
       >
         <div class="sprint-header-general">
           <svg-icon
             [src]="sharedSvgRoutes.ARROW_DOWN_ICON"
             class="sprint-header-icon"
-            [class.is-expanded]="isGroupsExpanded"
+            [class.is-expanded]="isGroupExpanded(group)"
           ></svg-icon>
           <div>
             <span class="sprint-header-text">{{ group.name }}</span>
@@ -179,13 +297,9 @@
         </div>
       </div>
 
-      <div class="task-group" [class.is-collapsed]="!isGroupsExpanded">
+      <div class="task-group" [class.is-collapsed]="!isGroupExpanded(group)">
         <ng-container *ngIf="group.tasks.length > 0; else noTasks">
-          <div
-            class="task-item"
-            *ngFor="let task of group.tasks"
-            [class.is-locked]="activeWorkItemId === task.id"
-          >
+          <div class="task-item" *ngFor="let task of group.tasks">
             <div class="task-left" (click)="onOpenTask(task)">
               <input type="checkbox" class="checkbox" />
               <div class="task-main">
@@ -194,55 +308,56 @@
               </div>
             </div>
 
-            <div class="task-middle">
-              <span class="task-assignee">
-                {{ task.assignedUserId ? ('User ' + task.assignedUserId) : 'Unassigned' }}
-              </span>
+            <div class="task-middle" (click)="$event.stopPropagation()">
+              <app-task-assignee
+                [members]="boardMembers"
+                [assignedUserId]="task.assignedUserId ?? null"
+                (assignedUserIdChange)="onTaskAssigneeChange(task, $event)"
+              ></app-task-assignee>
             </div>
 
-            <div class="task-right">
-              <select
-                class="status-select"
-                [value]="task.status"
-                (change)="onTaskStatusChange(task, $any($event.target).value)"
+            <div class="task-right" (click)="$event.stopPropagation()">
+              <app-ve-status
+                [taskStatus]="task.status"
+                (statusChange)="onTaskStatusChange(task, $event)"
+              ></app-ve-status>
+              <app-task-priority
+                [priority]="task.priority"
+                (priorityChange)="onTaskPriorityChange(task, $event)"
+              ></app-task-priority>
+              <div
+                class="task-menu"
+                [ngbPopover]="taskMenuTpl"
+                #taskMenuPopover="ngbPopover"
+                triggers="click"
+                placement="left"
+                container="body"
+                popoverClass="task-menu-popover"
+                autoClose="outside"
+                (click)="$event.stopPropagation()"
               >
-                <option *ngFor="let status of statusOptions" [value]="status">
-                  {{ status }}
-                </option>
-              </select>
-              <div class="points-container">
-                <span class="points-label">{{ task.priority }}</span>
+                ⋮
               </div>
-           <div class="task-menu" 
-     [ngbPopover]="taskOptionsPopover" 
-     placement="left"
-     triggers="click">
-  ⋮
-</div>
-
-<ng-template #taskOptionsPopover>
-  <div class="task-options">
-    <button type="button" (click)="onEditTask(task)">Edit</button>
-    <button type="button" (click)="onDeleteTask(task)">Delete</button>
-    
-    <button type="button" 
-            *ngIf="activeWorkItemId === task.id" 
-            (click)="onReleaseTask(task)">
-      Release
-    </button>
-  </div>
-</ng-template>
-              <!-- <div class="task-options" *ngIf="taskMenuOpenId === task.id">
-                <button type="button" (click)="onEditTask(task)">Edit</button>
-                <button type="button" (click)="onDeleteTask(task)">Delete</button>
-                <button
-                  type="button"
-                  *ngIf="activeWorkItemId === task.id"
-                  (click)="onReleaseTask(task)"
-                >
-                  Release
-                </button>
-              </div> -->
+              <ng-template #taskMenuTpl>
+                <div class="task-options">
+                  <button
+                    type="button"
+                    class="task-option task-option--edit"
+                    (click)="onEditTaskFromMenu(task, taskMenuPopover, $event)"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    class="task-option task-option--delete"
+                    (click)="
+                      onDeleteTaskFromMenu(task, taskMenuPopover, $event)
+                    "
+                  >
+                    Delete
+                  </button>
+                </div>
+              </ng-template>
             </div>
           </div>
         </ng-container>

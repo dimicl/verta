@@ -1,8 +1,8 @@
 <div class="chat-card">
   <div class="chat-header">
     <app-avatar
-      [firstName]="firstName()"
-      [lastName]="lastName()"
+      [firstName]="displayFirstName()"
+      [lastName]="displayLastName()"
       [width]="24"
       [height]="24"
       aria-hidden="true"
@@ -10,7 +10,9 @@
 
     <div class="chat-title">
       <div class="chat-title__row">
-        <div class="chat-title__name">{{ firstName() }} {{ lastName() }}</div>
+        <div class="chat-title__name">
+          {{ displayFirstName() }}@if (!isGroup()) { {{ displayLastName() }} }
+        </div>
 
         <!-- <div class="chat-badges">           
             <span
@@ -40,9 +42,24 @@
         [class.msg--me]="m.from === 'me'"
         [class.msg--them]="m.from === 'them'"
       >
-        <div class="msg-bubble">
-          <div class="msg-text">{{ m.text }}</div>
-          <div class="msg-meta">{{ m.time }}</div>
+        @if (m.from !== 'me') {
+        <app-avatar
+          class="msg-avatar"
+          [title]="senderLabel(m)"
+          [firstName]="m.senderFirstName"
+          [lastName]="m.senderLastName"
+          [width]="28"
+          [height]="28"
+        />
+        }
+        <div class="msg-content">
+          @if (isGroup() && m.from === 'them') {
+          <div class="msg-sender">{{ senderLabel(m) }}</div>
+          }
+          <div class="msg-bubble">
+            <div class="msg-text">{{ m.text }}</div>
+            <div class="msg-meta">{{ m.time }}</div>
+          </div>
         </div>
       </div>
       }

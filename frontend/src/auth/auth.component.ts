@@ -24,6 +24,7 @@ export class AuthComponent implements OnInit {
   public buttonText = signal<string>('');
   public subtitleText = signal<string>('');
   public isSubmitted = signal<boolean>(false);
+  public loginError = signal<string>('');
 
   public sharedSvgRoutes = SharedSvgRoutes;
   public AuthHelper = AuthHelper;
@@ -58,6 +59,7 @@ export class AuthComponent implements OnInit {
     this.loginForm.reset();
     this.registerForm.reset();
     this.isSubmitted.set(false);
+    this.loginError.set('');
     this.router.navigate([this.isRegisterMode ? '/login' : '/register']);
   }
 
@@ -144,6 +146,10 @@ export class AuthComponent implements OnInit {
     control.setValue(value);
     control.markAsDirty();
     control.updateValueAndValidity({ onlySelf: true });
+
+    if (!this.isRegisterMode && (controlName === 'email' || controlName === 'password')) {
+      this.loginError.set('');
+    }
   }
 
   public onFieldBlur(controlName: string): void {
@@ -177,11 +183,21 @@ export class AuthComponent implements OnInit {
           this.router.navigate(['/main']);
         });
     } else {
-      this.authService.login(this.loginForm.value).subscribe((response) => {
-        localStorage.setItem('user_id', response.user.id);
-        localStorage.setItem('token', response.token);
-        this.loginForm.reset();
-        this.router.navigate(['/main']);
+      this.loginError.set('');
+      this.authService.login(this.loginForm.value).subscribe({
+        next: (response) => {
+          localStorage.setItem('user_id', response.user.id);
+          localStorage.setItem('token', response.token);
+          this.loginForm.reset();
+          this.router.navigate(['/main']);
+        },
+        error: (err) => {
+          this.loginForm.reset();
+          this.isSubmitted.set(false);
+          this.loginError.set(
+            err.error?.message ?? 'Login failed. Please try again.'
+          );
+        },
       });
     }
   }

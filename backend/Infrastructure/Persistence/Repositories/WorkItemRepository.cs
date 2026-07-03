@@ -14,4 +14,12 @@ public class WorkItemRepository : GenericRepository<WorkItem>, IWorkItemReposito
             .OrderBy(x => x.CreatedAt)
             .ToListAsync();
     }
+
+    public async Task<List<WorkItem>> GetBySprintIdAsync(int sprintId)
+    {
+        return await _dbSet
+            .Where(x => x.SprintId == sprintId)
+            .OrderBy(x => x.CreatedAt)
+            .ToListAsync();
+    }
 }

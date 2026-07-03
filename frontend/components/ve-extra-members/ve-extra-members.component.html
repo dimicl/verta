@@ -9,11 +9,16 @@
   (shown)="onNotificationShown.set(true)"
   (hidden)="onNotificationShown.set(false)"
 >
-  <span class="others-text">+14</span>
+  <span class="others-text">+{{ extraCount }}</span>
 </div>
 
 <ng-template #othersTemplate>
   <div class="notification-popover">
-    <p class="notification-popover-title">Members</p>
-  </div></ng-template
->
+    <p class="notification-popover-title">Board members</p>
+    <ul class="notification-popover-list">
+      <li *ngFor="let member of members">
+        {{ getMemberName(member) }}
+      </li>
+    </ul>
+  </div>
+</ng-template>

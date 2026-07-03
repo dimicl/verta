@@ -10,6 +10,7 @@ public class Board
     public int OwnerId { get; set; }
     public User? Owner { get; set; }
 
+    public List<Sprint>? Sprints { get; set; }
     public List<WorkItem>? WorkItems { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

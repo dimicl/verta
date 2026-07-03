@@ -29,6 +29,14 @@
   margin-top: 14px;
 }
 
+.auth-error {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 18px;
+  color: #dc2626;
+  text-align: center;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

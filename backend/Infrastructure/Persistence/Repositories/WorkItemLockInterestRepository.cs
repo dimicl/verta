@@ -31,6 +31,25 @@ public class WorkItemLockInterestRepository : GenericRepository<WorkItemLockInte
         }
     }
 
+    public async Task<WorkItemLockInterest?> GetFirstAsync(int workItemId)
+    {
+        return await _dbSet
+            .Where(x => x.WorkItemId == workItemId)
+            .OrderBy(x => x.RegisteredAt)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<int> GetPositionAsync(int workItemId, int userId)
+    {
+        var userEntry = await _dbSet
+            .FirstOrDefaultAsync(x => x.WorkItemId == workItemId && x.UserId == userId);
+
+        if (userEntry == null) return 0;
+
+        return await _dbSet
+            .CountAsync(x => x.WorkItemId == workItemId && x.RegisteredAt <= userEntry.RegisteredAt);
+    }
+
     public async Task<List<int>> GetInterestedUserIdsAsync(int workItemId)
     {
         return await _dbSet
@@ -43,6 +62,12 @@ public class WorkItemLockInterestRepository : GenericRepository<WorkItemLockInte
     {
         var entries = await _dbSet.Where(x => x.WorkItemId == workItemId).ToListAsync();
         _dbSet.RemoveRange(entries);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task RemoveEntryAsync(WorkItemLockInterest entry)
+    {
+        _dbSet.Remove(entry);
         await _context.SaveChangesAsync();
     }
 

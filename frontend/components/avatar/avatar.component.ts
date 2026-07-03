@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, Input } from '@angular/core';
+import { Component, computed, input } from '@angular/core';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 
 @Component({
@@ -9,13 +9,13 @@ import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
   styleUrl: './avatar.component.scss',
 })
 export class AvatarComponent {
-  @Input() firstName = '';
-  @Input() lastName = '';
-  @Input() width = 36;
-  @Input() height = 36;
-  @Input() colorKey = '';
-  @Input() dashboardType = false;
-  @Input() isSelected = false;
+  readonly firstName = input('');
+  readonly lastName = input('');
+  readonly width = input(36);
+  readonly height = input(36);
+  readonly colorKey = input('');
+  readonly dashboardType = input(false);
+  readonly isSelected = input(false);
 
   private readonly palette = [
     'blue',
@@ -33,8 +33,8 @@ export class AvatarComponent {
   ] as const;
 
   initials = computed(() => {
-    const first = (this.firstName?.trim()?.[0] ?? '').toUpperCase();
-    const last = (this.lastName?.trim()?.[0] ?? '').toUpperCase();
+    const first = (this.firstName()?.trim()?.[0] ?? '').toUpperCase();
+    const last = (this.lastName()?.trim()?.[0] ?? '').toUpperCase();
     return first + last || '?';
   });
 
@@ -44,11 +44,11 @@ export class AvatarComponent {
   });
 
   colorClass = computed(() => {
-    if (this.colorKey?.trim()) {
-      return this.colorKey.trim().toLowerCase();
+    if (this.colorKey()?.trim()) {
+      return this.colorKey().trim().toLowerCase();
     }
 
-    const seed = `${this.firstName}${this.lastName}`.trim().toLowerCase();
+    const seed = `${this.firstName()}${this.lastName()}`.trim().toLowerCase();
     if (!seed) return 'gray';
 
     let hash = 0;

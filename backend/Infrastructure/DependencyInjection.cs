@@ -5,6 +5,7 @@ using backend.Infrastructure.Notifications;
 using backend.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using backend.Infrastructure.BackgroundServices;
+using backend.Infrastructure.Storage;
 
 namespace backend.Infrastructure;
 
@@ -37,7 +38,12 @@ public static class DependencyInjection
         services.AddSingleton<IRabbitMqConnectionManager, RabbitMqConnectionManager>();
         services.AddScoped<IMessageBus, RabbitMQBus>();
         services.AddScoped<IBoardRepository, BoardRepository>();
+        services.AddScoped<IBoardMemberRepository, BoardMemberRepository>();
+        services.AddScoped<IBoardAccessService, BoardAccessService>();
+        services.AddScoped<IBoardMemberSyncService, BoardMemberSyncService>();
         services.AddScoped<IBoardService, BoardService>();
+        services.AddScoped<ISprintRepository, SprintRepository>();
+        services.AddScoped<ISprintService, SprintService>();
         services.AddScoped<IWorkItemRepository, WorkItemRepository>();
         services.AddScoped<IWorkItemService, WorkItemService>();
         services.AddScoped<ICommentRepository, CommentRepository>();
@@ -45,6 +51,7 @@ public static class DependencyInjection
         services.AddScoped<ISubWorkItemRepository, SubWorkItemRepository>();
         services.AddScoped<ISubWorkItemService, SubWorkItemService>();
         services.AddScoped<IWorkItemFileRepository, WorkItemFileRepository>();
+        services.AddScoped<IFileStorageService, LocalFileStorageService>();
         services.AddScoped<IWorkItemFileService, WorkItemFileService>();
         services.AddScoped<DomainEventSubject>();
         services.AddScoped<IDomainEventObserver, SignalRDomainEventObserver>();

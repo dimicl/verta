@@ -10,6 +10,7 @@ public static class WorkItemHelper
             Status = workItem.Status,
             Priority = workItem.Priority,
             BoardId = workItem.BoardId,
+            SprintId = workItem.SprintId,
             CreatedByUserId = workItem.CreatedByUserId,
             AssignedUserId = workItem.AssignedUserId,
             CreatedAt = workItem.CreatedAt,

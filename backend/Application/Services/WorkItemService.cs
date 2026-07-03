@@ -7,28 +7,34 @@ public class WorkItemService : IWorkItemService
 {
     private readonly IWorkItemRepository _workItemRepo;
     private readonly IBoardRepository _boardRepo;
+    private readonly ISprintRepository _sprintRepo;
     private readonly IWorkspaceMemberRepository _workspaceMemberRepo;
+    private readonly IBoardAccessService _boardAccessService;
     private readonly IUserContext _userContext;
     private readonly DomainEventSubject _domainEventSubject;
     private readonly CommandInvoker _commandInvoker;
-    private readonly INotificationService _notificationService;
+    private readonly IWorkItemLockService _workItemLockService;
 
     public WorkItemService(
         IWorkItemRepository workItemRepo,
         IBoardRepository boardRepo,
+        ISprintRepository sprintRepo,
         IWorkspaceMemberRepository workspaceMemberRepo,
+        IBoardAccessService boardAccessService,
         IUserContext userContext,
         DomainEventSubject domainEventSubject,
         CommandInvoker commandInvoker,
-        INotificationService notificationService)
+        IWorkItemLockService workItemLockService)
     {
         _workItemRepo = workItemRepo;
         _boardRepo = boardRepo;
+        _sprintRepo = sprintRepo;
         _workspaceMemberRepo = workspaceMemberRepo;
+        _boardAccessService = boardAccessService;
         _userContext = userContext;
         _domainEventSubject = domainEventSubject;
         _commandInvoker = commandInvoker;
-        _notificationService = notificationService;
+        _workItemLockService = workItemLockService;
     }
 
     public async Task<WorkItemResponse> Create(WorkItemRequest request)
@@ -48,16 +54,17 @@ public class WorkItemService : IWorkItemService
         if (board == null)
             throw new Exception("Board does not exist.");
 
-        var member = await _workspaceMemberRepo.GetByWorkspaceAndUserIdAsync(
-            board.WorkspaceId,
-            userId
-        );
+        await _boardAccessService.EnsureBoardAccessAsync(board);
 
-        if (member == null)
-            throw new Exception("You are not member of this workspace.");
+        if (request.SprintId.HasValue)
+        {
+            var sprint = await _sprintRepo.GetById(request.SprintId.Value);
+            if (sprint == null)
+                throw new Exception("Sprint does not exist.");
 
-        if (member.Role == UserRole.Guest)
-            throw new Exception("Guest cannot create work item.");
+            if (sprint.BoardId != request.BoardId)
+                throw new Exception("Sprint does not belong to this board.");
+        }
 
         if (request.AssignedUserId.HasValue)
         {
@@ -75,6 +82,7 @@ public class WorkItemService : IWorkItemService
             Name = request.Name,
             Description = request.Description,
             BoardId = request.BoardId,
+            SprintId = request.SprintId,
             CreatedByUserId = userId,
             AssignedUserId = request.AssignedUserId,
             Priority = request.Priority,
@@ -86,7 +94,7 @@ public class WorkItemService : IWorkItemService
         {
             var created = await _workItemRepo.Add(workItem);
 
-            await _domainEventSubject.NotifyAsync("WorkItemCreated", new
+            await _domainEventSubject.NotifyAsync(DomainEventNames.WorkItemCreated, new
             {
                 WorkItemId = created.Id,
                 BoardId = created.BoardId,
@@ -98,16 +106,14 @@ public class WorkItemService : IWorkItemService
 
             if (created.AssignedUserId.HasValue)
             {
-                await _notificationService.SendToUserAsync(
-                    created.AssignedUserId.Value,
-                    "WorkItemAssigned",
-                    new
-                    {
-                        WorkItemId = created.Id,
-                        Name = created.Name,
-                        BoardId = created.BoardId,
-                        AssignedByUserId = userId
-                    });
+                await _domainEventSubject.NotifyAsync(DomainEventNames.WorkItemAssigned, new
+                {
+                    TargetUserId = created.AssignedUserId.Value,
+                    WorkItemId = created.Id,
+                    Name = created.Name,
+                    BoardId = created.BoardId,
+                    AssignedByUserId = userId
+                });
             }
 
             return WorkItemHelper.ToResponse(created);
@@ -124,15 +130,28 @@ public class WorkItemService : IWorkItemService
         if (board == null)
             throw new Exception("Board does not exist.");
 
-        var member = await _workspaceMemberRepo.GetByWorkspaceAndUserIdAsync(
-            board.WorkspaceId,
-            userId
-        );
-
-        if (member == null)
-            throw new Exception("You are not member of this workspace.");
+        await _boardAccessService.EnsureBoardAccessAsync(board);
 
         var workItems = await _workItemRepo.GetByBoardIdAsync(boardId);
+
+        return workItems.Select(WorkItemHelper.ToResponse).ToList();
+    }
+
+    public async Task<List<WorkItemResponse>> GetBySprintId(int sprintId)
+    {
+        var userId = _userContext.GetUserId();
+
+        var sprint = await _sprintRepo.GetById(sprintId);
+        if (sprint == null)
+            throw new Exception("Sprint does not exist.");
+
+        var board = await _boardRepo.GetById(sprint.BoardId);
+        if (board == null)
+            throw new Exception("Board does not exist.");
+
+        await _boardAccessService.EnsureBoardAccessAsync(board);
+
+        var workItems = await _workItemRepo.GetBySprintIdAsync(sprintId);
 
         return workItems.Select(WorkItemHelper.ToResponse).ToList();
     }
@@ -149,13 +168,7 @@ public class WorkItemService : IWorkItemService
         if (board == null)
             throw new Exception("Board does not exist.");
 
-        var member = await _workspaceMemberRepo.GetByWorkspaceAndUserIdAsync(
-            board.WorkspaceId,
-            userId
-        );
-
-        if (member == null)
-            throw new Exception("You are not member of this workspace.");
+        await _boardAccessService.EnsureBoardAccessAsync(board);
 
         return WorkItemHelper.ToResponse(workItem);
     }
@@ -175,16 +188,7 @@ public class WorkItemService : IWorkItemService
         if (board == null)
             throw new Exception("Board does not exist.");
 
-        var member = await _workspaceMemberRepo.GetByWorkspaceAndUserIdAsync(
-            board.WorkspaceId,
-            userId
-        );
-
-        if (member == null)
-            throw new Exception("You are not member of this workspace.");
-
-        if (member.Role == UserRole.Guest)
-            throw new Exception("Guest cannot change work item status.");
+        await _boardAccessService.EnsureBoardAccessAsync(board);
 
         var currentState = WorkItemStateFactory.Create(workItem.Status);
 
@@ -202,11 +206,115 @@ public class WorkItemService : IWorkItemService
 
             await _workItemRepo.Update(workItem);
 
-            await _domainEventSubject.NotifyAsync("WorkItemStatusChanged", new
+            await _domainEventSubject.NotifyAsync(DomainEventNames.WorkItemStatusChanged, new
             {
                 WorkItemId = workItem.Id,
                 BoardId = workItem.BoardId,
+                Name = workItem.Name,
                 Status = workItem.Status,
+                UpdatedByUserId = userId,
+                TargetUserId = workItem.AssignedUserId
+            });
+
+            return WorkItemHelper.ToResponse(workItem);
+        });
+
+        return await _commandInvoker.ExecuteAsync(command);
+    }
+
+    public async Task<WorkItemResponse> ChangePriority(int workItemId, ChangeWorkItemPriorityRequest request)
+    {
+        if (request == null)
+            throw new Exception("Request not found.");
+
+        var userId = _userContext.GetUserId();
+
+        var workItem = await _workItemRepo.GetById(workItemId);
+        if (workItem == null)
+            throw new Exception("Work item does not exist.");
+
+        var board = await _boardRepo.GetById(workItem.BoardId);
+        if (board == null)
+            throw new Exception("Board does not exist.");
+
+        await _boardAccessService.EnsureBoardAccessAsync(board);
+
+        var command = new ChangeWorkItemPriorityCommand(async () =>
+        {
+            workItem.Priority = request.Priority;
+            workItem.UpdatedAt = DateTime.UtcNow;
+
+            await _workItemRepo.Update(workItem);
+
+            await _domainEventSubject.NotifyAsync(DomainEventNames.WorkItemPriorityChanged, new
+            {
+                WorkItemId = workItem.Id,
+                BoardId = workItem.BoardId,
+                Priority = workItem.Priority,
+                UpdatedByUserId = userId
+            });
+
+            return WorkItemHelper.ToResponse(workItem);
+        });
+
+        return await _commandInvoker.ExecuteAsync(command);
+    }
+
+    public async Task<WorkItemResponse> ChangeAssignee(
+        int workItemId,
+        ChangeWorkItemAssigneeRequest request)
+    {
+        if (request == null)
+            throw new Exception("Request not found.");
+
+        var userId = _userContext.GetUserId();
+
+        var workItem = await _workItemRepo.GetById(workItemId);
+        if (workItem == null)
+            throw new Exception("Work item does not exist.");
+
+        var board = await _boardRepo.GetById(workItem.BoardId);
+        if (board == null)
+            throw new Exception("Board does not exist.");
+
+        await _boardAccessService.EnsureBoardAccessAsync(board);
+
+        if (request.AssignedUserId.HasValue)
+        {
+            var assignedMember = await _workspaceMemberRepo.GetByWorkspaceAndUserIdAsync(
+                board.WorkspaceId,
+                request.AssignedUserId.Value
+            );
+
+            if (assignedMember == null)
+                throw new Exception("Assigned user is not member of this workspace.");
+        }
+
+        var previousAssignee = workItem.AssignedUserId;
+
+        var command = new ChangeWorkItemAssigneeCommand(async () =>
+        {
+            workItem.AssignedUserId = request.AssignedUserId;
+            workItem.UpdatedAt = DateTime.UtcNow;
+
+            await _workItemRepo.Update(workItem);
+
+            if (workItem.AssignedUserId.HasValue && workItem.AssignedUserId != previousAssignee)
+            {
+                await _domainEventSubject.NotifyAsync(DomainEventNames.WorkItemAssigned, new
+                {
+                    TargetUserId = workItem.AssignedUserId.Value,
+                    WorkItemId = workItem.Id,
+                    Name = workItem.Name,
+                    BoardId = workItem.BoardId,
+                    AssignedByUserId = userId
+                });
+            }
+
+            await _domainEventSubject.NotifyAsync(DomainEventNames.WorkItemUpdated, new
+            {
+                WorkItemId = workItem.Id,
+                BoardId = workItem.BoardId,
                 UpdatedByUserId = userId
             });
 
@@ -237,16 +345,19 @@ public class WorkItemService : IWorkItemService
         if (board == null)
             throw new Exception("Board does not exist.");
 
-        var member = await _workspaceMemberRepo.GetByWorkspaceAndUserIdAsync(
-            board.WorkspaceId,
-            userId
-        );
+        await _boardAccessService.EnsureBoardAccessAsync(board);
 
-        if (member == null)
-            throw new Exception("You are not member of this workspace.");
+        await _workItemLockService.EnsureUserHasWriteLockAsync(workItemId);
 
-        if (member.Role == UserRole.Guest)
-            throw new Exception("Guest cannot update work item.");
+        if (request.SprintId.HasValue)
+        {
+            var sprint = await _sprintRepo.GetById(request.SprintId.Value);
+            if (sprint == null)
+                throw new Exception("Sprint does not exist.");
+
+            if (sprint.BoardId != workItem.BoardId)
+                throw new Exception("Sprint does not belong to this board.");
+        }
 
         if (request.AssignedUserId.HasValue)
         {
@@ -259,22 +370,42 @@ public class WorkItemService : IWorkItemService
                 throw new Exception("Assigned user is not member of this workspace.");
         }
 
-        workItem.Name = request.Name;
-        workItem.Description = request.Description;
-        workItem.AssignedUserId = request.AssignedUserId;
-        workItem.Priority = request.Priority;
-        workItem.UpdatedAt = DateTime.UtcNow;
+        var previousAssignee = workItem.AssignedUserId;
 
-        await _workItemRepo.Update(workItem);
-
-        await _domainEventSubject.NotifyAsync("WorkItemUpdated", new
+        var command = new UpdateWorkItemCommand(async () =>
         {
-            WorkItemId = workItem.Id,
-            BoardId = workItem.BoardId,
-            UpdatedByUserId = userId
+            workItem.Name = request.Name;
+            workItem.Description = request.Description;
+            workItem.AssignedUserId = request.AssignedUserId;
+            workItem.Priority = request.Priority;
+            workItem.SprintId = request.SprintId;
+            workItem.UpdatedAt = DateTime.UtcNow;
+
+            await _workItemRepo.Update(workItem);
+
+            if (workItem.AssignedUserId.HasValue && workItem.AssignedUserId != previousAssignee)
+            {
+                await _domainEventSubject.NotifyAsync(DomainEventNames.WorkItemAssigned, new
+                {
+                    TargetUserId = workItem.AssignedUserId.Value,
+                    WorkItemId = workItem.Id,
+                    Name = workItem.Name,
+                    BoardId = workItem.BoardId,
+                    AssignedByUserId = userId
+                });
+            }
+
+            await _domainEventSubject.NotifyAsync(DomainEventNames.WorkItemUpdated, new
+            {
+                WorkItemId = workItem.Id,
+                BoardId = workItem.BoardId,
+                UpdatedByUserId = userId
+            });
+
+            return WorkItemHelper.ToResponse(workItem);
         });
 
-        return WorkItemHelper.ToResponse(workItem);
+        return await _commandInvoker.ExecuteAsync(command);
     }
 
     public async Task Delete(int workItemId)
@@ -289,24 +420,24 @@ public class WorkItemService : IWorkItemService
         if (board == null)
             throw new Exception("Board does not exist.");
 
-        var member = await _workspaceMemberRepo.GetByWorkspaceAndUserIdAsync(
-            board.WorkspaceId,
-            userId
-        );
+        await _boardAccessService.EnsureBoardAccessAsync(board);
 
-        if (member == null)
-            throw new Exception("You are not member of this workspace.");
+        await _workItemLockService.EnsureUserHasWriteLockAsync(workItemId);
 
-        if (member.Role == UserRole.Guest)
-            throw new Exception("Guest cannot delete work item.");
-
-        await _workItemRepo.Delete(workItem);
-
-        await _domainEventSubject.NotifyAsync("WorkItemDeleted", new
+        var command = new DeleteWorkItemCommand(async () =>
         {
-            WorkItemId = workItem.Id,
-            BoardId = workItem.BoardId,
-            DeletedByUserId = userId
+            await _workItemRepo.Delete(workItem);
+
+            await _domainEventSubject.NotifyAsync(DomainEventNames.WorkItemDeleted, new
+            {
+                WorkItemId = workItem.Id,
+                BoardId = workItem.BoardId,
+                DeletedByUserId = userId
+            });
+
+            return true;
         });
+
+        await _commandInvoker.ExecuteAsync(command);
     }
 }
