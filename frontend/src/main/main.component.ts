@@ -107,6 +107,8 @@ export class MainComponent implements OnInit, OnDestroy {
 
   public sprintTaskGroups: SprintTaskGroup[] = [];
   public sprints: SprintResponse[] = [];
+  private allTasks: WorkItemResponse[] = [];
+  public searchQuery = signal('');
   public showStatusErrorToast = false;
   public statusErrorMessage = '';
 
@@ -224,27 +226,14 @@ export class MainComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: ({ sprints, tasks }) => {
         this.sprints = sprints;
-
-        const groups: SprintTaskGroup[] = sprints.map((sprint) => ({
-          id: sprint.id,
-          name: sprint.name,
-          tasks: tasks.filter((task) => task.sprintId === sprint.id),
-        }));
-
-        const backlogTasks = tasks.filter((task) => !task.sprintId);
-        groups.push({
-          id: null,
-          name: 'Backlog',
-          tasks: backlogTasks,
-        });
-
-        this.sprintTaskGroups = groups;
-        this.rebuildBoardTasks(tasks);
+        this.allTasks = tasks;
+        this.applyTaskFilters();
       },
       error: (err) => {
         console.error('Greška pri učitavanju backloga:', err);
         this.sprintTaskGroups = [];
         this.sprints = [];
+        this.allTasks = [];
         this.clearBoardTasks();
       },
     });
@@ -258,6 +247,50 @@ export class MainComponent implements OnInit, OnDestroy {
       Testing: [],
       Done: [],
     };
+  }
+
+  private applyTaskFilters(): void {
+    const filteredTasks = this.getFilteredTasks();
+
+    const groups: SprintTaskGroup[] = this.sprints.map((sprint) => ({
+      id: sprint.id,
+      name: sprint.name,
+      tasks: filteredTasks.filter((task) => task.sprintId === sprint.id),
+    }));
+
+    groups.push({
+      id: null,
+      name: 'Backlog',
+      tasks: filteredTasks.filter((task) => !task.sprintId),
+    });
+
+    this.sprintTaskGroups = groups;
+    this.rebuildBoardTasks(filteredTasks);
+  }
+
+  private getFilteredTasks(): WorkItemResponse[] {
+    const query = this.searchQuery().trim().toLowerCase();
+    const userId = this.selectedUser();
+
+    return this.allTasks.filter((task) => {
+      const matchesSearch =
+        !query || task.name.toLowerCase().includes(query);
+      const matchesAssignee =
+        userId === null || task.assignedUserId === userId;
+
+      return matchesSearch && matchesAssignee;
+    });
+  }
+
+  public hasActiveTaskFilters(): boolean {
+    return (
+      this.searchQuery().trim().length > 0 || this.selectedUser() !== null
+    );
+  }
+
+  public onSearchChange(query: string): void {
+    this.searchQuery.set(query);
+    this.applyTaskFilters();
   }
 
   private rebuildBoardTasks(tasks: WorkItemResponse[]): void {
@@ -323,6 +356,11 @@ export class MainComponent implements OnInit, OnDestroy {
 
     task.status = targetStatus;
 
+    const taskInAll = this.allTasks.find((item) => item.id === task.id);
+    if (taskInAll) {
+      taskInAll.status = targetStatus;
+    }
+
     this.taskService.changeStatus(task.id, targetStatus).subscribe({
       next: (updated) => {
         task.status = updated.status;
@@ -363,7 +401,8 @@ export class MainComponent implements OnInit, OnDestroy {
   }
 
   public onUserSelect(userId: number): void {
-    this.selectedUser.set(userId);
+    this.selectedUser.update((current) => (current === userId ? null : userId));
+    this.applyTaskFilters();
   }
 
   public get visibleBoardMembers(): Array<{
@@ -426,6 +465,8 @@ export class MainComponent implements OnInit, OnDestroy {
 
   public onSelectBoard(board: BoardResponse): void {
     this.selectedBoardId.set(board.id);
+    this.searchQuery.set('');
+    this.selectedUser.set(null);
     this.loadBacklog(board.id);
   }
 
@@ -597,6 +638,11 @@ export class MainComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const taskInAll = this.allTasks.find((item) => item.id === task.id);
+    if (taskInAll) {
+      taskInAll.status = toStatus;
+    }
+
     const fromList = this.boardTasksByStatus[fromStatus];
     const toList = this.boardTasksByStatus[toStatus];
     const index = fromList.findIndex((item) => item.id === task.id);
@@ -616,6 +662,11 @@ export class MainComponent implements OnInit, OnDestroy {
     this.taskService.changeAssignee(task.id, assignedUserId).subscribe({
       next: (updated) => {
         task.assignedUserId = updated.assignedUserId;
+        const taskInAll = this.allTasks.find((item) => item.id === task.id);
+        if (taskInAll) {
+          taskInAll.assignedUserId = updated.assignedUserId;
+        }
+        this.applyTaskFilters();
       },
       error: (err) => {
         console.error('Greška pri dodeli taska:', err);

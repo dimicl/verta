@@ -1,6 +1,7 @@
 using backend.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 [ApiController]
 [Authorize]
@@ -21,6 +22,10 @@ public class SprintController : ControllerBase
         {
             var result = await _sprintService.Create(request);
             return Ok(result);
+        }
+        catch (DbUpdateException ex)
+        {
+            return BadRequest(new { message = ex.InnerException?.Message ?? ex.Message });
         }
         catch (Exception ex)
         {

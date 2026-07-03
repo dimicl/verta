@@ -36,12 +36,18 @@ public class SprintService : ISprintService
 
         await _boardAccessService.EnsureBoardAccessAsync(board);
 
+        var startDate = ToUtcDate(request.StartDate);
+        var endDate = ToUtcDate(request.EndDate);
+
+        if (startDate.HasValue && endDate.HasValue && endDate < startDate)
+            throw new Exception("End date must be on or after start date.");
+
         var sprint = new Sprint
         {
-            Name = request.Name,
+            Name = request.Name.Trim(),
             BoardId = request.BoardId,
-            StartDate = request.StartDate,
-            EndDate = request.EndDate,
+            StartDate = startDate,
+            EndDate = endDate,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -76,5 +82,20 @@ public class SprintService : ISprintService
         var sprints = await _sprintRepo.GetByBoardIdAsync(boardId);
 
         return sprints.Select(SprintHelper.ToResponse).ToList();
+    }
+
+    private static DateTime? ToUtcDate(DateTime? value)
+    {
+        if (!value.HasValue)
+            return null;
+
+        var date = value.Value;
+
+        return date.Kind switch
+        {
+            DateTimeKind.Utc => date,
+            DateTimeKind.Local => date.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(date, DateTimeKind.Utc),
+        };
     }
 }

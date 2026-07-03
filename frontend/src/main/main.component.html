@@ -112,6 +112,7 @@
         [label]="'Search'"
         [type]="'search'"
         [icon]="sharedSvgRoutes.SEARCH_ICON"
+        (onGetValue)="onSearchChange($event)"
       />
     </div>
     <ng-container *ngIf="selectedToolbarTab() !== 'Chat'">
@@ -139,18 +140,21 @@
         <div class="users-container">
           <app-avatar
             *ngFor="let user of visibleBoardMembers"
+            [userId]="user.id"
             [firstName]="user.firstName"
             [lastName]="user.lastName"
             [width]="18"
             [height]="18"
             [dashboardType]="true"
             [isSelected]="selectedUser() === user.id"
-            (click)="onUserSelect(user.id)"
+            (avatarClick)="onUserSelect($event)"
           ></app-avatar>
           <app-ve-extra-members
             *ngIf="extraBoardMembersCount > 0"
             [members]="hiddenBoardMembers"
             [extraCount]="extraBoardMembersCount"
+            [selectedUserId]="selectedUser()"
+            (memberSelect)="onUserSelect($event)"
           ></app-ve-extra-members>
         </div>
         <div
@@ -363,7 +367,13 @@
         </ng-container>
 
         <ng-template #noTasks>
-          <div class="empty-state-board">No tasks found for this sprint.</div>
+          <div class="empty-state-board">
+            {{
+              hasActiveTaskFilters()
+                ? 'No tasks match your filters.'
+                : 'No tasks found for this sprint.'
+            }}
+          </div>
         </ng-template>
       </div>
     </div>
