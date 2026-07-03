@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, input, output } from '@angular/core';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 
 @Component({
@@ -9,6 +9,7 @@ import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
   styleUrl: './avatar.component.scss',
 })
 export class AvatarComponent {
+  readonly userId = input<number | null>(null);
   readonly firstName = input('');
   readonly lastName = input('');
   readonly width = input(36);
@@ -16,6 +17,8 @@ export class AvatarComponent {
   readonly colorKey = input('');
   readonly dashboardType = input(false);
   readonly isSelected = input(false);
+
+  readonly avatarClick = output<number>();
 
   private readonly palette = [
     'blue',
@@ -58,4 +61,11 @@ export class AvatarComponent {
 
     return this.palette[hash % this.palette.length];
   });
+
+  onAvatarClick(): void {
+    const id = this.userId();
+    if (this.dashboardType() && id !== null) {
+      this.avatarClick.emit(id);
+    }
+  }
 }

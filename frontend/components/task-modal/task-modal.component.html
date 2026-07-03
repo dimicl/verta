@@ -2,7 +2,7 @@
   <div class="modal-header">
     <div>
       <span class="modal-header-title">
-        {{ isEditMode ? 'Edit Task' : 'Add Task' }}
+        {{ isEditMode ? "Edit Task" : "Add Task" }}
       </span>
     </div>
     <div
@@ -74,18 +74,13 @@
       </div>
       <div class="field-group">
         <div class="field-label">Points</div>
-        <input
-          class="field-input"
-          type="number"
-          min="0"
-          [(ngModel)]="points"
-        />
+        <input class="field-input" type="number" min="0" [(ngModel)]="points" />
       </div>
     </div>
 
     <div class="attachments">
       <div class="attachments-header">
-        <span class="attachments-title">Attachments</span>
+        <span class="attachments-title">Documents</span>
         <div class="attachments-counter">
           <span class="files-counter">{{ dropZone?.fileCount ?? 0 }}</span>
         </div>
@@ -96,7 +91,7 @@
 
   <div class="modal-footer">
     <div class="action-button" (click)="onSave()">
-      {{ isEditMode ? 'Save changes' : 'Create task' }}
+      {{ isEditMode ? "Save changes" : "Create task" }}
     </div>
   </div>
 </div>

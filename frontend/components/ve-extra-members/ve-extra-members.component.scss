@@ -15,10 +15,26 @@
   padding: 0;
   list-style: none;
 
-  li {
+  li,
+  .notification-popover-item {
     font-size: 12px;
     line-height: 18px;
     color: #2f2f2f;
+  }
+
+  .notification-popover-item {
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+
+    &:hover {
+      background: #f3f4f6;
+    }
+
+    &.is-selected {
+      background: #dbeafe;
+      color: #2563eb;
+    }
   }
 }
 

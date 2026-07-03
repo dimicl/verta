@@ -1,9 +1,10 @@
 .sprint-modal {
-  padding: 4px;
+  padding: 8px 12px 4px;
+  min-width: 360px;
 }
 
 .sprint-modal-header {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 
   .sprint-modal-header-text {
     font-size: 20px;
@@ -15,13 +16,13 @@
 .sprint-modal-body {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 20px;
 }
 
 .sprint-form-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .sprint-error {
@@ -35,8 +36,9 @@
 .sprint-modal-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
-  margin-top: 18px;
+  gap: 12px;
+  margin-top: 28px;
+  padding-top: 8px;
 }
 
 .sprint-btn {

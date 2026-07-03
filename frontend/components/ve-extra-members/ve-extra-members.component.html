@@ -16,7 +16,12 @@
   <div class="notification-popover">
     <p class="notification-popover-title">Board members</p>
     <ul class="notification-popover-list">
-      <li *ngFor="let member of members">
+      <li
+        *ngFor="let member of members"
+        class="notification-popover-item"
+        [class.is-selected]="selectedUserId === member.id"
+        (click)="memberSelect.emit(member.id)"
+      >
         {{ getMemberName(member) }}
       </li>
     </ul>
