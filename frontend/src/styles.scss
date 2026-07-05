@@ -122,3 +122,11 @@ table {
     }
   }
 }
+
+.stacked-modal {
+  z-index: 1060 !important;
+}
+
+.stacked-modal-backdrop {
+  z-index: 1055 !important;
+}

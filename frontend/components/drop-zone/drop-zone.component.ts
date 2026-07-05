@@ -43,6 +43,7 @@ const SUPPORTED_TYPES: FileExtension[] = [
 })
 export class DropZoneComponent implements OnChanges {
   @Input() public workItemId: number | null = null;
+  @Input() public subWorkItemId: number | null | undefined = undefined;
 
   @ViewChild('fileInput') private fileInput?: ElementRef<HTMLInputElement>;
   @ViewChild('dropZoneContainer') private dropZoneContainer?: ElementRef<HTMLElement>;
@@ -88,9 +89,24 @@ export class DropZoneComponent implements OnChanges {
   private readonly destroyRef = inject(DestroyRef);
 
   public ngOnChanges(changes: SimpleChanges): void {
-    if (changes['workItemId'] && this.workItemId) {
+    if (
+      (changes['workItemId'] || changes['subWorkItemId']) &&
+      this.canPersistFiles()
+    ) {
       this.loadFiles();
     }
+  }
+
+  private canPersistFiles(): boolean {
+    if (!this.workItemId) {
+      return false;
+    }
+
+    if (this.subWorkItemId === undefined) {
+      return true;
+    }
+
+    return this.subWorkItemId !== null;
   }
 
   public get pendingFiles(): File[] {
@@ -193,14 +209,16 @@ export class DropZoneComponent implements OnChanges {
   }
 
   private loadFiles(): void {
-    if (!this.workItemId) {
+    if (!this.canPersistFiles() || !this.workItemId) {
       return;
     }
 
-    this.workItemFileService
-      .getByWorkItemId(this.workItemId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
+    const request =
+      this.subWorkItemId !== undefined && this.subWorkItemId !== null
+        ? this.workItemFileService.getBySubWorkItemId(this.subWorkItemId)
+        : this.workItemFileService.getByWorkItemId(this.workItemId);
+
+    request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: (files) => {
           this.docs.set(files.map((file) => this.mapApiFile(file)));
         },
@@ -244,12 +262,12 @@ export class DropZoneComponent implements OnChanges {
         size: file.size,
         imagePreviewUrl: previewUrl,
         file,
-        pending: !this.workItemId,
+        pending: !this.canPersistFiles(),
       };
 
       this.docs.update((items) => [...items, localDoc]);
 
-      if (this.workItemId) {
+      if (this.canPersistFiles()) {
         await this.uploadFile(localDoc, file);
       }
     }
@@ -259,7 +277,7 @@ export class DropZoneComponent implements OnChanges {
   }
 
   private uploadFile(localDoc: AppFile, file: File): Promise<void> {
-    if (!this.workItemId) {
+    if (!this.canPersistFiles() || !this.workItemId) {
       return Promise.resolve();
     }
 
@@ -267,7 +285,11 @@ export class DropZoneComponent implements OnChanges {
 
     return new Promise((resolve) => {
       this.workItemFileService
-        .upload(this.workItemId!, file)
+        .upload(
+          this.workItemId!,
+          file,
+          this.subWorkItemId !== undefined ? this.subWorkItemId : undefined
+        )
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (created) => {

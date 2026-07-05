@@ -28,5 +28,6 @@ public static class DomainEventNames
     public const string BoardUnlocked = "BoardUnlocked";
 
     public const string SubWorkItemCreated = "SubWorkItemCreated";
+    public const string SubWorkItemUpdated = "SubWorkItemUpdated";
     public const string SubWorkItemStatusChanged = "SubWorkItemStatusChanged";
 }

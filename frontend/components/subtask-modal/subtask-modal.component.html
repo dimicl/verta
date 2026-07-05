@@ -1,8 +1,10 @@
 <div class="modal-container">
   <div class="modal-header">
     <div>
-      <span class="modal-header-title">{{ modalTitle }}</span>
-      <div class="parent-task" *ngIf="isSubtask && parentTaskTitle">
+      <span class="modal-header-title">
+        {{ isEditMode ? "Edit Subtask" : "Add Subtask" }}
+      </span>
+      <div class="parent-task" *ngIf="parentTaskTitle">
         Parent task: <strong>{{ parentTaskTitle }}</strong>
       </div>
     </div>
@@ -27,7 +29,7 @@
       <input
         class="title-input"
         type="text"
-        [placeholder]="isSubtask ? 'Enter subtask title...' : 'Enter task title...'"
+        placeholder="Enter subtask title..."
         [(ngModel)]="title"
       />
     </div>
@@ -42,37 +44,15 @@
       ></textarea>
     </div>
 
-    <app-task-subtasks
-      *ngIf="!isSubtask"
-      [workItemId]="workItemId"
-      [parentTaskTitle]="title"
-      [members]="members"
-      [currentUserId]="currentUserId"
-      [currentUserFirstName]="currentUserFirstName"
-      [currentUserLastName]="currentUserLastName"
-      (subtasksChanged)="onSubtasksChanged($event)"
-      (createSubtaskRequest)="onCreateSubtask()"
-      (editSubtaskRequest)="onEditSubtask($event)"
-    ></app-task-subtasks>
-
     <app-task-comments
-      [workItemId]="commentsWorkItemId"
-      [subWorkItemId]="commentsSubWorkItemId"
+      [workItemId]="parentWorkItemId"
+      [subWorkItemId]="subWorkItemId"
       [currentUserId]="currentUserId"
       [currentUserFirstName]="currentUserFirstName"
       [currentUserLastName]="currentUserLastName"
     ></app-task-comments>
 
     <div class="fields-row">
-      <div class="field-group" *ngIf="!isEditMode && !isSubtask">
-        <div class="field-label">Sprint</div>
-        <select class="field-select" [(ngModel)]="sprintId">
-          <option [ngValue]="null">No sprint (Backlog)</option>
-          <option *ngFor="let sprint of sprints" [ngValue]="sprint.id">
-            {{ sprint.name }}
-          </option>
-        </select>
-      </div>
       <div class="field-group">
         <div class="field-label">Assigned</div>
         <app-task-assignee
@@ -87,7 +67,7 @@
           (statusChange)="status = $event"
         ></app-ve-status>
       </div>
-      <div class="field-group" *ngIf="isSubtask">
+      <div class="field-group">
         <div class="field-label">Priority</div>
         <app-task-priority
           [priority]="priority"
@@ -108,15 +88,15 @@
         </div>
       </div>
       <app-drop-zone
-        [workItemId]="commentsWorkItemId"
-        [subWorkItemId]="commentsSubWorkItemId"
+        [workItemId]="parentWorkItemId"
+        [subWorkItemId]="subWorkItemId"
       ></app-drop-zone>
     </div>
   </div>
 
   <div class="modal-footer">
     <div class="action-button" (click)="onSave()">
-      {{ saveLabel }}
+      {{ isEditMode ? "Save changes" : "Create subtask" }}
     </div>
   </div>
 </div>

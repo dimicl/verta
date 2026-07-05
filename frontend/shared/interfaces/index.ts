@@ -16,3 +16,7 @@ export * from './work-item-file-response.interface';
 export * from './sprint-request.interface';
 export * from './sprint-response.interface';
 export * from './notification.interface';
+export * from './sub-work-item-request.interface';
+export * from './sub-work-item-response.interface';
+export * from './change-sub-work-item-status-request.interface';
+export * from './update-sub-work-item-request.interface';

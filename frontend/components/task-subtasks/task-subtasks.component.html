@@ -1,0 +1,68 @@
+<section class="task-subtasks">
+  <div class="task-subtasks__header">
+    <div class="task-subtasks__title-row">
+      <span class="task-subtasks__title">Subtasks</span>
+      <span class="task-subtasks__count" *ngIf="subtasks().length > 0">{{
+        subtasks().length
+      }}</span>
+    </div>
+
+    <button
+      type="button"
+      class="task-subtasks__create-btn"
+      [disabled]="!workItemId || isSubmitting()"
+      (click)="onCreateSubtask()"
+    >
+      <svg-icon
+        class="task-subtasks__create-icon"
+        [src]="sharedSvgRoutes.PLUS_ICON"
+      />
+      Create Subtask
+    </button>
+  </div>
+
+  <div class="task-subtasks__loading" *ngIf="workItemId && isLoading()">
+    Loading subtasks...
+  </div>
+
+  <div class="task-subtasks__table-wrap" *ngIf="subtasks().length > 0">
+    <table class="task-subtasks__table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (subtask of subtasks(); track subtask.id) {
+        <tr class="task-subtasks__row" (click)="onOpenSubtask(subtask)">
+          <td class="task-subtasks__name">{{ subtask.name }}</td>
+          <td class="task-subtasks__description">{{ subtask.description }}</td>
+          <td class="task-subtasks__status" (click)="$event.stopPropagation()">
+            <app-ve-status
+              [taskStatus]="subtask.status"
+              (statusChange)="onStatusChange(subtask, $event)"
+            ></app-ve-status>
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div
+    class="task-subtasks__empty"
+    *ngIf="!isLoading() && subtasks().length === 0"
+  >
+    No subtasks yet.
+  </div>
+
+  <div class="task-subtasks__hint" *ngIf="!workItemId">
+    Save the task first to add subtasks.
+  </div>
+
+  <div class="task-subtasks__error" *ngIf="errorMessage()">
+    {{ errorMessage() }}
+  </div>
+</section>

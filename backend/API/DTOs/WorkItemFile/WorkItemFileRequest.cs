@@ -1,6 +1,7 @@
 public record WorkItemFileRequest
 {
     public required int WorkItemId { get; set; }
+    public int? SubWorkItemId { get; set; }
 
     public required string FileName { get; set; }
     public required string FileType { get; set; }

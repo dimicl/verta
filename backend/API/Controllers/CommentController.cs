@@ -42,6 +42,20 @@ public class CommentController : ControllerBase
         }
     }
 
+    [HttpGet("sub-work-item/{subWorkItemId:int}")]
+    public async Task<IActionResult> GetBySubWorkItemId(int subWorkItemId)
+    {
+        try
+        {
+            var result = await _commentService.GetBySubWorkItemId(subWorkItemId);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpPut("{commentId:int}")]
     public async Task<IActionResult> Update(
         int commentId,

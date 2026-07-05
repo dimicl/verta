@@ -203,9 +203,23 @@
             cdkDrag
           >
             <div class="board-card-header">
-              <div class="board-card-body" (click)="onOpenTask(task)">
-                <span class="task-title">{{ task.name }}</span>
-                <span class="task-description">{{ task.description }}</span>
+              <div class="board-card-title-row">
+                <button
+                  *ngIf="hasSubtasks(task.id)"
+                  type="button"
+                  class="subtask-toggle"
+                  [class.is-expanded]="isTaskExpanded(task.id)"
+                  (click)="onToggleTaskSubtasks(task.id, $event)"
+                >
+                  <svg-icon
+                    [src]="sharedSvgRoutes.ARROW_DOWN_ICON"
+                    class="subtask-toggle-icon"
+                  ></svg-icon>
+                </button>
+                <div class="board-card-body" (click)="onOpenTask(task)">
+                  <span class="task-title">{{ task.name }}</span>
+                  <span class="task-description">{{ task.description }}</span>
+                </div>
               </div>
               <div
                 class="task-menu"
@@ -260,6 +274,33 @@
                   </button>
                 </div>
               </ng-template>
+            </div>
+
+            <div
+              class="board-subtasks"
+              *ngIf="hasSubtasks(task.id) && isTaskExpanded(task.id)"
+              (click)="$event.stopPropagation()"
+            >
+              <div
+                class="board-subtask-row"
+                *ngFor="let subtask of getSubtasks(task.id)"
+                (click)="onOpenSubtask(task, subtask)"
+              >
+                <div class="board-subtask-info">
+                  <span class="board-subtask-name">{{ subtask.name }}</span>
+                  <span class="board-subtask-description">{{
+                    subtask.description
+                  }}</span>
+                </div>
+                <div (click)="$event.stopPropagation()">
+                  <app-ve-status
+                    [taskStatus]="subtask.status"
+                    (statusChange)="
+                      onSubtaskStatusChange(task.id, subtask, $event)
+                    "
+                  ></app-ve-status>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -379,3 +420,5 @@
     </div>
   </div>
 </ng-template>
+
+

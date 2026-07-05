@@ -9,3 +9,4 @@ export * from './board.service';
 export * from './task.service';
 export * from './sprint.service';
 export * from './signalr.service';
+export * from './sub-work-item.service';

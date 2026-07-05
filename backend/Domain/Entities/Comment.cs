@@ -7,6 +7,9 @@ public class Comment
     public int WorkItemId { get; set; }
     public WorkItem? WorkItem { get; set; }
 
+    public int? SubWorkItemId { get; set; }
+    public SubWorkItem? SubWorkItem { get; set; }
+
     public int UserId { get; set; }
     public User? User { get; set; }
 

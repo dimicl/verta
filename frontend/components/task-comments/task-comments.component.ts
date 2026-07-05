@@ -17,12 +17,14 @@ import { CommentService } from '../../shared/services';
 
 @Component({
   selector: 'app-task-comments',
+  standalone: true,
   imports: [CommonModule, FormsModule, AvatarComponent],
   templateUrl: './task-comments.component.html',
   styleUrl: './task-comments.component.scss',
 })
 export class TaskCommentsComponent implements OnInit, OnChanges {
   @Input() public workItemId: number | null = null;
+  @Input() public subWorkItemId: number | null | undefined = undefined;
   @Input() public currentUserId = 0;
   @Input() public currentUserFirstName = 'User';
   @Input() public currentUserLastName = '';
@@ -43,17 +45,32 @@ export class TaskCommentsComponent implements OnInit, OnChanges {
   }
 
   public ngOnChanges(changes: SimpleChanges): void {
-    if (changes['workItemId'] && !changes['workItemId'].firstChange) {
+    if (
+      (changes['workItemId'] && !changes['workItemId'].firstChange) ||
+      (changes['subWorkItemId'] && !changes['subWorkItemId'].firstChange)
+    ) {
       this.loadComments();
     }
   }
 
   public get pendingComments(): string[] {
-    if (this.workItemId) {
+    if (this.canPersistComments()) {
       return [];
     }
 
     return this.comments().map((comment) => comment.content);
+  }
+
+  private canPersistComments(): boolean {
+    if (!this.workItemId) {
+      return false;
+    }
+
+    if (this.subWorkItemId === undefined) {
+      return true;
+    }
+
+    return this.subWorkItemId !== null;
   }
 
   public authorName(comment: CommentResponse): string {
@@ -93,7 +110,7 @@ export class TaskCommentsComponent implements OnInit, OnChanges {
       return;
     }
 
-    if (!this.workItemId) {
+    if (!this.canPersistComments()) {
       const localComment: CommentResponse = {
         id: -Date.now(),
         content,
@@ -113,7 +130,11 @@ export class TaskCommentsComponent implements OnInit, OnChanges {
     this.errorMessage.set('');
 
     this.commentService
-      .create({ workItemId: this.workItemId, content })
+      .create({
+        workItemId: this.workItemId!,
+        subWorkItemId: this.subWorkItemId,
+        content,
+      })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (created) => {
@@ -227,23 +248,30 @@ export class TaskCommentsComponent implements OnInit, OnChanges {
       return;
     }
 
+    if (this.subWorkItemId === null) {
+      this.comments.set([]);
+      return;
+    }
+
     this.isLoading.set(true);
     this.errorMessage.set('');
 
-    this.commentService
-      .getByWorkItemId(this.workItemId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (items) => {
-          this.comments.set(items);
-          this.isLoading.set(false);
-        },
-        error: (err) => {
-          this.errorMessage.set(
-            err.error?.message ?? 'Failed to load comments.'
-          );
-          this.isLoading.set(false);
-        },
-      });
+    const request =
+      this.subWorkItemId !== undefined && this.subWorkItemId !== null
+        ? this.commentService.getBySubWorkItemId(this.subWorkItemId)
+        : this.commentService.getByWorkItemId(this.workItemId);
+
+    request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (items) => {
+        this.comments.set(items);
+        this.isLoading.set(false);
+      },
+      error: (err) => {
+        this.errorMessage.set(
+          err.error?.message ?? 'Failed to load comments.'
+        );
+        this.isLoading.set(false);
+      },
+    });
   }
 }

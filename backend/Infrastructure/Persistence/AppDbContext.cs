@@ -399,6 +399,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(x => x.Status)
                 .HasConversion<string>();
 
+            entity.Property(x => x.Priority)
+                .HasConversion<string>();
+
             entity.HasOne(x => x.WorkItem)
                 .WithMany(w => w.SubWorkItems)
                 .HasForeignKey(x => x.WorkItemId)
@@ -408,6 +411,11 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .WithMany()
                 .HasForeignKey(x => x.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.AssignedUser)
+                .WithMany()
+                .HasForeignKey(x => x.AssignedUserId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<Comment>(entity =>
@@ -425,6 +433,11 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.HasOne(x => x.WorkItem)
                 .WithMany(w => w.Comments)
                 .HasForeignKey(x => x.WorkItemId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.SubWorkItem)
+                .WithMany()
+                .HasForeignKey(x => x.SubWorkItemId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne(x => x.User)
@@ -454,6 +467,11 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.HasOne(x => x.WorkItem)
                 .WithMany(w => w.Files)
                 .HasForeignKey(x => x.WorkItemId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.SubWorkItem)
+                .WithMany()
+                .HasForeignKey(x => x.SubWorkItemId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

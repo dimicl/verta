@@ -13,7 +13,16 @@ public class CommentRepository
     {
         return await _dbSet
             .Include(x => x.User)
-            .Where(x => x.WorkItemId == workItemId)
+            .Where(x => x.WorkItemId == workItemId && x.SubWorkItemId == null)
+            .OrderBy(x => x.CreatedAt)
+            .ToListAsync();
+    }
+
+    public async Task<List<Comment>> GetBySubWorkItemIdAsync(int subWorkItemId)
+    {
+        return await _dbSet
+            .Include(x => x.User)
+            .Where(x => x.SubWorkItemId == subWorkItemId)
             .OrderBy(x => x.CreatedAt)
             .ToListAsync();
     }

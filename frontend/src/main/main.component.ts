@@ -1,8 +1,10 @@
 import { Component, OnDestroy, OnInit, signal } from '@angular/core';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import {
   BoardService,
   CommentService,
+  SubWorkItemService,
   WorkItemFileService,
   SignalRService,
   SprintService,
@@ -19,6 +21,7 @@ import { AvatarComponent } from '../../components/avatar/avatar.component';
 import { ChatComponent } from '../chat/chat.component';
 import { VeNotificationComponent } from '../../components/ve-notification/ve-notification.component';
 import { TaskModalComponent } from '../../components/task-modal/task-modal.component';
+import { STACKED_MODAL_OPTIONS, TASK_MODAL_OPTIONS } from '../../shared/constants/modal-options';
 import { SprintModalComponent } from '../../components/sprint-modal/sprint-modal.component';
 import { VeExtraMembersComponent } from '../../components/ve-extra-members/ve-extra-members.component';
 import { WorkspaceModalComponent } from '../../components/workspace-modal/workspace-modal.component';
@@ -26,6 +29,7 @@ import { WorkspaceResponse } from '../../shared/interfaces/workspace-response.in
 import {
   BoardResponse,
   SprintResponse,
+  SubWorkItemResponse,
   WorkItemRequest,
   WorkItemResponse,
 } from '../../shared/interfaces';
@@ -126,7 +130,10 @@ export class MainComponent implements OnInit, OnDestroy {
   public activeWorkItemId: number | null = null;
   public stickyLockMessage = '';
   public collapsedGroupKeys = signal<Set<string>>(new Set());
+  public expandedTaskIds = signal<Set<number>>(new Set());
   public showLockToast = false;
+
+  public subtasksByWorkItemId: Record<number, SubWorkItemResponse[]> = {};
 
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   private lockToastTimer: ReturnType<typeof setTimeout> | null = null;
@@ -167,6 +174,7 @@ export class MainComponent implements OnInit, OnDestroy {
     private sprintService: SprintService,
     private taskService: TaskService,
     private commentService: CommentService,
+    private subWorkItemService: SubWorkItemService,
     private workItemFileService: WorkItemFileService,
     private signalRService: SignalRService,
     private modalService: NgbModal
@@ -228,12 +236,14 @@ export class MainComponent implements OnInit, OnDestroy {
         this.sprints = sprints;
         this.allTasks = tasks;
         this.applyTaskFilters();
+        this.loadSubtasksForTasks(tasks);
       },
       error: (err) => {
         console.error('Greška pri učitavanju backloga:', err);
         this.sprintTaskGroups = [];
         this.sprints = [];
         this.allTasks = [];
+        this.subtasksByWorkItemId = {};
         this.clearBoardTasks();
       },
     });
@@ -266,6 +276,160 @@ export class MainComponent implements OnInit, OnDestroy {
 
     this.sprintTaskGroups = groups;
     this.rebuildBoardTasks(filteredTasks);
+  }
+
+  private loadSubtasksForTasks(tasks: WorkItemResponse[]): void {
+    if (tasks.length === 0) {
+      this.subtasksByWorkItemId = {};
+      return;
+    }
+
+    forkJoin(
+      tasks.map((task) =>
+        this.subWorkItemService.getByWorkItemId(task.id).pipe(
+          catchError(() => of([] as SubWorkItemResponse[]))
+        )
+      )
+    ).subscribe({
+      next: (results) => {
+        const map: Record<number, SubWorkItemResponse[]> = {};
+        tasks.forEach((task, index) => {
+          map[task.id] = results[index];
+        });
+        this.subtasksByWorkItemId = map;
+      },
+      error: (err) => {
+        console.error('Greška pri učitavanju podzadataka:', err);
+        this.subtasksByWorkItemId = {};
+      },
+    });
+  }
+
+  public hasSubtasks(taskId: number): boolean {
+    return (this.subtasksByWorkItemId[taskId]?.length ?? 0) > 0;
+  }
+
+  public getSubtasks(taskId: number): SubWorkItemResponse[] {
+    return this.subtasksByWorkItemId[taskId] ?? [];
+  }
+
+  public isTaskExpanded(taskId: number): boolean {
+    return this.expandedTaskIds().has(taskId);
+  }
+
+  public onToggleTaskSubtasks(taskId: number, event: Event): void {
+    event.stopPropagation();
+
+    this.expandedTaskIds.update((ids) => {
+      const next = new Set(ids);
+      if (next.has(taskId)) {
+        next.delete(taskId);
+      } else {
+        next.add(taskId);
+      }
+      return next;
+    });
+  }
+
+  public onSubtaskStatusChange(
+    taskId: number,
+    subtask: SubWorkItemResponse,
+    status: TaskStatus
+  ): void {
+    if (subtask.status === status) {
+      return;
+    }
+
+    this.subWorkItemService.changeStatus(subtask.id, status).subscribe({
+      next: (updated) => {
+        const list = this.subtasksByWorkItemId[taskId];
+        if (!list) {
+          return;
+        }
+
+        const index = list.findIndex((item) => item.id === updated.id);
+        if (index >= 0) {
+          list[index] = updated;
+        }
+      },
+      error: (err) => {
+        console.error('Greška pri promeni statusa podzadatka:', err);
+        this.showStatusError(err.error?.message ?? err.message);
+      },
+    });
+  }
+
+  public onOpenSubtask(task: WorkItemResponse, subtask: SubWorkItemResponse): void {
+    const modalRef = this.modalService.open(TaskModalComponent, STACKED_MODAL_OPTIONS);
+
+    modalRef.componentInstance.isSubtask = true;
+    modalRef.componentInstance.isEditMode = true;
+    modalRef.componentInstance.parentWorkItemId = task.id;
+    modalRef.componentInstance.parentTaskTitle = task.name;
+    modalRef.componentInstance.subWorkItemId = subtask.id;
+    modalRef.componentInstance.title = subtask.name;
+    modalRef.componentInstance.description = subtask.description;
+    modalRef.componentInstance.status = subtask.status;
+    modalRef.componentInstance.priority = subtask.priority ?? 'Medium';
+    modalRef.componentInstance.assignedUserId = subtask.assignedUserId ?? null;
+    modalRef.componentInstance.members = this.boardMembers;
+    this.setModalCurrentUser(modalRef.componentInstance);
+
+    modalRef.result.then(
+      (result) => {
+        if (result?.title) {
+          this.saveSubtaskFromBoard(task, subtask, result);
+        }
+      },
+      () => {}
+    );
+  }
+
+  private saveSubtaskFromBoard(
+    task: WorkItemResponse,
+    existing: SubWorkItemResponse,
+    result: {
+      title: string;
+      description: string;
+      status: TaskStatus;
+      priority: TaskPriority;
+      assignedUserId?: number | null;
+    }
+  ): void {
+    this.subWorkItemService
+      .update(existing.id, {
+        name: result.title.trim(),
+        description: result.description.trim(),
+        assignedUserId: result.assignedUserId,
+        priority: result.priority,
+      })
+      .subscribe({
+        next: (updated) => {
+          const applyStatus = (item: SubWorkItemResponse) => {
+            const list = this.subtasksByWorkItemId[task.id];
+            if (list) {
+              const index = list.findIndex((entry) => entry.id === item.id);
+              if (index >= 0) {
+                list[index] = item;
+              }
+            }
+          };
+
+          if (result.status !== existing.status) {
+            this.subWorkItemService.changeStatus(updated.id, result.status).subscribe({
+              next: (withStatus) => applyStatus(withStatus),
+              error: () => applyStatus(updated),
+            });
+            return;
+          }
+
+          applyStatus(updated);
+        },
+        error: (err) => {
+          console.error('Greška pri ažuriranju podzadatka:', err);
+          this.showStatusError(err.error?.message ?? err.message);
+        },
+      });
   }
 
   private getFilteredTasks(): WorkItemResponse[] {
@@ -429,10 +593,7 @@ export class MainComponent implements OnInit, OnDestroy {
   }
 
   public onAddTask(): void {
-    const modalRef = this.modalService.open(TaskModalComponent, {
-      backdrop: 'static',
-      keyboard: false,
-    });
+    const modalRef = this.modalService.open(TaskModalComponent, TASK_MODAL_OPTIONS);
 
     modalRef.componentInstance.sprints = this.sprints;
     modalRef.componentInstance.members = this.boardMembers;
@@ -765,11 +926,7 @@ export class MainComponent implements OnInit, OnDestroy {
   }
 
   private openTaskModal(task: WorkItemResponse, isEditMode: boolean): void {
-    const modalRef = this.modalService.open(TaskModalComponent, {
-      backdrop: 'static',
-      keyboard: false,
-      size: 'lg',
-    });
+    const modalRef = this.modalService.open(TaskModalComponent, TASK_MODAL_OPTIONS);
 
     modalRef.componentInstance.isEditMode = isEditMode;
     modalRef.componentInstance.workItemId = isEditMode ? task.id : null;

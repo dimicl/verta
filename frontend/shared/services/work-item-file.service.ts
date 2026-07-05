@@ -15,9 +15,12 @@ export class WorkItemFileService {
     });
   }
 
-  public upload(workItemId: number, file: File) {
+  public upload(workItemId: number, file: File, subWorkItemId?: number | null) {
     const formData = new FormData();
     formData.append('workItemId', String(workItemId));
+    if (subWorkItemId) {
+      formData.append('subWorkItemId', String(subWorkItemId));
+    }
     formData.append('file', file, file.name);
 
     return this.http.post<WorkItemFileResponse>(`${this.apiUrl}/upload`, formData, {
@@ -28,6 +31,13 @@ export class WorkItemFileService {
   public getByWorkItemId(workItemId: number) {
     return this.http.get<WorkItemFileResponse[]>(
       `${this.apiUrl}/work-item/${workItemId}`,
+      { headers: this.authHeaders() }
+    );
+  }
+
+  public getBySubWorkItemId(subWorkItemId: number) {
+    return this.http.get<WorkItemFileResponse[]>(
+      `${this.apiUrl}/sub-work-item/${subWorkItemId}`,
       { headers: this.authHeaders() }
     );
   }

@@ -7,6 +7,7 @@ public class CommentService : ICommentService
 {
     private readonly ICommentRepository _commentRepo;
     private readonly IWorkItemRepository _workItemRepo;
+    private readonly ISubWorkItemRepository _subWorkItemRepo;
     private readonly IBoardRepository _boardRepo;
     private readonly IBoardAccessService _boardAccessService;
     private readonly IUserContext _userContext;
@@ -16,6 +17,7 @@ public class CommentService : ICommentService
     public CommentService(
         ICommentRepository commentRepo,
         IWorkItemRepository workItemRepo,
+        ISubWorkItemRepository subWorkItemRepo,
         IBoardRepository boardRepo,
         IBoardAccessService boardAccessService,
         IUserContext userContext,
@@ -24,6 +26,7 @@ public class CommentService : ICommentService
     {
         _commentRepo = commentRepo;
         _workItemRepo = workItemRepo;
+        _subWorkItemRepo = subWorkItemRepo;
         _boardRepo = boardRepo;
         _boardAccessService = boardAccessService;
         _userContext = userContext;
@@ -52,10 +55,21 @@ public class CommentService : ICommentService
 
         await _boardAccessService.EnsureBoardAccessAsync(board);
 
+        if (request.SubWorkItemId.HasValue)
+        {
+            var subWorkItem = await _subWorkItemRepo.GetById(request.SubWorkItemId.Value);
+            if (subWorkItem == null)
+                throw new Exception("Sub work item does not exist.");
+
+            if (subWorkItem.WorkItemId != request.WorkItemId)
+                throw new Exception("Sub work item does not belong to this work item.");
+        }
+
         var comment = new Comment
         {
             Content = request.Content.Trim(),
             WorkItemId = request.WorkItemId,
+            SubWorkItemId = request.SubWorkItemId,
             UserId = userId,
             CreatedAt = DateTime.UtcNow
         };
@@ -94,6 +108,21 @@ public class CommentService : ICommentService
         await _boardAccessService.EnsureBoardAccessAsync(board);
 
         var comments = await _commentRepo.GetByWorkItemIdAsync(workItemId);
+
+        return comments
+            .Select(CommentHelper.ToResponse)
+            .ToList();
+    }
+
+    public async Task<List<CommentResponse>> GetBySubWorkItemId(int subWorkItemId)
+    {
+        var subWorkItem = await _subWorkItemRepo.GetById(subWorkItemId);
+        if (subWorkItem == null)
+            throw new Exception("Sub work item does not exist.");
+
+        await EnsureWorkItemBoardAccessAsync(subWorkItem.WorkItemId);
+
+        var comments = await _commentRepo.GetBySubWorkItemIdAsync(subWorkItemId);
 
         return comments
             .Select(CommentHelper.ToResponse)

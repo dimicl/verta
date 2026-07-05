@@ -8,8 +8,10 @@ public static class SubWorkItemHelper
             Name = subWorkItem.Name,
             Description = subWorkItem.Description,
             Status = subWorkItem.Status,
+            Priority = subWorkItem.Priority,
             WorkItemId = subWorkItem.WorkItemId,
             UserId = subWorkItem.UserId,
+            AssignedUserId = subWorkItem.AssignedUserId,
             CreatedAt = subWorkItem.CreatedAt,
             UpdatedAt = subWorkItem.UpdatedAt
         };

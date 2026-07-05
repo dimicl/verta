@@ -1,0 +1,17 @@
+@import '../task-modal/task-modal.component.scss';
+
+.parent-task {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #6b7280;
+
+  strong {
+    color: #374151;
+  }
+}
+
+.modal-footer .action-button {
+  width: auto;
+  min-width: 120px;
+  padding: 4px 12px;
+}

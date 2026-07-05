@@ -305,6 +305,101 @@
   gap: 8px;
 }
 
+.board-card-title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.subtask-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background: #f3f4f6;
+  }
+
+  &.is-expanded .subtask-toggle-icon {
+    transform: rotate(0deg);
+  }
+}
+
+.subtask-toggle-icon {
+  display: flex;
+  width: 14px;
+  height: 14px;
+  transform: rotate(-90deg);
+  transition: transform 0.2s ease;
+
+  svg path {
+    fill: #6b7280;
+  }
+}
+
+.board-subtasks {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 2px;
+  padding: 8px 0 0 26px;
+  border-top: 1px dashed #e5e7eb;
+}
+
+.board-subtask-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: #f9fafb;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background: #f3f4f6;
+  }
+}
+
+.board-subtask-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.board-subtask-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.board-subtask-description {
+  font-size: 11px;
+  color: #6b7280;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .board-card-body {
   display: flex;
   flex-direction: column;

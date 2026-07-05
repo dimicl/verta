@@ -18,11 +18,12 @@ public class WorkItemFileController : ControllerBase
     [RequestSizeLimit(104_857_600)]
     public async Task<IActionResult> Upload(
         [FromForm] int workItemId,
-        [FromForm] IFormFile file)
+        [FromForm] IFormFile file,
+        [FromForm] int? subWorkItemId = null)
     {
         try
         {
-            var result = await _fileService.Upload(workItemId, file);
+            var result = await _fileService.Upload(workItemId, file, subWorkItemId);
             return Ok(result);
         }
         catch (Exception ex)
@@ -51,6 +52,20 @@ public class WorkItemFileController : ControllerBase
         try
         {
             var result = await _fileService.GetByWorkItemId(workItemId);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpGet("sub-work-item/{subWorkItemId:int}")]
+    public async Task<IActionResult> GetBySubWorkItemId(int subWorkItemId)
+    {
+        try
+        {
+            var result = await _fileService.GetBySubWorkItemId(subWorkItemId);
             return Ok(result);
         }
         catch (Exception ex)

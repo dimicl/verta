@@ -23,6 +23,13 @@ export class CommentService {
     );
   }
 
+  public getBySubWorkItemId(subWorkItemId: number) {
+    return this.http.get<CommentResponse[]>(
+      `${this.apiUrl}/sub-work-item/${subWorkItemId}`,
+      { headers: this.authHeaders() }
+    );
+  }
+
   public create(request: CommentRequest) {
     return this.http.post<CommentResponse>(this.apiUrl, request, {
       headers: this.authHeaders(),

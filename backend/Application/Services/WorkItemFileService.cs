@@ -8,6 +8,7 @@ public class WorkItemFileService : IWorkItemFileService
 {
     private readonly IWorkItemFileRepository _fileRepo;
     private readonly IWorkItemRepository _workItemRepo;
+    private readonly ISubWorkItemRepository _subWorkItemRepo;
     private readonly IBoardRepository _boardRepo;
     private readonly IBoardAccessService _boardAccessService;
     private readonly IFileStorageService _fileStorageService;
@@ -17,6 +18,7 @@ public class WorkItemFileService : IWorkItemFileService
     public WorkItemFileService(
         IWorkItemFileRepository fileRepo,
         IWorkItemRepository workItemRepo,
+        ISubWorkItemRepository subWorkItemRepo,
         IBoardRepository boardRepo,
         IBoardAccessService boardAccessService,
         IFileStorageService fileStorageService,
@@ -25,6 +27,7 @@ public class WorkItemFileService : IWorkItemFileService
     {
         _fileRepo = fileRepo;
         _workItemRepo = workItemRepo;
+        _subWorkItemRepo = subWorkItemRepo;
         _boardRepo = boardRepo;
         _boardAccessService = boardAccessService;
         _fileStorageService = fileStorageService;
@@ -32,7 +35,10 @@ public class WorkItemFileService : IWorkItemFileService
         _commandInvoker = commandInvoker;
     }
 
-    public async Task<WorkItemFileResponse> Upload(int workItemId, IFormFile file)
+    public async Task<WorkItemFileResponse> Upload(
+        int workItemId,
+        IFormFile file,
+        int? subWorkItemId = null)
     {
         if (file == null || file.Length == 0)
             throw new Exception("File is required.");
@@ -54,6 +60,7 @@ public class WorkItemFileService : IWorkItemFileService
         var request = new WorkItemFileRequest
         {
             WorkItemId = workItemId,
+            SubWorkItemId = subWorkItemId,
             FileName = file.FileName,
             FileType = file.ContentType,
             FileSize = file.Length,
@@ -91,9 +98,20 @@ public class WorkItemFileService : IWorkItemFileService
 
         await _boardAccessService.EnsureBoardAccessAsync(board);
 
+        if (request.SubWorkItemId.HasValue)
+        {
+            var subWorkItem = await _subWorkItemRepo.GetById(request.SubWorkItemId.Value);
+            if (subWorkItem == null)
+                throw new Exception("Sub work item does not exist.");
+
+            if (subWorkItem.WorkItemId != request.WorkItemId)
+                throw new Exception("Sub work item does not belong to this work item.");
+        }
+
         var file = new WorkItemFile
         {
             WorkItemId = request.WorkItemId,
+            SubWorkItemId = request.SubWorkItemId,
             FileName = request.FileName,
             FileType = request.FileType,
             FileSize = request.FileSize,
@@ -134,6 +152,27 @@ public class WorkItemFileService : IWorkItemFileService
         await _boardAccessService.EnsureBoardAccessAsync(board);
 
         var files = await _fileRepo.GetByWorkItemIdAsync(workItemId);
+
+        return files.Select(WorkItemFileHelper.ToResponse).ToList();
+    }
+
+    public async Task<List<WorkItemFileResponse>> GetBySubWorkItemId(int subWorkItemId)
+    {
+        var subWorkItem = await _subWorkItemRepo.GetById(subWorkItemId);
+        if (subWorkItem == null)
+            throw new Exception("Sub work item does not exist.");
+
+        var workItem = await _workItemRepo.GetById(subWorkItem.WorkItemId);
+        if (workItem == null)
+            throw new Exception("Work item does not exist.");
+
+        var board = await _boardRepo.GetById(workItem.BoardId);
+        if (board == null)
+            throw new Exception("Board does not exist.");
+
+        await _boardAccessService.EnsureBoardAccessAsync(board);
+
+        var files = await _fileRepo.GetBySubWorkItemIdAsync(subWorkItemId);
 
         return files.Select(WorkItemFileHelper.ToResponse).ToList();
     }

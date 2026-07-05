@@ -28,12 +28,42 @@ public class SubWorkItemController : ControllerBase
         }
     }
 
+    [HttpGet("{subWorkItemId:int}")]
+    public async Task<IActionResult> GetById(int subWorkItemId)
+    {
+        try
+        {
+            var result = await _subWorkItemService.GetById(subWorkItemId);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpGet("work-item/{workItemId:int}")]
     public async Task<IActionResult> GetByWorkItemId(int workItemId)
     {
         try
         {
             var result = await _subWorkItemService.GetByWorkItemId(workItemId);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPut("{subWorkItemId:int}")]
+    public async Task<IActionResult> Update(
+        int subWorkItemId,
+        [FromBody] UpdateSubWorkItemRequest request)
+    {
+        try
+        {
+            var result = await _subWorkItemService.Update(subWorkItemId, request);
             return Ok(result);
         }
         catch (Exception ex)

@@ -5,6 +5,9 @@ public class WorkItemFile
     public int WorkItemId { get; set; }
     public WorkItem? WorkItem { get; set; }
 
+    public int? SubWorkItemId { get; set; }
+    public SubWorkItem? SubWorkItem { get; set; }
+
     public required string FileName { get; set; }
     public required string FileType { get; set; }
     public long FileSize { get; set; }
