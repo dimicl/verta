@@ -7,4 +7,5 @@ public interface ISubWorkItemService
     Task<List<SubWorkItemResponse>> GetByWorkItemId(int workItemId);
     Task<SubWorkItemResponse> Update(int subWorkItemId, UpdateSubWorkItemRequest request);
     Task<SubWorkItemResponse> ChangeStatus(int subWorkItemId, ChangeSubWorkItemStatusRequest request);
+    Task Delete(int subWorkItemId);
 }

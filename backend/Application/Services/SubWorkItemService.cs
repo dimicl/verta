@@ -230,6 +230,41 @@ public class SubWorkItemService : ISubWorkItemService
         return await _commandInvoker.ExecuteAsync(command);
     }
 
+    public async Task Delete(int subWorkItemId)
+    {
+        var userId = _userContext.GetUserId();
+
+        var subWorkItem = await _subRepo.GetById(subWorkItemId);
+        if (subWorkItem == null)
+            throw new Exception("Sub work item does not exist.");
+
+        var workItem = await _workItemRepo.GetById(subWorkItem.WorkItemId);
+        if (workItem == null)
+            throw new Exception("Work item does not exist.");
+
+        var board = await _boardRepo.GetById(workItem.BoardId);
+        if (board == null)
+            throw new Exception("Board does not exist.");
+
+        await _boardAccessService.EnsureBoardAccessAsync(board);
+
+        var command = new DeleteSubWorkItemCommand(async () =>
+        {
+            await _subRepo.Delete(subWorkItem);
+
+            await _domainEventSubject.NotifyAsync(DomainEventNames.SubWorkItemDeleted, new
+            {
+                SubWorkItemId = subWorkItem.Id,
+                WorkItemId = subWorkItem.WorkItemId,
+                DeletedByUserId = userId
+            });
+
+            return true;
+        });
+
+        await _commandInvoker.ExecuteAsync(command);
+    }
+
     private async Task EnsureAssignedUserIsWorkspaceMemberAsync(
         int workspaceId,
         int? assignedUserId)

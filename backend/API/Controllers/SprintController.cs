@@ -60,4 +60,34 @@ public class SprintController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+
+    [HttpPut("{sprintId:int}")]
+    public async Task<IActionResult> Update(
+        int sprintId,
+        [FromBody] UpdateSprintRequest request)
+    {
+        try
+        {
+            var result = await _sprintService.Update(sprintId, request);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpDelete("{sprintId:int}")]
+    public async Task<IActionResult> Delete(int sprintId)
+    {
+        try
+        {
+            await _sprintService.Delete(sprintId);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }

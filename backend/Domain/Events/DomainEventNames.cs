@@ -30,4 +30,8 @@ public static class DomainEventNames
     public const string SubWorkItemCreated = "SubWorkItemCreated";
     public const string SubWorkItemUpdated = "SubWorkItemUpdated";
     public const string SubWorkItemStatusChanged = "SubWorkItemStatusChanged";
+    public const string SubWorkItemDeleted = "SubWorkItemDeleted";
+
+    public const string SprintUpdated = "SprintUpdated";
+    public const string SprintDeleted = "SprintDeleted";
 }

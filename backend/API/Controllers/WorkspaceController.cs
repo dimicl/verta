@@ -20,18 +20,63 @@ public class WorkspaceController : ControllerBase
     [Authorize]
     [HttpPost("workspace")]
     public async Task<IActionResult> CreateWorkspace([FromBody] WorkspaceRequest request)
-    {       
-        var result = await service.Create(request);
-        return Ok(result);
+    {
+        try
+        {
+            var result = await service.Create(request);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [Authorize]
     [HttpGet("workspace/my")]
     public async Task<IActionResult> GetMyWorkspace()
     {
-        var result = await service.GetByOwnerId();
+        try
+        {
+            var result = await service.GetByOwnerId();
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 
-        return Ok(result);
+    [Authorize]
+    [HttpPut("workspace/{workspaceId:int}")]
+    public async Task<IActionResult> UpdateWorkspace(
+        int workspaceId,
+        [FromBody] WorkspaceRequest request)
+    {
+        try
+        {
+            var result = await service.Update(workspaceId, request);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [Authorize]
+    [HttpDelete("workspace/{workspaceId:int}")]
+    public async Task<IActionResult> DeleteWorkspace(int workspaceId)
+    {
+        try
+        {
+            await service.Delete(workspaceId);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [Authorize]

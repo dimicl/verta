@@ -86,6 +86,41 @@ public class WorkspaceService : IWorkspaceService
       throw new Exception("Workspace does not exist.");
    }
 
-   
+   public async Task<WorkspaceResponse> Update(int workspaceId, WorkspaceRequest request)
+   {
+      if (request == null)
+         throw new Exception("Request not found.");
+
+      if (string.IsNullOrWhiteSpace(request.Name))
+         throw new Exception("Workspace name is required.");
+
+      var userId = _userContext.GetUserId();
+      var workspace = await _repo.GetById(workspaceId);
+
+      if (workspace == null)
+         throw new Exception("Workspace does not exist.");
+
+      if (workspace.OwnerId != userId)
+         throw new Exception("You are not the owner of this workspace.");
+
+      workspace.Name = request.Name.Trim();
+      await _repo.Update(workspace);
+
+      return WorkspaceHelper.ToResponse(workspace);
+   }
+
+   public async Task Delete(int workspaceId)
+   {
+      var userId = _userContext.GetUserId();
+      var workspace = await _repo.GetById(workspaceId);
+
+      if (workspace == null)
+         throw new Exception("Workspace does not exist.");
+
+      if (workspace.OwnerId != userId)
+         throw new Exception("You are not the owner of this workspace.");
+
+      await _repo.Delete(workspace);
+   }
 
 }

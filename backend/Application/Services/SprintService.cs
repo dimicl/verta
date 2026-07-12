@@ -84,6 +84,55 @@ public class SprintService : ISprintService
         return sprints.Select(SprintHelper.ToResponse).ToList();
     }
 
+    public async Task<SprintResponse> Update(int sprintId, UpdateSprintRequest request)
+    {
+        if (request == null)
+            throw new Exception("Request not found.");
+
+        if (string.IsNullOrWhiteSpace(request.Name))
+            throw new Exception("Sprint name is required.");
+
+        var sprint = await _sprintRepo.GetById(sprintId);
+        if (sprint == null)
+            throw new Exception("Sprint does not exist.");
+
+        var board = await _boardRepo.GetById(sprint.BoardId);
+        if (board == null)
+            throw new Exception("Board does not exist.");
+
+        await _boardAccessService.EnsureBoardAccessAsync(board);
+
+        var startDate = ToUtcDate(request.StartDate);
+        var endDate = ToUtcDate(request.EndDate);
+
+        if (startDate.HasValue && endDate.HasValue && endDate < startDate)
+            throw new Exception("End date must be on or after start date.");
+
+        sprint.Name = request.Name.Trim();
+        sprint.StartDate = startDate;
+        sprint.EndDate = endDate;
+        sprint.UpdatedAt = DateTime.UtcNow;
+
+        await _sprintRepo.Update(sprint);
+
+        return SprintHelper.ToResponse(sprint);
+    }
+
+    public async Task Delete(int sprintId)
+    {
+        var sprint = await _sprintRepo.GetById(sprintId);
+        if (sprint == null)
+            throw new Exception("Sprint does not exist.");
+
+        var board = await _boardRepo.GetById(sprint.BoardId);
+        if (board == null)
+            throw new Exception("Board does not exist.");
+
+        await _boardAccessService.EnsureBoardAccessAsync(board);
+
+        await _sprintRepo.Delete(sprint);
+    }
+
     private static DateTime? ToUtcDate(DateTime? value)
     {
         if (!value.HasValue)

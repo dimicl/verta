@@ -942,8 +942,16 @@ export class MainComponent implements OnInit, OnDestroy {
     modalRef.result.then(
       (result) => {
         if (result && isEditMode) {
-          this.updateTask(task.id, result, task.boardId, task.status, task.priority);
+          this.updateTask(
+            task.id,
+            result,
+            task.boardId,
+            task.status,
+            task.priority,
+            () => this.closeTask(task.id));
+          return;
         }
+
         this.closeTask(task.id);
       },
       () => {
@@ -1029,7 +1037,8 @@ export class MainComponent implements OnInit, OnDestroy {
     },
     boardId: number,
     previousStatus: TaskStatus,
-    priority: string
+    priority: string,
+    onComplete?: () => void
   ): void {
     const request: WorkItemRequest = {
       name: result.title,
@@ -1047,15 +1056,20 @@ export class MainComponent implements OnInit, OnDestroy {
             this.taskService
               .changeStatus(workItemId, result.status)
               .subscribe({
-                next: () => this.refreshBacklog(),
+                next: () => {
+                  this.refreshBacklog();
+                  onComplete?.();
+                },
                 error: (err) => {
                   console.error('Greška pri promeni statusa taska:', err);
                   this.showStatusError(err.error?.message ?? err.message);
                   this.refreshBacklog();
+                  onComplete?.();
                 },
               });
           } else {
             this.refreshBacklog();
+            onComplete?.();
           }
         };
 
@@ -1066,6 +1080,7 @@ export class MainComponent implements OnInit, OnDestroy {
         if (err.status === 403) {
           this.showTaskOccupiedToast();
         }
+        onComplete?.();
       },
     });
   }
@@ -1127,7 +1142,11 @@ export class MainComponent implements OnInit, OnDestroy {
   }
 
   public onOpenCreateModal() {
-    this.modalService.open(WorkspaceModalComponent, {});
+    const modalRef = this.modalService.open(WorkspaceModalComponent, {});
+    modalRef.componentInstance.onEmitOwnerId.subscribe(() => {
+      modalRef.close();
+      this.getWorkspace();
+    });
   }
 
   public onOpenBoardInviteModal(): void {

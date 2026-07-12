@@ -87,4 +87,18 @@ public class SubWorkItemController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+
+    [HttpDelete("{subWorkItemId:int}")]
+    public async Task<IActionResult> Delete(int subWorkItemId)
+    {
+        try
+        {
+            await _subWorkItemService.Delete(subWorkItemId);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }

@@ -127,12 +127,17 @@ app.UseAuthorization();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("DatabaseSeeder");
+
     db.Database.Migrate();
 
     db.Database.ExecuteSqlRaw("DELETE FROM board_lock_queue");
     db.Database.ExecuteSqlRaw("DELETE FROM board_locks");
     db.Database.ExecuteSqlRaw("DELETE FROM work_item_lock_interests");
     db.Database.ExecuteSqlRaw("DELETE FROM work_item_locks");
+
+    await DatabaseSeeder.SeedAsync(db, configuration, logger);
 }
 
 app.MapControllers();
