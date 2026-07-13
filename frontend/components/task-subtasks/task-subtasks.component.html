@@ -32,6 +32,7 @@
           <th>Name</th>
           <th>Description</th>
           <th>Status</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
@@ -44,6 +45,20 @@
               [taskStatus]="subtask.status"
               (statusChange)="onStatusChange(subtask, $event)"
             ></app-ve-status>
+          </td>
+          <td class="task-subtasks__actions" (click)="$event.stopPropagation()">
+            <button
+              type="button"
+              class="task-subtasks__delete-btn"
+              title="Delete subtask"
+              [disabled]="isSubmitting()"
+              (click)="onDeleteSubtask(subtask, $event)"
+            >
+              <svg-icon
+                class="task-subtasks__delete-icon"
+                [src]="sharedSvgRoutes.DELETE_ICON"
+              />
+            </button>
           </td>
         </tr>
         }

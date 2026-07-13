@@ -114,7 +114,17 @@
     </div>
   </div>
 
+  <div class="modal-error" *ngIf="errorMessage">{{ errorMessage }}</div>
+
   <div class="modal-footer">
+    <button
+      type="button"
+      class="action-button action-button--danger"
+      *ngIf="isSubtask && isEditMode"
+      (click)="onDeleteSubtask()"
+    >
+      Delete
+    </button>
     <div class="action-button" (click)="onSave()">
       {{ saveLabel }}
     </div>

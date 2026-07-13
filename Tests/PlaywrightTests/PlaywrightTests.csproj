@@ -21,6 +21,10 @@
 
   <ItemGroup>
     <Using Include="NUnit.Framework" />
+    <Using Include="NUnit.Framework.Legacy" />
+    <Using Include="Microsoft.Playwright" />
+    <Using Include="Microsoft.Playwright.NUnit" />
+    <Using Include="static Microsoft.Playwright.Assertions" />
   </ItemGroup>
 
   <ItemGroup>

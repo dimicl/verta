@@ -104,11 +104,23 @@
   background: #fff;
 }
 
+.modal-error {
+  font-size: 13px;
+  color: #b91c1c;
+  padding: 0 2px;
+}
+
 .modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+
   .action-button {
     display: flex;
     align-items: center;
     justify-content: center;
+    border: 0;
     border-radius: 3px;
     background-color: #030ba7;
     width: 120px;
@@ -121,6 +133,15 @@
 
     &:hover {
       background-color: #00056b;
+    }
+
+    &--danger {
+      margin-right: auto;
+      background-color: #dc2626;
+
+      &:hover {
+        background-color: #b91c1c;
+      }
     }
   }
 }

@@ -17,9 +17,9 @@ public class WorkItemFileController : ControllerBase
     [HttpPost("upload")]
     [RequestSizeLimit(104_857_600)]
     public async Task<IActionResult> Upload(
-        [FromForm] int workItemId,
-        [FromForm] IFormFile file,
-        [FromForm] int? subWorkItemId = null)
+         int workItemId,
+         IFormFile file,
+         int? subWorkItemId = null)
     {
         try
         {

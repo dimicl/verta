@@ -1,8 +1,0 @@
-public record WorkspaceMemberRequest
-{
-    public required int WorkspaceId { get; set; }
-
-    public required int UserId { get; set; }
-
-    public required UserRole Role { get; set; }
-}

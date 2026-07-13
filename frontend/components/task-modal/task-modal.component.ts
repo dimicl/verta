@@ -8,7 +8,12 @@ import { TaskStatus } from '../../shared/types/task-status.type';
 import { TaskPriority } from '../../shared/types/task-priority.type';
 import { SprintResponse, SubWorkItemResponse } from '../../shared/interfaces';
 import { SharedSvgRoutes } from '../../shared/constants/shared-svg-routes';
-import { STACKED_MODAL_OPTIONS } from '../../shared/constants/modal-options';
+import {
+  CONFIRM_MODAL_OPTIONS,
+  STACKED_MODAL_OPTIONS,
+} from '../../shared/constants/modal-options';
+import { SubWorkItemService } from '../../shared/services';
+import { ConfirmModalComponent } from '../confirm-modal/confirm-modal.component';
 import { VeStatusComponent } from '../ve-status/ve-status.component';
 import {
   TaskAssigneeComponent,
@@ -68,8 +73,10 @@ export class TaskModalComponent {
   public dropZone?: DropZoneComponent;
 
   public subtasksChanged: SubWorkItemResponse[] = [];
+  public errorMessage = '';
 
   private readonly modalService = inject(NgbModal);
+  private readonly subWorkItemService = inject(SubWorkItemService);
 
   constructor(private activeModal: NgbActiveModal) {}
 
@@ -134,12 +141,55 @@ export class TaskModalComponent {
 
     modalRef.result.then(
       (result) => {
+        if (result?.deleted && existing) {
+          this.taskSubtasks?.removeLocalSubtask(existing.id);
+          return;
+        }
+
         if (result?.title) {
           this.taskSubtasks?.saveFromModal(existing ?? null, result);
         }
       },
       () => {}
     );
+  }
+
+  public onDeleteSubtask(): void {
+    if (!this.isSubtask || !this.isEditMode || !this.subWorkItemId) {
+      return;
+    }
+
+    const confirmRef = this.modalService.open(
+      ConfirmModalComponent,
+      CONFIRM_MODAL_OPTIONS
+    );
+    confirmRef.componentInstance.title = 'Delete subtask';
+    confirmRef.componentInstance.message =
+      'Želite li sigurno da obrišete ovaj subtask?';
+
+    confirmRef.result.then(
+      (confirmed) => {
+        if (confirmed) {
+          this.deleteSubtask();
+        }
+      },
+      () => {}
+    );
+  }
+
+  private deleteSubtask(): void {
+    if (!this.subWorkItemId) {
+      return;
+    }
+
+    this.subWorkItemService.delete(this.subWorkItemId).subscribe({
+      next: () => {
+        this.activeModal.close({ deleted: true, id: this.subWorkItemId });
+      },
+      error: (err) => {
+        this.errorMessage = err.error?.message ?? 'Failed to delete subtask.';
+      },
+    });
   }
 
   public onClose(): void {

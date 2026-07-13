@@ -12,3 +12,12 @@ export const STACKED_MODAL_OPTIONS: NgbModalOptions = {
   windowClass: 'stacked-modal',
   backdropClass: 'stacked-modal-backdrop',
 };
+
+export const CONFIRM_MODAL_OPTIONS: NgbModalOptions = {
+  backdrop: 'static',
+  keyboard: false,
+  centered: true,
+  size: 'sm',
+  windowClass: 'confirm-modal',
+  backdropClass: 'confirm-modal-backdrop',
+};

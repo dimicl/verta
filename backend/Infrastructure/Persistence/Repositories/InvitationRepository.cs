@@ -12,18 +12,4 @@ public class InvitationRepository : GenericRepository<Invitation>, IInvitationRe
         return await _dbSet
             .FirstOrDefaultAsync(x => x.WorkspaceId == workspaceId && x.User!.Email == email);
     }
-
-    public async Task<List<Invitation>> GetByWorkspaceIdAsync(int workspaceId)
-    {
-        return await _dbSet
-            .Where(x => x.WorkspaceId == workspaceId)
-            .ToListAsync();
-    }
-
-    public async Task<List<Invitation>> GetByUserIdAsync(int userId)
-    {
-        return await _dbSet
-            .Where(x => x.UserId == userId)
-            .ToListAsync();
-    }
 }

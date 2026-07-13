@@ -12,11 +12,14 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { SvgIconComponent } from 'angular-svg-icon';
 import { forkJoin } from 'rxjs';
 import { VeStatusComponent } from '../ve-status/ve-status.component';
+import { ConfirmModalComponent } from '../confirm-modal/confirm-modal.component';
 import { SubWorkItemResponse } from '../../shared/interfaces';
 import { SharedSvgRoutes } from '../../shared/constants/shared-svg-routes';
+import { CONFIRM_MODAL_OPTIONS } from '../../shared/constants/modal-options';
 import {
   CommentService,
   SubWorkItemService,
@@ -52,6 +55,7 @@ export class TaskSubtasksComponent implements OnInit, OnChanges {
   private readonly subWorkItemService = inject(SubWorkItemService);
   private readonly commentService = inject(CommentService);
   private readonly workItemFileService = inject(WorkItemFileService);
+  private readonly modalService = inject(NgbModal);
   private readonly destroyRef = inject(DestroyRef);
 
   public ngOnInit(): void {
@@ -74,6 +78,59 @@ export class TaskSubtasksComponent implements OnInit, OnChanges {
 
   public onOpenSubtask(subtask: SubWorkItemResponse): void {
     this.editSubtaskRequest.emit(subtask);
+  }
+
+  public onDeleteSubtask(subtask: SubWorkItemResponse, event?: Event): void {
+    event?.stopPropagation();
+
+    if (this.isSubmitting()) {
+      return;
+    }
+
+    const modalRef = this.modalService.open(
+      ConfirmModalComponent,
+      CONFIRM_MODAL_OPTIONS
+    );
+    modalRef.componentInstance.title = 'Delete subtask';
+    modalRef.componentInstance.message =
+      'Želite li sigurno da obrišete ovaj subtask?';
+
+    modalRef.result.then(
+      (confirmed) => {
+        if (confirmed) {
+          this.deleteSubtask(subtask.id);
+        }
+      },
+      () => {}
+    );
+  }
+
+  private deleteSubtask(subWorkItemId: number): void {
+    this.isSubmitting.set(true);
+    this.errorMessage.set('');
+
+    this.subWorkItemService
+      .delete(subWorkItemId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.removeLocalSubtask(subWorkItemId);
+          this.isSubmitting.set(false);
+        },
+        error: (err) => {
+          this.errorMessage.set(
+            err.error?.message ?? 'Failed to delete subtask.'
+          );
+          this.isSubmitting.set(false);
+        },
+      });
+  }
+
+  public removeLocalSubtask(subWorkItemId: number): void {
+    this.subtasks.update((items) =>
+      items.filter((item) => item.id !== subWorkItemId)
+    );
+    this.subtasksChanged.emit(this.subtasks());
   }
 
   public onStatusChange(

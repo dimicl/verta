@@ -56,4 +56,10 @@ export class SubWorkItemService {
       { headers: this.authHeaders() }
     );
   }
+
+  public delete(subWorkItemId: number) {
+    return this.http.delete<void>(`${this.apiUrl}/${subWorkItemId}`, {
+      headers: this.authHeaders(),
+    });
+  }
 }

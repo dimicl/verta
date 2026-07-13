@@ -1,0 +1,35 @@
+<div class="confirm-modal-container">
+  <div class="confirm-modal__header">
+    <span class="confirm-modal__title">{{ title }}</span>
+    <div
+      class="confirm-modal__close"
+      ngbTooltip="Close"
+      triggers="hover"
+      container="body"
+      placement="bottom"
+      (click)="onCancel()"
+    >
+      <svg-icon
+        class="confirm-modal__close-icon"
+        [src]="sharedSvgRoutes.CLOSE_ICON"
+      ></svg-icon>
+    </div>
+  </div>
+
+  <div class="confirm-modal__body">
+    <p class="confirm-modal__message">{{ message }}</p>
+  </div>
+
+  <div class="confirm-modal__footer">
+    <button type="button" class="confirm-modal__btn" (click)="onCancel()">
+      {{ cancelLabel }}
+    </button>
+    <button
+      type="button"
+      class="confirm-modal__btn confirm-modal__btn--danger"
+      (click)="onConfirm()"
+    >
+      {{ confirmLabel }}
+    </button>
+  </div>
+</div>

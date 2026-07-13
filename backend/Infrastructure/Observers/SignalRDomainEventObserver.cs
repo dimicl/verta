@@ -1,6 +1,5 @@
 using System.Text.Json;
-using backend.API.Hubs;
-using Microsoft.AspNetCore.SignalR;
+using backend.Application.Interfaces;
 using Microsoft.Extensions.Logging;
 
 public class SignalRDomainEventObserver : IDomainEventObserver
@@ -15,14 +14,14 @@ public class SignalRDomainEventObserver : IDomainEventObserver
         DomainEventNames.WorkspaceInvitation,
     };
 
-    private readonly IHubContext<SystemHub> _hubContext;
+    private readonly INotificationService _notificationService;
     private readonly ILogger<SignalRDomainEventObserver> _logger;
 
     public SignalRDomainEventObserver(
-        IHubContext<SystemHub> hubContext,
+        INotificationService notificationService,
         ILogger<SignalRDomainEventObserver> logger)
     {
-        _hubContext = hubContext;
+        _notificationService = notificationService;
         _logger = logger;
     }
 
@@ -45,7 +44,7 @@ public class SignalRDomainEventObserver : IDomainEventObserver
         {
             foreach (var userId in userIds)
             {
-                await SendToUserAsync(userId, clientEventName, payload);
+                await NotifyUserAsync(userId, clientEventName, payload);
             }
 
             return;
@@ -54,7 +53,7 @@ public class SignalRDomainEventObserver : IDomainEventObserver
         if (element.TryGetProperty("TargetUserId", out var targetProp)
             && targetProp.TryGetInt32(out var targetUserId))
         {
-            await SendToUserAsync(targetUserId, clientEventName, payload);
+            await NotifyUserAsync(targetUserId, clientEventName, payload);
         }
     }
 
@@ -77,15 +76,13 @@ public class SignalRDomainEventObserver : IDomainEventObserver
         return userIds.Count > 0;
     }
 
-    private async Task SendToUserAsync(int userId, string clientEventName, object payload)
+    private async Task NotifyUserAsync(int userId, string clientEventName, object payload)
     {
         _logger.LogDebug(
             "SignalR domain event {EventName} -> user {UserId}",
             clientEventName,
             userId);
 
-        await _hubContext.Clients
-            .Group(SystemHub.UserGroup(userId))
-            .SendAsync(clientEventName, payload);
+        await _notificationService.SendToUserAsync(userId, clientEventName, payload);
     }
 }

@@ -23,16 +23,6 @@ public class UserService : IUserService
         return UserHelper.ToResponse(user);
     }
 
-    public async Task<UserResponse> GetByEmail(string email)
-    {
-        var user = await _repo.GetByEmailAsync(email);
-
-        if (user == null)
-            throw new Exception("User not found");
-
-        return UserHelper.ToResponse(user);
-    }
-
     public async Task<UserResponse> GetCurrentUser()
     {
         var userId = _userContext.GetUserId();
