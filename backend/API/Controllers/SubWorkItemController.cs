@@ -17,43 +17,22 @@ public class SubWorkItemController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] SubWorkItemRequest request)
     {
-        try
-        {
-            var result = await _subWorkItemService.Create(request);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _subWorkItemService.Create(request);
+        return Ok(result);
     }
 
     [HttpGet("{subWorkItemId:int}")]
     public async Task<IActionResult> GetById(int subWorkItemId)
     {
-        try
-        {
-            var result = await _subWorkItemService.GetById(subWorkItemId);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _subWorkItemService.GetById(subWorkItemId);
+        return Ok(result);
     }
 
     [HttpGet("work-item/{workItemId:int}")]
     public async Task<IActionResult> GetByWorkItemId(int workItemId)
     {
-        try
-        {
-            var result = await _subWorkItemService.GetByWorkItemId(workItemId);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _subWorkItemService.GetByWorkItemId(workItemId);
+        return Ok(result);
     }
 
     [HttpPut("{subWorkItemId:int}")]
@@ -61,15 +40,8 @@ public class SubWorkItemController : ControllerBase
         int subWorkItemId,
         [FromBody] UpdateSubWorkItemRequest request)
     {
-        try
-        {
-            var result = await _subWorkItemService.Update(subWorkItemId, request);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _subWorkItemService.Update(subWorkItemId, request);
+        return Ok(result);
     }
 
     [HttpPatch("{subWorkItemId:int}/status")]
@@ -77,28 +49,14 @@ public class SubWorkItemController : ControllerBase
         int subWorkItemId,
         [FromBody] ChangeSubWorkItemStatusRequest request)
     {
-        try
-        {
-            var result = await _subWorkItemService.ChangeStatus(subWorkItemId, request);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _subWorkItemService.ChangeStatus(subWorkItemId, request);
+        return Ok(result);
     }
 
     [HttpDelete("{subWorkItemId:int}")]
     public async Task<IActionResult> Delete(int subWorkItemId)
     {
-        try
-        {
-            await _subWorkItemService.Delete(subWorkItemId);
-            return NoContent();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        await _subWorkItemService.Delete(subWorkItemId);
+        return NoContent();
     }
 }

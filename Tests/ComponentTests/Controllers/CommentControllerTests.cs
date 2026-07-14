@@ -1,3 +1,4 @@
+using backend.Application.Exceptions;
 using backend.Application.Interfaces;
 using ComponentTests.Helpers;
 using Microsoft.AspNetCore.Mvc;
@@ -35,27 +36,27 @@ public class CommentControllerTests
     }
 
     [Test]
-    public async Task CreateEmptyContentReturnsBadRequest()
+    public void CreateEmptyContentPropagatesValidation()
     {
         var request = TestDataFactory.CreateCommentRequest();
         _serviceMock.Setup(s => s.Create(request))
-            .ThrowsAsync(new Exception("Comment content is required."));
+            .ThrowsAsync(new ValidationException("Comment content is required."));
 
-        var result = await _controller.Create(request);
+        var ex = Assert.ThrowsAsync<ValidationException>(() => _controller.Create(request));
 
-        Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+        Assert.That(ex!.Message, Does.Contain("required"));
     }
 
     [Test]
-    public async Task CreateWorkItemNotFoundReturnsBadRequest()
+    public void CreateWorkItemNotFoundPropagatesNotFound()
     {
         var request = TestDataFactory.CreateCommentRequest();
         _serviceMock.Setup(s => s.Create(request))
-            .ThrowsAsync(new Exception("Work item does not exist."));
+            .ThrowsAsync(new NotFoundException("Work item does not exist."));
 
-        var result = await _controller.Create(request);
+        var ex = Assert.ThrowsAsync<NotFoundException>(() => _controller.Create(request));
 
-        Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+        Assert.That(ex!.Message, Does.Contain("does not exist"));
     }
 
   #endregion
@@ -81,14 +82,14 @@ public class CommentControllerTests
     }
 
     [Test]
-    public async Task GetByWorkItemIdWorkItemNotFoundReturnsBadRequest()
+    public void GetByWorkItemIdWorkItemNotFoundPropagatesNotFound()
     {
         _serviceMock.Setup(s => s.GetByWorkItemId(999))
-            .ThrowsAsync(new Exception("Work item does not exist."));
+            .ThrowsAsync(new NotFoundException("Work item does not exist."));
 
-        var result = await _controller.GetByWorkItemId(999);
+        var ex = Assert.ThrowsAsync<NotFoundException>(() => _controller.GetByWorkItemId(999));
 
-        Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+        Assert.That(ex!.Message, Does.Contain("does not exist"));
     }
 
     [Test]
@@ -123,27 +124,27 @@ public class CommentControllerTests
     }
 
     [Test]
-    public async Task UpdateNotFoundReturnsBadRequest()
+    public void UpdateNotFoundPropagatesNotFound()
     {
         var request = TestDataFactory.CreateUpdateCommentRequest();
         _serviceMock.Setup(s => s.Update(999, request))
-            .ThrowsAsync(new Exception("Comment does not exist."));
+            .ThrowsAsync(new NotFoundException("Comment does not exist."));
 
-        var result = await _controller.Update(999, request);
+        var ex = Assert.ThrowsAsync<NotFoundException>(() => _controller.Update(999, request));
 
-        Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+        Assert.That(ex!.Message, Does.Contain("does not exist"));
     }
 
     [Test]
-    public async Task UpdateNotOwnerReturnsBadRequest()
+    public void UpdateNotOwnerPropagatesForbidden()
     {
         var request = TestDataFactory.CreateUpdateCommentRequest();
         _serviceMock.Setup(s => s.Update(1, request))
-            .ThrowsAsync(new Exception("You can only edit your own comments."));
+            .ThrowsAsync(new ForbiddenException("You can only edit your own comments."));
 
-        var result = await _controller.Update(1, request);
+        var ex = Assert.ThrowsAsync<ForbiddenException>(() => _controller.Update(1, request));
 
-        Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+        Assert.That(ex!.Message, Does.Contain("only edit"));
     }
 
   #endregion
@@ -161,25 +162,25 @@ public class CommentControllerTests
     }
 
     [Test]
-    public async Task DeleteNotFoundReturnsBadRequest()
+    public void DeleteNotFoundPropagatesNotFound()
     {
         _serviceMock.Setup(s => s.Delete(999))
-            .ThrowsAsync(new Exception("Comment does not exist."));
+            .ThrowsAsync(new NotFoundException("Comment does not exist."));
 
-        var result = await _controller.Delete(999);
+        var ex = Assert.ThrowsAsync<NotFoundException>(() => _controller.Delete(999));
 
-        Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+        Assert.That(ex!.Message, Does.Contain("does not exist"));
     }
 
     [Test]
-    public async Task DeleteNotOwnerReturnsBadRequest()
+    public void DeleteNotOwnerPropagatesForbidden()
     {
         _serviceMock.Setup(s => s.Delete(1))
-            .ThrowsAsync(new Exception("You can only delete your own comments."));
+            .ThrowsAsync(new ForbiddenException("You can only delete your own comments."));
 
-        var result = await _controller.Delete(1);
+        var ex = Assert.ThrowsAsync<ForbiddenException>(() => _controller.Delete(1));
 
-        Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+        Assert.That(ex!.Message, Does.Contain("only delete"));
     }
 
   #endregion

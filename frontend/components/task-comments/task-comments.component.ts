@@ -28,6 +28,7 @@ export class TaskCommentsComponent implements OnInit, OnChanges {
   @Input() public currentUserId = 0;
   @Input() public currentUserFirstName = 'User';
   @Input() public currentUserLastName = '';
+  @Input() public readOnly = false;
 
   public readonly comments = signal<CommentResponse[]>([]);
   public readonly draft = signal('');
@@ -105,6 +106,9 @@ export class TaskCommentsComponent implements OnInit, OnChanges {
   }
 
   public onSend(): void {
+    if (this.readOnly) {
+      return;
+    }
     const content = this.draft().trim();
     if (!content || this.isSubmitting()) {
       return;
@@ -159,6 +163,9 @@ export class TaskCommentsComponent implements OnInit, OnChanges {
   }
 
   public onStartEdit(comment: CommentResponse): void {
+    if (this.readOnly) {
+      return;
+    }
     this.editingCommentId.set(comment.id);
     this.editDraft.set(comment.content);
     this.errorMessage.set('');
@@ -170,6 +177,9 @@ export class TaskCommentsComponent implements OnInit, OnChanges {
   }
 
   public onSaveEdit(comment: CommentResponse): void {
+    if (this.readOnly) {
+      return;
+    }
     const content = this.editDraft().trim();
     if (!content || this.isSubmitting()) {
       return;
@@ -209,7 +219,7 @@ export class TaskCommentsComponent implements OnInit, OnChanges {
   }
 
   public onDelete(comment: CommentResponse): void {
-    if (this.isSubmitting()) {
+    if (this.readOnly || this.isSubmitting()) {
       return;
     }
 
@@ -240,6 +250,10 @@ export class TaskCommentsComponent implements OnInit, OnChanges {
           this.isSubmitting.set(false);
         },
       });
+  }
+
+  public reload(): void {
+    this.loadComments();
   }
 
   private loadComments(): void {

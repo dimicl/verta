@@ -1,3 +1,4 @@
+using backend.Application.Exceptions;
 using backend.Application.Interfaces;
 using ComponentTests.Helpers;
 using Microsoft.AspNetCore.Mvc;
@@ -35,27 +36,27 @@ public class SprintControllerTests
     }
 
     [Test]
-    public async Task CreateMissingNameReturnsBadRequest()
+    public void CreateMissingNamePropagatesValidation()
     {
         var request = TestDataFactory.CreateSprintRequest();
         _serviceMock.Setup(s => s.Create(request))
-            .ThrowsAsync(new Exception("Sprint name is required."));
+            .ThrowsAsync(new ValidationException("Sprint name is required."));
 
-        var result = await _controller.Create(request);
+        var ex = Assert.ThrowsAsync<ValidationException>(() => _controller.Create(request));
 
-        Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+        Assert.That(ex!.Message, Does.Contain("required"));
     }
 
     [Test]
-    public async Task CreateBoardNotFoundReturnsBadRequest()
+    public void CreateBoardNotFoundPropagatesNotFound()
     {
         var request = TestDataFactory.CreateSprintRequest();
         _serviceMock.Setup(s => s.Create(request))
-            .ThrowsAsync(new Exception("Board does not exist."));
+            .ThrowsAsync(new NotFoundException("Board does not exist."));
 
-        var result = await _controller.Create(request);
+        var ex = Assert.ThrowsAsync<NotFoundException>(() => _controller.Create(request));
 
-        Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+        Assert.That(ex!.Message, Does.Contain("does not exist"));
     }
 
   #endregion
@@ -76,25 +77,25 @@ public class SprintControllerTests
     }
 
     [Test]
-    public async Task GetByIdNotFoundReturnsBadRequest()
+    public void GetByIdNotFoundPropagatesNotFound()
     {
         _serviceMock.Setup(s => s.GetById(999))
-            .ThrowsAsync(new Exception("Sprint does not exist."));
+            .ThrowsAsync(new NotFoundException("Sprint does not exist."));
 
-        var result = await _controller.GetById(999);
+        var ex = Assert.ThrowsAsync<NotFoundException>(() => _controller.GetById(999));
 
-        Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+        Assert.That(ex!.Message, Does.Contain("does not exist"));
     }
 
     [Test]
-    public async Task GetByIdNoAccessReturnsBadRequest()
+    public void GetByIdNoAccessPropagatesForbidden()
     {
         _serviceMock.Setup(s => s.GetById(1))
-            .ThrowsAsync(new Exception("You do not have access to this board."));
+            .ThrowsAsync(new ForbiddenException("You do not have access to this board."));
 
-        var result = await _controller.GetById(1);
+        var ex = Assert.ThrowsAsync<ForbiddenException>(() => _controller.GetById(1));
 
-        Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+        Assert.That(ex!.Message, Does.Contain("do not have access"));
     }
 
   #endregion
@@ -115,27 +116,27 @@ public class SprintControllerTests
     }
 
     [Test]
-    public async Task UpdateNotFoundReturnsBadRequest()
+    public void UpdateNotFoundPropagatesNotFound()
     {
         var request = TestDataFactory.CreateUpdateSprintRequest();
         _serviceMock.Setup(s => s.Update(999, request))
-            .ThrowsAsync(new Exception("Sprint does not exist."));
+            .ThrowsAsync(new NotFoundException("Sprint does not exist."));
 
-        var result = await _controller.Update(999, request);
+        var ex = Assert.ThrowsAsync<NotFoundException>(() => _controller.Update(999, request));
 
-        Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+        Assert.That(ex!.Message, Does.Contain("does not exist"));
     }
 
     [Test]
-    public async Task UpdateInvalidDatesReturnsBadRequest()
+    public void UpdateInvalidDatesPropagatesValidation()
     {
         var request = TestDataFactory.CreateUpdateSprintRequest();
         _serviceMock.Setup(s => s.Update(1, request))
-            .ThrowsAsync(new Exception("End date must be on or after start date."));
+            .ThrowsAsync(new ValidationException("End date must be on or after start date."));
 
-        var result = await _controller.Update(1, request);
+        var ex = Assert.ThrowsAsync<ValidationException>(() => _controller.Update(1, request));
 
-        Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+        Assert.That(ex!.Message, Does.Contain("End date"));
     }
 
   #endregion
@@ -153,25 +154,25 @@ public class SprintControllerTests
     }
 
     [Test]
-    public async Task DeleteNotFoundReturnsBadRequest()
+    public void DeleteNotFoundPropagatesNotFound()
     {
         _serviceMock.Setup(s => s.Delete(999))
-            .ThrowsAsync(new Exception("Sprint does not exist."));
+            .ThrowsAsync(new NotFoundException("Sprint does not exist."));
 
-        var result = await _controller.Delete(999);
+        var ex = Assert.ThrowsAsync<NotFoundException>(() => _controller.Delete(999));
 
-        Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+        Assert.That(ex!.Message, Does.Contain("does not exist"));
     }
 
     [Test]
-    public async Task DeleteNoAccessReturnsBadRequest()
+    public void DeleteNoAccessPropagatesForbidden()
     {
         _serviceMock.Setup(s => s.Delete(1))
-            .ThrowsAsync(new Exception("You do not have access to this board."));
+            .ThrowsAsync(new ForbiddenException("You do not have access to this board."));
 
-        var result = await _controller.Delete(1);
+        var ex = Assert.ThrowsAsync<ForbiddenException>(() => _controller.Delete(1));
 
-        Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+        Assert.That(ex!.Message, Does.Contain("do not have access"));
     }
 
   #endregion

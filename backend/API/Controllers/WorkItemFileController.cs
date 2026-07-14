@@ -21,70 +21,35 @@ public class WorkItemFileController : ControllerBase
          IFormFile file,
          int? subWorkItemId = null)
     {
-        try
-        {
-            var result = await _fileService.Upload(workItemId, file, subWorkItemId);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _fileService.Upload(workItemId, file, subWorkItemId);
+        return Ok(result);
     }
 
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] WorkItemFileRequest request)
     {
-        try
-        {
-            var result = await _fileService.Create(request);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _fileService.Create(request);
+        return Ok(result);
     }
 
     [HttpGet("work-item/{workItemId:int}")]
     public async Task<IActionResult> GetByWorkItemId(int workItemId)
     {
-        try
-        {
-            var result = await _fileService.GetByWorkItemId(workItemId);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _fileService.GetByWorkItemId(workItemId);
+        return Ok(result);
     }
 
     [HttpGet("sub-work-item/{subWorkItemId:int}")]
     public async Task<IActionResult> GetBySubWorkItemId(int subWorkItemId)
     {
-        try
-        {
-            var result = await _fileService.GetBySubWorkItemId(subWorkItemId);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _fileService.GetBySubWorkItemId(subWorkItemId);
+        return Ok(result);
     }
 
     [HttpDelete("{fileId:int}")]
     public async Task<IActionResult> Delete(int fileId)
     {
-        try
-        {
-            await _fileService.Delete(fileId);
-            return Ok(new { message = "File deleted successfully." });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        await _fileService.Delete(fileId);
+        return Ok(new { message = "File deleted successfully." });
     }
 }

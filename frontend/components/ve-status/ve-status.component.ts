@@ -16,6 +16,7 @@ export class VeStatusComponent {
   public sharedSvgRoutes = SharedSvgRoutes;
 
   @Input() public taskStatus: TaskStatus = 'ToDo';
+  @Input() public disabled = false;
   @Output() public statusChange = new EventEmitter<TaskStatus>();
 
   public get allowedStatuses(): TaskStatus[] {
@@ -23,6 +24,10 @@ export class VeStatusComponent {
   }
 
   public onSelectStatus(status: TaskStatus, popover: NgbPopover): void {
+    if (this.disabled) {
+      return;
+    }
+
     if (status === this.taskStatus) {
       popover.close();
       return;

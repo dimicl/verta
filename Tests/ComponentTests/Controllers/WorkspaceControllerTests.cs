@@ -1,3 +1,4 @@
+using backend.Application.Exceptions;
 using backend.Application.Interfaces;
 using ComponentTests.Helpers;
 using Microsoft.AspNetCore.Mvc;
@@ -42,27 +43,27 @@ public class WorkspaceControllerTests
     }
 
     [Test]
-    public async Task CreateAlreadyHasWorkspaceReturnsBadRequest()
+    public void CreateAlreadyHasWorkspacePropagatesValidation()
     {
         var request = TestDataFactory.CreateWorkspaceRequest();
         _serviceMock.Setup(s => s.Create(request))
-            .ThrowsAsync(new Exception("User already has a workspace."));
+            .ThrowsAsync(new ValidationException("User already has a workspace."));
 
-        var result = await _controller.CreateWorkspace(request);
+        var ex = Assert.ThrowsAsync<ValidationException>(() => _controller.CreateWorkspace(request));
 
-        Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+        Assert.That(ex!.Message, Does.Contain("already has"));
     }
 
     [Test]
-    public async Task CreateMissingNameReturnsBadRequest()
+    public void CreateMissingNamePropagatesValidation()
     {
         var request = TestDataFactory.CreateWorkspaceRequest();
         _serviceMock.Setup(s => s.Create(request))
-            .ThrowsAsync(new Exception("Workspace name is required."));
+            .ThrowsAsync(new ValidationException("Workspace name is required."));
 
-        var result = await _controller.CreateWorkspace(request);
+        var ex = Assert.ThrowsAsync<ValidationException>(() => _controller.CreateWorkspace(request));
 
-        Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+        Assert.That(ex!.Message, Does.Contain("required"));
     }
 
   #endregion
@@ -83,25 +84,25 @@ public class WorkspaceControllerTests
     }
 
     [Test]
-    public async Task GetMyWorkspaceNotFoundReturnsBadRequest()
+    public void GetMyWorkspaceNotFoundPropagatesNotFound()
     {
         _serviceMock.Setup(s => s.GetByOwnerId())
-            .ThrowsAsync(new Exception("Workspace does not exist."));
+            .ThrowsAsync(new NotFoundException("Workspace does not exist."));
 
-        var result = await _controller.GetMyWorkspace();
+        var ex = Assert.ThrowsAsync<NotFoundException>(() => _controller.GetMyWorkspace());
 
-        Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+        Assert.That(ex!.Message, Does.Contain("does not exist"));
     }
 
     [Test]
-    public async Task GetMyWorkspaceUnauthorizedReturnsBadRequest()
+    public void GetMyWorkspaceUnauthorizedPropagatesForbidden()
     {
         _serviceMock.Setup(s => s.GetByOwnerId())
-            .ThrowsAsync(new Exception("User is not authenticated."));
+            .ThrowsAsync(new ForbiddenException("User is not authenticated."));
 
-        var result = await _controller.GetMyWorkspace();
+        var ex = Assert.ThrowsAsync<ForbiddenException>(() => _controller.GetMyWorkspace());
 
-        Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+        Assert.That(ex!.Message, Does.Contain("not authenticated"));
     }
 
   #endregion
@@ -122,27 +123,27 @@ public class WorkspaceControllerTests
     }
 
     [Test]
-    public async Task UpdateNotFoundReturnsBadRequest()
+    public void UpdateNotFoundPropagatesNotFound()
     {
         var request = TestDataFactory.CreateWorkspaceRequest();
         _serviceMock.Setup(s => s.Update(999, request))
-            .ThrowsAsync(new Exception("Workspace does not exist."));
+            .ThrowsAsync(new NotFoundException("Workspace does not exist."));
 
-        var result = await _controller.UpdateWorkspace(999, request);
+        var ex = Assert.ThrowsAsync<NotFoundException>(() => _controller.UpdateWorkspace(999, request));
 
-        Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+        Assert.That(ex!.Message, Does.Contain("does not exist"));
     }
 
     [Test]
-    public async Task UpdateNotOwnerReturnsBadRequest()
+    public void UpdateNotOwnerPropagatesForbidden()
     {
         var request = TestDataFactory.CreateWorkspaceRequest();
         _serviceMock.Setup(s => s.Update(1, request))
-            .ThrowsAsync(new Exception("You are not the owner of this workspace."));
+            .ThrowsAsync(new ForbiddenException("You are not the owner of this workspace."));
 
-        var result = await _controller.UpdateWorkspace(1, request);
+        var ex = Assert.ThrowsAsync<ForbiddenException>(() => _controller.UpdateWorkspace(1, request));
 
-        Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+        Assert.That(ex!.Message, Does.Contain("not the owner"));
     }
 
   #endregion
@@ -160,25 +161,25 @@ public class WorkspaceControllerTests
     }
 
     [Test]
-    public async Task DeleteNotFoundReturnsBadRequest()
+    public void DeleteNotFoundPropagatesNotFound()
     {
         _serviceMock.Setup(s => s.Delete(999))
-            .ThrowsAsync(new Exception("Workspace does not exist."));
+            .ThrowsAsync(new NotFoundException("Workspace does not exist."));
 
-        var result = await _controller.DeleteWorkspace(999);
+        var ex = Assert.ThrowsAsync<NotFoundException>(() => _controller.DeleteWorkspace(999));
 
-        Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+        Assert.That(ex!.Message, Does.Contain("does not exist"));
     }
 
     [Test]
-    public async Task DeleteNotOwnerReturnsBadRequest()
+    public void DeleteNotOwnerPropagatesForbidden()
     {
         _serviceMock.Setup(s => s.Delete(1))
-            .ThrowsAsync(new Exception("You are not the owner of this workspace."));
+            .ThrowsAsync(new ForbiddenException("You are not the owner of this workspace."));
 
-        var result = await _controller.DeleteWorkspace(1);
+        var ex = Assert.ThrowsAsync<ForbiddenException>(() => _controller.DeleteWorkspace(1));
 
-        Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+        Assert.That(ex!.Message, Does.Contain("not the owner"));
     }
 
   #endregion

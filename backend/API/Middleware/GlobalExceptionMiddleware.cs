@@ -31,6 +31,12 @@ public class GlobalExceptionMiddleware
             context.Response.ContentType = "application/json";
             await context.Response.WriteAsJsonAsync(new { message = ex.Message });
         }
+        catch (ValidationException ex)
+        {
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsJsonAsync(new { message = ex.Message });
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unhandled exception.");

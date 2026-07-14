@@ -1,4 +1,3 @@
-using backend.Application.Exceptions;
 using backend.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,30 +20,16 @@ public class WorkspaceController : ControllerBase
     [HttpPost("workspace")]
     public async Task<IActionResult> CreateWorkspace([FromBody] WorkspaceRequest request)
     {
-        try
-        {
-            var result = await service.Create(request);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await service.Create(request);
+        return Ok(result);
     }
 
     [Authorize]
     [HttpGet("workspace/my")]
     public async Task<IActionResult> GetMyWorkspace()
     {
-        try
-        {
-            var result = await service.GetByOwnerId();
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await service.GetByOwnerId();
+        return Ok(result);
     }
 
     [Authorize]
@@ -53,30 +38,16 @@ public class WorkspaceController : ControllerBase
         int workspaceId,
         [FromBody] WorkspaceRequest request)
     {
-        try
-        {
-            var result = await service.Update(workspaceId, request);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await service.Update(workspaceId, request);
+        return Ok(result);
     }
 
     [Authorize]
     [HttpDelete("workspace/{workspaceId:int}")]
     public async Task<IActionResult> DeleteWorkspace(int workspaceId)
     {
-        try
-        {
-            await service.Delete(workspaceId);
-            return NoContent();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        await service.Delete(workspaceId);
+        return NoContent();
     }
 
     [Authorize]
@@ -84,16 +55,8 @@ public class WorkspaceController : ControllerBase
     public async Task<IActionResult> InviteUser(
         [FromBody] InvitationRequest request)
     {
-        try
-        {
-            var result = await invitationService.InviteUser(request);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            
-            return BadRequest(new {message = ex.Message});
-        }
+        var result = await invitationService.InviteUser(request);
+        return Ok(result);
         
     }
 
@@ -101,22 +64,7 @@ public class WorkspaceController : ControllerBase
     [HttpGet("workspace/{workspaceId:int}/members")]
     public async Task<IActionResult> GetMembers(int workspaceId)
     {
-        try
-        {
-            var result = await memberService.GetMembersByWorkspaceId(workspaceId);
-            return Ok(result);
-        }
-        catch (NotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-        catch (ForbiddenException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, new { message = ex.Message });
-        }
+        var result = await memberService.GetMembersByWorkspaceId(workspaceId);
+        return Ok(result);
     }
 }

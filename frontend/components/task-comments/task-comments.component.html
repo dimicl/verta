@@ -58,7 +58,7 @@
           }
         </div>
         <p class="task-comment__content">{{ comment.content }}</p>
-        @if (isOwnComment(comment)) {
+        @if (isOwnComment(comment) && !readOnly) {
         <div class="task-comment__actions">
           <button
             type="button"
@@ -83,7 +83,7 @@
     }
   </div>
 
-  <div class="task-comments__compose">
+  <div class="task-comments__compose" *ngIf="!readOnly">
     <app-avatar
       class="task-comments__compose-avatar"
       [firstName]="currentUserFirstName"

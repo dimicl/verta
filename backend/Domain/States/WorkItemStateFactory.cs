@@ -1,3 +1,4 @@
+using backend.Application.Exceptions;
 public static class WorkItemStateFactory
 {
     public static IWorkItemState Create(WorkItemStatus status)
@@ -9,7 +10,7 @@ public static class WorkItemStateFactory
             WorkItemStatus.PR => new PRState(),
             WorkItemStatus.Testing => new TestingState(),
             WorkItemStatus.Done => new DoneState(),
-            _ => throw new Exception("Invalid work item status.")
+            _ => throw new ValidationException("Invalid work item status.")
         };
     }
 }

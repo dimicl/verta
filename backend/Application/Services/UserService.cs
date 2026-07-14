@@ -1,5 +1,6 @@
 using backend.Shared.Helpers;
 
+using backend.Application.Exceptions;
 namespace backend.Application.Services;
 
 public class UserService : IUserService
@@ -18,7 +19,7 @@ public class UserService : IUserService
         var user = await _repo.GetById(id);
 
         if (user == null)
-            throw new Exception("User not found");
+            throw new NotFoundException("User not found");
 
         return UserHelper.ToResponse(user);
     }
@@ -30,7 +31,7 @@ public class UserService : IUserService
         var user = await _repo.GetById(userId);
 
         if (user == null)
-            throw new Exception("User not found");
+            throw new NotFoundException("User not found");
 
         return UserHelper.ToResponse(user);
     }

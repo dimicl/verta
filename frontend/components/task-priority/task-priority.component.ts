@@ -12,6 +12,7 @@ import { TaskPriority } from '../../shared/types/task-priority.type';
 })
 export class TaskPriorityComponent {
   @Input() public priority: string = 'Medium';
+  @Input() public disabled = false;
   @Output() public priorityChange = new EventEmitter<TaskPriority>();
 
   public readonly priorities = TASK_PRIORITIES;
@@ -21,6 +22,10 @@ export class TaskPriorityComponent {
   }
 
   public onSelectPriority(priority: TaskPriority, popover: NgbPopover): void {
+    if (this.disabled) {
+      return;
+    }
+
     if (priority === this.normalizedPriority) {
       popover.close();
       return;

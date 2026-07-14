@@ -3,6 +3,7 @@ using backend.Application.Interfaces;
 using backend.Shared.Helpers;
 using Microsoft.EntityFrameworkCore;
 
+using backend.Application.Exceptions;
 namespace backend.Application.Services;
 
 public class WorkspaceService : IWorkspaceService
@@ -23,14 +24,14 @@ public class WorkspaceService : IWorkspaceService
    {
     if (request == null)
      {
-        throw new Exception("Request not found");
+        throw new ValidationException("Request not found");
      }
 
      var userId = _userContext.GetUserId();
 
      var existingWorkspace = await _repo.GetByOwnerIdAsync(userId);
      if(existingWorkspace != null)
-        throw new Exception ("User already has a workspace.");
+        throw new ValidationException("User already has a workspace.");
      
 
      var workspace = new Workspace {
@@ -57,7 +58,7 @@ public class WorkspaceService : IWorkspaceService
    }
    catch(DbUpdateException)
    {
-         throw new Exception("User already has a workspace.");
+         throw new ValidationException("User already has a workspace.");
    }
    }
 
@@ -83,25 +84,25 @@ public class WorkspaceService : IWorkspaceService
          return WorkspaceHelper.ToResponse(ownerWorkspace);
       }
 
-      throw new Exception("Workspace does not exist.");
+      throw new NotFoundException("Workspace does not exist.");
    }
 
    public async Task<WorkspaceResponse> Update(int workspaceId, WorkspaceRequest request)
    {
       if (request == null)
-         throw new Exception("Request not found.");
+         throw new ValidationException("Request not found.");
 
       if (string.IsNullOrWhiteSpace(request.Name))
-         throw new Exception("Workspace name is required.");
+         throw new ValidationException("Workspace name is required.");
 
       var userId = _userContext.GetUserId();
       var workspace = await _repo.GetById(workspaceId);
 
       if (workspace == null)
-         throw new Exception("Workspace does not exist.");
+         throw new NotFoundException("Workspace does not exist.");
 
       if (workspace.OwnerId != userId)
-         throw new Exception("You are not the owner of this workspace.");
+         throw new ForbiddenException("You are not the owner of this workspace.");
 
       workspace.Name = request.Name.Trim();
       await _repo.Update(workspace);
@@ -115,10 +116,10 @@ public class WorkspaceService : IWorkspaceService
       var workspace = await _repo.GetById(workspaceId);
 
       if (workspace == null)
-         throw new Exception("Workspace does not exist.");
+         throw new NotFoundException("Workspace does not exist.");
 
       if (workspace.OwnerId != userId)
-         throw new Exception("You are not the owner of this workspace.");
+         throw new ForbiddenException("You are not the owner of this workspace.");
 
       await _repo.Delete(workspace);
    }

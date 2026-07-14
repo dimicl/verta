@@ -1,6 +1,7 @@
 using backend.Application.Interfaces;
 using backend.Shared.Helpers;
 
+using backend.Application.Exceptions;
 namespace backend.Application.Services;
 
 public class InvitationService : IInvitationService
@@ -36,7 +37,7 @@ public class InvitationService : IInvitationService
     {
         if (request == null)
         {
-            throw new Exception("Request not found.");
+            throw new ValidationException("Request not found.");
         }
 
         var currentUserId = _userContext.GetUserId();
@@ -45,24 +46,24 @@ public class InvitationService : IInvitationService
         
         if(invitedUser == null)
         {
-            throw new Exception("Invited user does not exist.");
+            throw new NotFoundException("Invited user does not exist.");
         }
 
         var workspace = await _workspaceRepo.GetById(request.WorkspaceId);
 
         if (workspace == null)
         {
-            throw new Exception("Workspace does not exist.");
+            throw new NotFoundException("Workspace does not exist.");
         }
 
         if (workspace.OwnerId != currentUserId)
         {
-            throw new Exception("Only workspace owner can invite users.");
+            throw new ForbiddenException("Only workspace owner can invite users.");
         }
 
         if (invitedUser.Id == currentUserId)
         {
-            throw new Exception("You cannot invite yourself.");
+            throw new ForbiddenException("You cannot invite yourself.");
         }
 
         var existingMember = await _workspaceMemberRepo.GetByWorkspaceAndUserIdAsync(
@@ -72,7 +73,7 @@ public class InvitationService : IInvitationService
 
         if (existingMember != null)
         {
-            throw new Exception("User is already member of this workspace.");
+            throw new ValidationException("User is already member of this workspace.");
         }
 
         var existingInvitation = await _invitationRepo.GetByWorkspaceAndEmailAsync(
@@ -82,7 +83,7 @@ public class InvitationService : IInvitationService
 
         if (existingInvitation != null)
         {
-            throw new Exception("User is already invited to this workspace.");
+            throw new ValidationException("User is already invited to this workspace.");
         }
 
         var invitation = new Invitation

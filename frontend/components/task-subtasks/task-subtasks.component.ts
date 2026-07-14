@@ -42,6 +42,7 @@ export class TaskSubtasksComponent implements OnInit, OnChanges {
   @Input() public currentUserId = 0;
   @Input() public currentUserFirstName = 'User';
   @Input() public currentUserLastName = '';
+  @Input() public readOnly = false;
   @Output() public subtasksChanged = new EventEmitter<SubWorkItemResponse[]>();
   @Output() public createSubtaskRequest = new EventEmitter<void>();
   @Output() public editSubtaskRequest = new EventEmitter<SubWorkItemResponse>();
@@ -68,8 +69,12 @@ export class TaskSubtasksComponent implements OnInit, OnChanges {
     }
   }
 
+  public reload(): void {
+    this.loadSubtasks();
+  }
+
   public onCreateSubtask(): void {
-    if (!this.workItemId) {
+    if (this.readOnly || !this.workItemId) {
       return;
     }
 
@@ -83,7 +88,7 @@ export class TaskSubtasksComponent implements OnInit, OnChanges {
   public onDeleteSubtask(subtask: SubWorkItemResponse, event?: Event): void {
     event?.stopPropagation();
 
-    if (this.isSubmitting()) {
+    if (this.readOnly || this.isSubmitting()) {
       return;
     }
 
@@ -137,7 +142,7 @@ export class TaskSubtasksComponent implements OnInit, OnChanges {
     subtask: SubWorkItemResponse,
     status: TaskStatus
   ): void {
-    if (subtask.status === status || this.isSubmitting()) {
+    if (this.readOnly || subtask.status === status || this.isSubmitting()) {
       return;
     }
 

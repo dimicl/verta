@@ -1,5 +1,6 @@
 using backend.Application.Interfaces;
 
+using backend.Application.Exceptions;
 namespace backend.Application.Services;
 
 public class BoardAccessService : IBoardAccessService
@@ -31,14 +32,14 @@ public class BoardAccessService : IBoardAccessService
         );
 
         if (member == null)
-            throw new Exception("You are not member of this workspace.");
+            throw new ForbiddenException("You are not member of this workspace.");
 
         if (await HasFullWorkspaceBoardAccessAsync(board.WorkspaceId, userId))
             return member;
 
         var boardMember = await _boardMemberRepo.GetByBoardAndUserIdAsync(board.Id, userId);
         if (boardMember == null)
-            throw new Exception("You do not have access to this board.");
+            throw new ForbiddenException("You do not have access to this board.");
 
         return member;
     }

@@ -37,7 +37,7 @@
         <div class="workspace-avatar">V</div>
         <div class="workspace-name">{{ workspace?.name }}</div>
       </div>
-      <div class="workspace-actions">
+      <div class="workspace-actions" *ngIf="canManageWorkspace">
         <div class="invite-btn" (click)="onOpenInviteModal()">
           Invite to Workspace
         </div>
@@ -58,6 +58,7 @@
       <div class="boards-header">
         <span>Boards</span>
         <div
+          *ngIf="canManageWorkspace"
           class="add-board-btn"
           ngbTooltip="Add Board"
           triggers="hover"
@@ -118,6 +119,7 @@
     <ng-container *ngIf="selectedToolbarTab() !== 'Chat'">
       <div class="board-actions">
         <div
+          *ngIf="canEditBoard"
           class="users-container-add-button add-sprint-btn"
           ngbTooltip="Add Sprint"
           triggers="hover"
@@ -128,6 +130,7 @@
           Add Sprint
         </div>
         <div
+          *ngIf="canManageWorkspace"
           class="users-container-add-button invite-board-btn"
           ngbTooltip="Invite to Board"
           triggers="hover"
@@ -158,6 +161,7 @@
           ></app-ve-extra-members>
         </div>
         <div
+          *ngIf="canEditBoard"
           class="users-container-add-button"
           ngbTooltip="Create Task"
           triggers="hover"
@@ -195,12 +199,14 @@
           [id]="column.status"
           [cdkDropListData]="boardTasksByStatus[column.status]"
           [cdkDropListConnectedTo]="boardColumnIds"
+          [cdkDropListDisabled]="!canEditBoard"
           (cdkDropListDropped)="onBoardDrop($event, column.status)"
         >
           <div
             class="board-card"
             *ngFor="let task of boardTasksByStatus[column.status]"
             cdkDrag
+            [cdkDragDisabled]="!canEditBoard"
           >
             <div class="board-card-header">
               <div class="board-card-title-row">
@@ -222,6 +228,7 @@
                 </div>
               </div>
               <div
+                *ngIf="canEditBoard"
                 class="task-menu"
                 [ngbPopover]="boardTaskMenuTpl"
                 #boardTaskMenuPopover="ngbPopover"
@@ -239,16 +246,19 @@
               <app-task-assignee
                 [members]="boardMembers"
                 [assignedUserId]="task.assignedUserId ?? null"
+                [disabled]="!canEditBoard"
                 (assignedUserIdChange)="onTaskAssigneeChange(task, $event)"
               ></app-task-assignee>
 
               <app-ve-status
                 [taskStatus]="task.status"
+                [disabled]="!canEditBoard"
                 (statusChange)="onTaskStatusChange(task, $event)"
               ></app-ve-status>
 
               <app-task-priority
                 [priority]="task.priority"
+                [disabled]="!canEditBoard"
                 (priorityChange)="onTaskPriorityChange(task, $event)"
               ></app-task-priority>
 
@@ -295,6 +305,7 @@
                 <div (click)="$event.stopPropagation()">
                   <app-ve-status
                     [taskStatus]="subtask.status"
+                    [disabled]="!canEditBoard"
                     (statusChange)="
                       onSubtaskStatusChange(task.id, subtask, $event)
                     "
@@ -357,6 +368,7 @@
               <app-task-assignee
                 [members]="boardMembers"
                 [assignedUserId]="task.assignedUserId ?? null"
+                [disabled]="!canEditBoard"
                 (assignedUserIdChange)="onTaskAssigneeChange(task, $event)"
               ></app-task-assignee>
             </div>
@@ -364,13 +376,16 @@
             <div class="task-right" (click)="$event.stopPropagation()">
               <app-ve-status
                 [taskStatus]="task.status"
+                [disabled]="!canEditBoard"
                 (statusChange)="onTaskStatusChange(task, $event)"
               ></app-ve-status>
               <app-task-priority
                 [priority]="task.priority"
+                [disabled]="!canEditBoard"
                 (priorityChange)="onTaskPriorityChange(task, $event)"
               ></app-task-priority>
               <div
+                *ngIf="canEditBoard"
                 class="task-menu"
                 [ngbPopover]="taskMenuTpl"
                 #taskMenuPopover="ngbPopover"

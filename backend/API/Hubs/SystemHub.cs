@@ -16,6 +16,24 @@ public class SystemHub : Hub
 
     public static string UserGroup(int userId) => $"user-{userId}";
 
+    public static string BoardGroup(int boardId) => $"board-{boardId}";
+
+    public async Task JoinBoard(int boardId)
+    {
+        if (boardId <= 0)
+            return;
+
+        await Groups.AddToGroupAsync(Context.ConnectionId, BoardGroup(boardId));
+    }
+
+    public async Task LeaveBoard(int boardId)
+    {
+        if (boardId <= 0)
+            return;
+
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, BoardGroup(boardId));
+    }
+
     public override async Task OnConnectedAsync()
     {
         var userId = GetUserId();

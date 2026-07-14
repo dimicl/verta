@@ -3,6 +3,7 @@ using PlaywrightTests.Configuration;
 
 namespace PlaywrightTests.Helpers;
 
+//helper za e2e app helper
 public static class AuthHelper
 {
     public static async Task LoginAsync(IPage page, string email, string password)

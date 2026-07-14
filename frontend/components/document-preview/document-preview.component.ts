@@ -15,6 +15,7 @@ export class DocumentPreviewComponent {
   public sharedSvgRoutes = SharedSvgRoutes;
 
   public file = input.required<AppFile>();
+  public readOnly = input(false);
   public onDelete = output<string>();
   public showDeleteModal = signal(false);
 
@@ -40,6 +41,9 @@ export class DocumentPreviewComponent {
 
   public handleDelete(event: Event): void {
     event.stopPropagation();
+    if (this.readOnly()) {
+      return;
+    }
     this.showDeleteModal.set(true);
   }
 

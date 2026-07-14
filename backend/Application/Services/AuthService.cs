@@ -1,5 +1,6 @@
 using backend.Application.Interfaces;
 using backend.Shared.Helpers;
+using backend.Application.Exceptions;
 
 namespace backend.Application.Services;
 
@@ -23,7 +24,7 @@ public class AuthService : IAuthService
     {
         var existingUser = await _userRepository.GetByEmailAsync(request.Email);
         if (existingUser != null)
-            throw new Exception("Email already exists");
+            throw new ValidationException("Email already exists");
 
         var passwordHash = PasswordHasher.Hash(request.Password);
         var user = new User
@@ -63,13 +64,13 @@ public class AuthService : IAuthService
     {
         var user = await _userRepository.GetByEmailAsync(request.Email);
         if (user == null)
-            throw new Exception("User not found");
+            throw new ValidationException("User not found");
 
         if (!PasswordHasher.Verify(request.Password, user.Password))
-            throw new Exception("Invalid password");
+            throw new ValidationException("Invalid password");
 
         if (user.Status != UserStatus.Active)
-            throw new Exception("User account is not active");
+            throw new ValidationException("User account is not active");
 
         await _messageBus.PublishAsync("user-events",
             System.Text.Json.JsonSerializer.Serialize(new

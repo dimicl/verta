@@ -32,8 +32,8 @@ public sealed class ApiClient : IAsyncDisposable
         {
             DataObject = new
             {
-                firstName = "Play",
-                lastName = "wright",
+                firstName = "Test",
+                lastName = "Test",
                 email = Email,
                 password = Password
             }
@@ -206,6 +206,7 @@ public sealed class ApiClient : IAsyncDisposable
         return (await ParseIdAsync(response))!.Value;
     }
 
+    //zatvara konekcije
     public async ValueTask DisposeAsync()
     {
         await _request.DisposeAsync();

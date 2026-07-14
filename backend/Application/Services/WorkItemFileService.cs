@@ -1,7 +1,7 @@
 using backend.Application.Interfaces;
-using backend.Shared.Helpers;
 using Microsoft.AspNetCore.Http;
 
+using backend.Application.Exceptions;
 namespace backend.Application.Services;
 
 public class WorkItemFileService : IWorkItemFileService
@@ -41,15 +41,15 @@ public class WorkItemFileService : IWorkItemFileService
         int? subWorkItemId = null)
     {
         if (file == null || file.Length == 0)
-            throw new Exception("File is required.");
+            throw new ValidationException("File is required.");
 
         var workItem = await _workItemRepo.GetById(workItemId);
         if (workItem == null)
-            throw new Exception("Work item does not exist.");
+            throw new NotFoundException("Work item does not exist.");
 
         var board = await _boardRepo.GetById(workItem.BoardId);
         if (board == null)
-            throw new Exception("Board does not exist.");
+            throw new NotFoundException("Board does not exist.");
 
         await _boardAccessService.EnsureBoardAccessAsync(board);
 
@@ -73,68 +73,14 @@ public class WorkItemFileService : IWorkItemFileService
 
     public async Task<WorkItemFileResponse> Create(WorkItemFileRequest request)
     {
-        if (request == null)
-            throw new Exception("Request not found.");
-
-        if (string.IsNullOrWhiteSpace(request.FileName))
-            throw new Exception("File name is required.");
-
-        if (string.IsNullOrWhiteSpace(request.FileType))
-            throw new Exception("File type is required.");
-
-        if (string.IsNullOrWhiteSpace(request.FileUrl))
-            throw new Exception("File URL is required.");
-
-        if (request.FileSize <= 0)
-            throw new Exception("File size must be greater than zero.");
-
-        var workItem = await _workItemRepo.GetById(request.WorkItemId);
-        if (workItem == null)
-            throw new Exception("Work item does not exist.");
-
-        var board = await _boardRepo.GetById(workItem.BoardId);
-        if (board == null)
-            throw new Exception("Board does not exist.");
-
-        await _boardAccessService.EnsureBoardAccessAsync(board);
-
-        if (request.SubWorkItemId.HasValue)
-        {
-            var subWorkItem = await _subWorkItemRepo.GetById(request.SubWorkItemId.Value);
-            if (subWorkItem == null)
-                throw new Exception("Sub work item does not exist.");
-
-            if (subWorkItem.WorkItemId != request.WorkItemId)
-                throw new Exception("Sub work item does not belong to this work item.");
-        }
-
-        var file = new WorkItemFile
-        {
-            WorkItemId = request.WorkItemId,
-            SubWorkItemId = request.SubWorkItemId,
-            FileName = request.FileName,
-            FileType = request.FileType,
-            FileSize = request.FileSize,
-            FileUrl = request.FileUrl,
-            FileThumbnailUrl = request.FileThumbnailUrl,
-            CreatedAt = DateTime.UtcNow,
-        };
-
-        var command = new AddWorkItemFileCommand(async () =>
-        {
-            var created = await _fileRepo.Add(file);
-
-            await _domainEventSubject.NotifyAsync(DomainEventNames.WorkItemFileAdded, new
-            {
-                FileId = created.Id,
-                WorkItemId = created.WorkItemId,
-                FileName = created.FileName,
-                FileType = created.FileType,
-                FileSize = created.FileSize,
-            });
-
-            return WorkItemFileHelper.ToResponse(created);
-        });
+        var command = new AddWorkItemFileCommand(
+            request,
+            _fileRepo,
+            _workItemRepo,
+            _subWorkItemRepo,
+            _boardRepo,
+            _boardAccessService,
+            _domainEventSubject);
 
         return await _commandInvoker.ExecuteAsync(command);
     }
@@ -143,11 +89,11 @@ public class WorkItemFileService : IWorkItemFileService
     {
         var workItem = await _workItemRepo.GetById(workItemId);
         if (workItem == null)
-            throw new Exception("Work item does not exist.");
+            throw new NotFoundException("Work item does not exist.");
 
         var board = await _boardRepo.GetById(workItem.BoardId);
         if (board == null)
-            throw new Exception("Board does not exist.");
+            throw new NotFoundException("Board does not exist.");
 
         await _boardAccessService.EnsureBoardAccessAsync(board);
 
@@ -160,15 +106,15 @@ public class WorkItemFileService : IWorkItemFileService
     {
         var subWorkItem = await _subWorkItemRepo.GetById(subWorkItemId);
         if (subWorkItem == null)
-            throw new Exception("Sub work item does not exist.");
+            throw new NotFoundException("Sub work item does not exist.");
 
         var workItem = await _workItemRepo.GetById(subWorkItem.WorkItemId);
         if (workItem == null)
-            throw new Exception("Work item does not exist.");
+            throw new NotFoundException("Work item does not exist.");
 
         var board = await _boardRepo.GetById(workItem.BoardId);
         if (board == null)
-            throw new Exception("Board does not exist.");
+            throw new NotFoundException("Board does not exist.");
 
         await _boardAccessService.EnsureBoardAccessAsync(board);
 
@@ -179,34 +125,14 @@ public class WorkItemFileService : IWorkItemFileService
 
     public async Task Delete(int fileId)
     {
-        var file = await _fileRepo.GetById(fileId);
-        if (file == null)
-            throw new Exception("File does not exist.");
-
-        var workItem = await _workItemRepo.GetById(file.WorkItemId);
-        if (workItem == null)
-            throw new Exception("Work item does not exist.");
-
-        var board = await _boardRepo.GetById(workItem.BoardId);
-        if (board == null)
-            throw new Exception("Board does not exist.");
-
-        await _boardAccessService.EnsureBoardAccessAsync(board);
-
-        var command = new DeleteWorkItemFileCommand(async () =>
-        {
-            await _fileStorageService.DeleteByUrlsAsync(file.FileUrl, file.FileThumbnailUrl);
-            await _fileRepo.Delete(file);
-
-            await _domainEventSubject.NotifyAsync(DomainEventNames.WorkItemFileDeleted, new
-            {
-                FileId = file.Id,
-                WorkItemId = file.WorkItemId,
-                FileName = file.FileName
-            });
-
-            return true;
-        });
+        var command = new DeleteWorkItemFileCommand(
+            fileId,
+            _fileRepo,
+            _workItemRepo,
+            _boardRepo,
+            _boardAccessService,
+            _fileStorageService,
+            _domainEventSubject);
 
         await _commandInvoker.ExecuteAsync(command);
     }

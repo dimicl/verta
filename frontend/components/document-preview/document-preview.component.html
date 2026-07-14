@@ -47,6 +47,7 @@
   </div>
 
   <div class="document-actions">
+    @if (!readOnly()) {
     <button
       type="button"
       class="document-actions__btn"
@@ -55,5 +56,6 @@
     >
       <svg-icon class="icon" [src]="sharedSvgRoutes.DELETE_ICON"></svg-icon>
     </button>
+    }
   </div>
 </div>

@@ -17,57 +17,29 @@ public class WorkItemController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] WorkItemRequest request)
     {
-        try
-        {
-            var result = await _workItemService.Create(request);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _workItemService.Create(request);
+        return Ok(result);
     }
 
     [HttpGet("{workItemId:int}")]
     public async Task<IActionResult> GetById(int workItemId)
     {
-        try
-        {
-            var result = await _workItemService.GetById(workItemId);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _workItemService.GetById(workItemId);
+        return Ok(result);
     }
 
     [HttpGet("board/{boardId:int}")]
     public async Task<IActionResult> GetByBoardId(int boardId)
     {
-        try
-        {
-            var result = await _workItemService.GetByBoardId(boardId);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _workItemService.GetByBoardId(boardId);
+        return Ok(result);
     }
 
     [HttpGet("sprint/{sprintId:int}")]
     public async Task<IActionResult> GetBySprintId(int sprintId)
     {
-        try
-        {
-            var result = await _workItemService.GetBySprintId(sprintId);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _workItemService.GetBySprintId(sprintId);
+        return Ok(result);
     }
 
     [HttpPatch("{workItemId:int}/status")]
@@ -75,15 +47,8 @@ public class WorkItemController : ControllerBase
         int workItemId,
         [FromBody] ChangeWorkItemStatusRequest request)
     {
-        try
-        {
-            var result = await _workItemService.ChangeStatus(workItemId, request);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _workItemService.ChangeStatus(workItemId, request);
+        return Ok(result);
     }
 
     [HttpPatch("{workItemId:int}/priority")]
@@ -91,15 +56,8 @@ public class WorkItemController : ControllerBase
         int workItemId,
         [FromBody] ChangeWorkItemPriorityRequest request)
     {
-        try
-        {
-            var result = await _workItemService.ChangePriority(workItemId, request);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _workItemService.ChangePriority(workItemId, request);
+        return Ok(result);
     }
 
     [HttpPatch("{workItemId:int}/assignee")]
@@ -107,15 +65,8 @@ public class WorkItemController : ControllerBase
         int workItemId,
         [FromBody] ChangeWorkItemAssigneeRequest request)
     {
-        try
-        {
-            var result = await _workItemService.ChangeAssignee(workItemId, request);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _workItemService.ChangeAssignee(workItemId, request);
+        return Ok(result);
     }
 
     [HttpPut("{workItemId:int}")]
@@ -123,28 +74,14 @@ public class WorkItemController : ControllerBase
         int workItemId,
         [FromBody] WorkItemRequest request)
     {
-        try
-        {
-            var result = await _workItemService.Update(workItemId, request);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _workItemService.Update(workItemId, request);
+        return Ok(result);
     }
 
     [HttpDelete("{workItemId:int}")]
     public async Task<IActionResult> Delete(int workItemId)
     {
-        try
-        {
-            await _workItemService.Delete(workItemId);
-            return NoContent();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        await _workItemService.Delete(workItemId);
+        return NoContent();
     }
 }

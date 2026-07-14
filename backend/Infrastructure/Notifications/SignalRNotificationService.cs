@@ -25,4 +25,11 @@ public class SignalRNotificationService : INotificationService
             .Group(SystemHub.UserGroup(userId))
             .SendAsync(eventName, payload);
     }
+
+    public Task SendToGroupAsync(string groupName, string eventName, object payload)
+    {
+        return _hubContext.Clients
+            .Group(groupName)
+            .SendAsync(eventName, payload);
+    }
 }

@@ -31,6 +31,12 @@ export class TaskService {
     });
   }
 
+  public getById(workItemId: number) {
+    return this.http.get<WorkItemResponse>(`${this.API_URL}/${workItemId}`, {
+      headers: this.authHeaders(),
+    });
+  }
+
   public create(request: WorkItemRequest) {
     return this.http.post<WorkItemResponse>(this.API_URL, request, {
       headers: this.authHeaders(),

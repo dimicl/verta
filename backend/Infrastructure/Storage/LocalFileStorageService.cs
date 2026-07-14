@@ -2,6 +2,7 @@ using backend.Application.Interfaces;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 
+using backend.Application.Exceptions;
 namespace backend.Infrastructure.Storage;
 
 public class LocalFileStorageService : IFileStorageService
@@ -26,14 +27,14 @@ public class LocalFileStorageService : IFileStorageService
         IFormFile file)
     {
         if (file == null || file.Length == 0)
-            throw new Exception("File is required.");
+            throw new ValidationException("File is required.");
 
         if (file.Length > MaxFileSizeBytes)
-            throw new Exception("File size exceeds the 100 MB limit.");
+            throw new ValidationException("File size exceeds the 100 MB limit.");
 
         var extension = Path.GetExtension(file.FileName).TrimStart('.').ToLowerInvariant();
         if (string.IsNullOrWhiteSpace(extension) || !AllowedExtensions.Contains(extension))
-            throw new Exception("Unsupported file type.");
+            throw new ValidationException("Unsupported file type.");
 
         var workItemFolder = Path.Combine(_uploadRoot, "work-items", workItemId.ToString());
         Directory.CreateDirectory(workItemFolder);

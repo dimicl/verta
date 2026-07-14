@@ -1,6 +1,7 @@
 using backend.Application.Interfaces;
 using backend.Shared.Helpers;
 
+using backend.Application.Exceptions;
 namespace backend.Application.Services;
 
 public class BoardService : IBoardService
@@ -40,19 +41,19 @@ public class BoardService : IBoardService
     public async Task<BoardResponse> Create(BoardRequest request)
     {
         if (request == null)
-            throw new Exception("Request not found.");
+            throw new ValidationException("Request not found.");
 
         if (string.IsNullOrWhiteSpace(request.Name))
-            throw new Exception("Board name is required.");
+            throw new ValidationException("Board name is required.");
 
         var userId = _userContext.GetUserId();
 
         var workspace = await _workspaceRepo.GetById(request.WorkspaceId);
         if (workspace == null)
-            throw new Exception("Workspace does not exist.");
+            throw new NotFoundException("Workspace does not exist.");
 
         if (!await _boardAccessService.HasFullWorkspaceBoardAccessAsync(request.WorkspaceId, userId))
-            throw new Exception("You are not allowed to create board.");
+            throw new ForbiddenException("You are not allowed to create board.");
 
         var board = new Board
         {
@@ -93,7 +94,7 @@ public class BoardService : IBoardService
         );
 
         if (member == null)
-            throw new Exception("You are not member of this workspace.");
+            throw new ForbiddenException("You are not member of this workspace.");
 
         var boards = await _boardRepo.GetByWorkspaceIdAsync(workspaceId);
 
@@ -112,7 +113,7 @@ public class BoardService : IBoardService
     {
         var board = await _boardRepo.GetById(boardId);
         if (board == null)
-            throw new Exception("Board does not exist.");
+            throw new NotFoundException("Board does not exist.");
 
         await _boardAccessService.EnsureBoardAccessAsync(board);
 
@@ -122,23 +123,23 @@ public class BoardService : IBoardService
     public async Task InviteToBoard(BoardInviteRequest request)
     {
         if (request == null)
-            throw new Exception("Request not found.");
+            throw new ValidationException("Request not found.");
 
         if (string.IsNullOrWhiteSpace(request.Email))
-            throw new Exception("Email is required.");
+            throw new ValidationException("Email is required.");
 
         var currentUserId = _userContext.GetUserId();
 
         var board = await _boardRepo.GetById(request.BoardId);
         if (board == null)
-            throw new Exception("Board does not exist.");
+            throw new NotFoundException("Board does not exist.");
 
         var workspace = await _workspaceRepo.GetById(board.WorkspaceId);
         if (workspace == null)
-            throw new Exception("Workspace does not exist.");
+            throw new NotFoundException("Workspace does not exist.");
 
         if (workspace.OwnerId != currentUserId && board.OwnerId != currentUserId)
-            throw new Exception("Only workspace or board owner can invite to board.");
+            throw new ForbiddenException("Only workspace or board owner can invite to board.");
 
         await AddUserToBoardAsync(board, request.Email.Trim(), currentUserId);
     }
@@ -147,7 +148,7 @@ public class BoardService : IBoardService
     {
         var board = await _boardRepo.GetById(boardId);
         if (board == null)
-            throw new Exception("Board does not exist.");
+            throw new NotFoundException("Board does not exist.");
 
         await _boardAccessService.EnsureBoardAccessAsync(board);
         await _boardMemberSyncService.AddWorkspaceMembersToBoardAsync(
@@ -232,10 +233,10 @@ public class BoardService : IBoardService
     {
         var invitedUser = await _userRepository.GetByEmailAsync(email);
         if (invitedUser == null)
-            throw new Exception("Invited user does not exist.");
+            throw new NotFoundException("Invited user does not exist.");
 
         if (invitedUser.Id == invitedByUserId)
-            throw new Exception("You cannot invite yourself.");
+            throw new ForbiddenException("You cannot invite yourself.");
 
         var existingMember = await _workspaceMemberRepo.GetByWorkspaceAndUserIdAsync(
             board.WorkspaceId,
@@ -243,7 +244,7 @@ public class BoardService : IBoardService
         );
 
         if (existingMember is { Role: UserRole.Owner or UserRole.Member })
-            throw new Exception("User already has access to all boards in this workspace.");
+            throw new ValidationException("User already has access to all boards in this workspace.");
 
         if (existingMember == null)
         {
@@ -262,7 +263,7 @@ public class BoardService : IBoardService
         );
 
         if (existingBoardMember != null)
-            throw new Exception("User is already invited to this board.");
+            throw new ValidationException("User is already invited to this board.");
 
         await _boardMemberRepo.Add(new BoardMember
         {

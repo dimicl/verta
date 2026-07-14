@@ -4,6 +4,7 @@ using PlaywrightTests.Configuration;
 
 namespace PlaywrightTests.Helpers;
 
+//klasa za kontekst, podesavamo browser
 public abstract class E2eTestBase : PageTest
 {
     public override BrowserNewContextOptions ContextOptions()

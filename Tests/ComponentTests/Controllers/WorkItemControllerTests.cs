@@ -1,3 +1,4 @@
+using backend.Application.Exceptions;
 using backend.Application.Interfaces;
 using ComponentTests.Helpers;
 using Microsoft.AspNetCore.Mvc;
@@ -35,28 +36,27 @@ public class WorkItemControllerTests
     }
 
     [Test]
-    public async Task CreateInvalidBoardReturnsBadRequest()
+    public void CreateInvalidBoardPropagatesNotFound()
     {
         var request = TestDataFactory.CreateWorkItemRequest();
         _serviceMock.Setup(s => s.Create(request))
-            .ThrowsAsync(new Exception("Board does not exist."));
+            .ThrowsAsync(new NotFoundException("Board does not exist."));
 
-        var result = await _controller.Create(request);
+        var ex = Assert.ThrowsAsync<NotFoundException>(() => _controller.Create(request));
 
-        var badRequest = result as BadRequestObjectResult;
-        Assert.That(badRequest, Is.Not.Null);
+        Assert.That(ex!.Message, Does.Contain("does not exist"));
     }
 
     [Test]
-    public async Task CreateMissingNameReturnsBadRequest()
+    public void CreateMissingNamePropagatesValidation()
     {
         var request = TestDataFactory.CreateWorkItemRequest();
         _serviceMock.Setup(s => s.Create(request))
-            .ThrowsAsync(new Exception("Work item name is required."));
+            .ThrowsAsync(new ValidationException("Work item name is required."));
 
-        var result = await _controller.Create(request);
+        var ex = Assert.ThrowsAsync<ValidationException>(() => _controller.Create(request));
 
-        Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+        Assert.That(ex!.Message, Does.Contain("required"));
     }
 
   #endregion
@@ -108,25 +108,25 @@ public class WorkItemControllerTests
     }
 
     [Test]
-    public async Task GetByIdNotFoundReturnsBadRequest()
+    public void GetByIdNotFoundPropagatesNotFound()
     {
         _serviceMock.Setup(s => s.GetById(999))
-            .ThrowsAsync(new Exception("Work item does not exist."));
+            .ThrowsAsync(new NotFoundException("Work item does not exist."));
 
-        var result = await _controller.GetById(999);
+        var ex = Assert.ThrowsAsync<NotFoundException>(() => _controller.GetById(999));
 
-        Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+        Assert.That(ex!.Message, Does.Contain("does not exist"));
     }
 
     [Test]
-    public async Task GetByIdNoAccessReturnsBadRequest()
+    public void GetByIdNoAccessPropagatesForbidden()
     {
         _serviceMock.Setup(s => s.GetById(1))
-            .ThrowsAsync(new Exception("You do not have access to this board."));
+            .ThrowsAsync(new ForbiddenException("You do not have access to this board."));
 
-        var result = await _controller.GetById(1);
+        var ex = Assert.ThrowsAsync<ForbiddenException>(() => _controller.GetById(1));
 
-        Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+        Assert.That(ex!.Message, Does.Contain("do not have access"));
     }
 
   #endregion
@@ -148,41 +148,39 @@ public class WorkItemControllerTests
     }
 
     [Test]
-    public async Task UpdateNotFoundReturnsBadRequest()
+    public void UpdateNotFoundPropagatesNotFound()
     {
         var request = TestDataFactory.CreateWorkItemRequest();
         _serviceMock.Setup(s => s.Update(999, request))
-            .ThrowsAsync(new Exception("Work item does not exist."));
+            .ThrowsAsync(new NotFoundException("Work item does not exist."));
 
-        var result = await _controller.Update(999, request);
+        var ex = Assert.ThrowsAsync<NotFoundException>(() => _controller.Update(999, request));
 
-        Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+        Assert.That(ex!.Message, Does.Contain("does not exist"));
     }
 
     [Test]
-    public async Task UpdateWithoutWriteLockReturnsBadRequest()
+    public void UpdateWithoutWriteLockPropagatesForbidden()
     {
         var request = TestDataFactory.CreateWorkItemRequest();
         _serviceMock.Setup(s => s.Update(1, request))
-            .ThrowsAsync(new Exception("This work item is locked by another user."));
+            .ThrowsAsync(new ForbiddenException("This work item is locked by another user."));
 
-        var result = await _controller.Update(1, request);
+        var ex = Assert.ThrowsAsync<ForbiddenException>(() => _controller.Update(1, request));
 
-        Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
-        var badRequest = (BadRequestObjectResult)result;
-        Assert.That(badRequest.Value, Is.Not.Null);
+        Assert.That(ex!.Message, Does.Contain("locked by another"));
     }
 
     [Test]
-    public async Task UpdateInvalidNameReturnsBadRequest()
+    public void UpdateInvalidNamePropagatesValidation()
     {
         var request = TestDataFactory.CreateWorkItemRequest();
         _serviceMock.Setup(s => s.Update(1, request))
-            .ThrowsAsync(new Exception("Work item name is required."));
+            .ThrowsAsync(new ValidationException("Work item name is required."));
 
-        var result = await _controller.Update(1, request);
+        var ex = Assert.ThrowsAsync<ValidationException>(() => _controller.Update(1, request));
 
-        Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+        Assert.That(ex!.Message, Does.Contain("required"));
     }
 
   #endregion
@@ -200,25 +198,25 @@ public class WorkItemControllerTests
     }
 
     [Test]
-    public async Task DeleteNotFoundReturnsBadRequest()
+    public void DeleteNotFoundPropagatesNotFound()
     {
         _serviceMock.Setup(s => s.Delete(999))
-            .ThrowsAsync(new Exception("Work item does not exist."));
+            .ThrowsAsync(new NotFoundException("Work item does not exist."));
 
-        var result = await _controller.Delete(999);
+        var ex = Assert.ThrowsAsync<NotFoundException>(() => _controller.Delete(999));
 
-        Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+        Assert.That(ex!.Message, Does.Contain("does not exist"));
     }
 
     [Test]
-    public async Task DeleteNoWriteLockReturnsBadRequest()
+    public void DeleteNoWriteLockPropagatesForbidden()
     {
         _serviceMock.Setup(s => s.Delete(1))
-            .ThrowsAsync(new Exception("You do not have write access to this work item."));
+            .ThrowsAsync(new ForbiddenException("You do not have write access to this work item."));
 
-        var result = await _controller.Delete(1);
+        var ex = Assert.ThrowsAsync<ForbiddenException>(() => _controller.Delete(1));
 
-        Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+        Assert.That(ex!.Message, Does.Contain("write access"));
     }
 
   #endregion

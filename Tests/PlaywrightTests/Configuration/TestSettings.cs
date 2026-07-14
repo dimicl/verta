@@ -16,8 +16,11 @@ public static class TestSettings
     public static string FrontendBaseUrl =>
         Configuration["FrontendBaseUrl"] ?? "http://localhost:4210";
 
+    public static string TestEmail =>
+        Configuration["TestEmail"] ?? "test@verta.com";
+
     public static string TestPassword =>
-        Configuration["TestPassword"] ?? "Test1234!";
+        Configuration["TestPassword"] ?? "Test123!";
 
     public static bool RecordVideo =>
         bool.TryParse(Configuration["RecordVideo"], out var record) && record;

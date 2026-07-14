@@ -1,6 +1,6 @@
 using backend.Application.Interfaces;
-using backend.Shared.Helpers;
 
+using backend.Application.Exceptions;
 namespace backend.Application.Services;
 
 public class CommentService : ICommentService
@@ -10,6 +10,7 @@ public class CommentService : ICommentService
     private readonly ISubWorkItemRepository _subWorkItemRepo;
     private readonly IBoardRepository _boardRepo;
     private readonly IBoardAccessService _boardAccessService;
+    private readonly IWorkItemLockService _workItemLockService;
     private readonly IUserContext _userContext;
     private readonly DomainEventSubject _domainEventSubject;
     private readonly CommandInvoker _commandInvoker;
@@ -20,6 +21,7 @@ public class CommentService : ICommentService
         ISubWorkItemRepository subWorkItemRepo,
         IBoardRepository boardRepo,
         IBoardAccessService boardAccessService,
+        IWorkItemLockService workItemLockService,
         IUserContext userContext,
         DomainEventSubject domainEventSubject,
         CommandInvoker commandInvoker)
@@ -29,6 +31,7 @@ public class CommentService : ICommentService
         _subWorkItemRepo = subWorkItemRepo;
         _boardRepo = boardRepo;
         _boardAccessService = boardAccessService;
+        _workItemLockService = workItemLockService;
         _userContext = userContext;
         _domainEventSubject = domainEventSubject;
         _commandInvoker = commandInvoker;
@@ -36,59 +39,16 @@ public class CommentService : ICommentService
 
     public async Task<CommentResponse> Create(CommentRequest request)
     {
-        if (request == null)
-            throw new Exception("Request not found.");
-
-        if (string.IsNullOrWhiteSpace(request.Content))
-            throw new Exception("Comment content is required.");
-
-        var userId = _userContext.GetUserId();
-        var workItem = await _workItemRepo.GetById(request.WorkItemId);
-
-        if (workItem == null)
-            throw new Exception("Work item does not exist.");
-
-        var board = await _boardRepo.GetById(workItem.BoardId);
-
-        if (board == null)
-            throw new Exception("Board does not exist.");
-
-        await _boardAccessService.EnsureBoardAccessAsync(board);
-
-        if (request.SubWorkItemId.HasValue)
-        {
-            var subWorkItem = await _subWorkItemRepo.GetById(request.SubWorkItemId.Value);
-            if (subWorkItem == null)
-                throw new Exception("Sub work item does not exist.");
-
-            if (subWorkItem.WorkItemId != request.WorkItemId)
-                throw new Exception("Sub work item does not belong to this work item.");
-        }
-
-        var comment = new Comment
-        {
-            Content = request.Content.Trim(),
-            WorkItemId = request.WorkItemId,
-            SubWorkItemId = request.SubWorkItemId,
-            UserId = userId,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        var command = new AddCommentCommand(async () =>
-        {
-            var createdComment = await _commentRepo.Add(comment);
-            var withUser = await _commentRepo.GetByIdWithUserAsync(createdComment.Id);
-
-            await _domainEventSubject.NotifyAsync(DomainEventNames.CommentCreated, new
-            {
-                CommentId = createdComment.Id,
-                WorkItemId = createdComment.WorkItemId,
-                UserId = createdComment.UserId,
-                Content = createdComment.Content
-            });
-
-            return CommentHelper.ToResponse(withUser ?? createdComment);
-        });
+        var command = new AddCommentCommand(
+            request,
+            _userContext.GetUserId(),
+            _commentRepo,
+            _workItemRepo,
+            _subWorkItemRepo,
+            _boardRepo,
+            _boardAccessService,
+            _workItemLockService,
+            _domainEventSubject);
 
         return await _commandInvoker.ExecuteAsync(command);
     }
@@ -96,14 +56,12 @@ public class CommentService : ICommentService
     public async Task<List<CommentResponse>> GetByWorkItemId(int workItemId)
     {
         var workItem = await _workItemRepo.GetById(workItemId);
-
         if (workItem == null)
-            throw new Exception("Work item does not exist.");
+            throw new NotFoundException("Work item does not exist.");
 
         var board = await _boardRepo.GetById(workItem.BoardId);
-
         if (board == null)
-            throw new Exception("Board does not exist.");
+            throw new NotFoundException("Board does not exist.");
 
         await _boardAccessService.EnsureBoardAccessAsync(board);
 
@@ -118,7 +76,7 @@ public class CommentService : ICommentService
     {
         var subWorkItem = await _subWorkItemRepo.GetById(subWorkItemId);
         if (subWorkItem == null)
-            throw new Exception("Sub work item does not exist.");
+            throw new NotFoundException("Sub work item does not exist.");
 
         await EnsureWorkItemBoardAccessAsync(subWorkItem.WorkItemId);
 
@@ -131,70 +89,31 @@ public class CommentService : ICommentService
 
     public async Task<CommentResponse> Update(int commentId, UpdateCommentRequest request)
     {
-        if (request == null)
-            throw new Exception("Request not found.");
-
-        if (string.IsNullOrWhiteSpace(request.Content))
-            throw new Exception("Comment content is required.");
-
-        var userId = _userContext.GetUserId();
-        var comment = await _commentRepo.GetByIdWithUserAsync(commentId);
-
-        if (comment == null)
-            throw new Exception("Comment does not exist.");
-
-        if (comment.UserId != userId)
-            throw new Exception("You can only edit your own comments.");
-
-        await EnsureWorkItemBoardAccessAsync(comment.WorkItemId);
-
-        comment.Content = request.Content.Trim();
-        comment.UpdatedAt = DateTime.UtcNow;
-
-        var command = new UpdateCommentCommand(async () =>
-        {
-            await _commentRepo.Update(comment);
-
-            await _domainEventSubject.NotifyAsync(DomainEventNames.CommentUpdated, new
-            {
-                CommentId = comment.Id,
-                WorkItemId = comment.WorkItemId,
-                UserId = comment.UserId,
-                Content = comment.Content
-            });
-
-            return CommentHelper.ToResponse(comment);
-        });
+        var command = new UpdateCommentCommand(
+            commentId,
+            request,
+            _userContext.GetUserId(),
+            _commentRepo,
+            _workItemRepo,
+            _boardRepo,
+            _boardAccessService,
+            _workItemLockService,
+            _domainEventSubject);
 
         return await _commandInvoker.ExecuteAsync(command);
     }
 
     public async Task Delete(int commentId)
     {
-        var userId = _userContext.GetUserId();
-        var comment = await _commentRepo.GetByIdWithUserAsync(commentId);
-
-        if (comment == null)
-            throw new Exception("Comment does not exist.");
-
-        if (comment.UserId != userId)
-            throw new Exception("You can only delete your own comments.");
-
-        await EnsureWorkItemBoardAccessAsync(comment.WorkItemId);
-
-        var command = new DeleteCommentCommand(async () =>
-        {
-            await _commentRepo.Delete(comment);
-
-            await _domainEventSubject.NotifyAsync(DomainEventNames.CommentDeleted, new
-            {
-                CommentId = comment.Id,
-                WorkItemId = comment.WorkItemId,
-                UserId = comment.UserId
-            });
-
-            return true;
-        });
+        var command = new DeleteCommentCommand(
+            commentId,
+            _userContext.GetUserId(),
+            _commentRepo,
+            _workItemRepo,
+            _boardRepo,
+            _boardAccessService,
+            _workItemLockService,
+            _domainEventSubject);
 
         await _commandInvoker.ExecuteAsync(command);
     }
@@ -202,14 +121,12 @@ public class CommentService : ICommentService
     private async Task EnsureWorkItemBoardAccessAsync(int workItemId)
     {
         var workItem = await _workItemRepo.GetById(workItemId);
-
         if (workItem == null)
-            throw new Exception("Work item does not exist.");
+            throw new NotFoundException("Work item does not exist.");
 
         var board = await _boardRepo.GetById(workItem.BoardId);
-
         if (board == null)
-            throw new Exception("Board does not exist.");
+            throw new NotFoundException("Board does not exist.");
 
         await _boardAccessService.EnsureBoardAccessAsync(board);
     }

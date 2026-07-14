@@ -18,6 +18,7 @@ export interface TaskMember {
 export class TaskAssigneeComponent {
   @Input() public members: TaskMember[] = [];
   @Input() public assignedUserId: number | null = null;
+  @Input() public disabled = false;
   @Output() public assignedUserIdChange = new EventEmitter<number | null>();
 
   public get assigneeLabel(): string {
@@ -45,6 +46,9 @@ export class TaskAssigneeComponent {
     userId: number | null,
     popover: NgbPopover
   ): void {
+    if (this.disabled) {
+      return;
+    }
     this.assignedUserId = userId;
     this.assignedUserIdChange.emit(userId);
     popover.close();

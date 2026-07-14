@@ -3,6 +3,7 @@ using static Microsoft.Playwright.Assertions;
 
 namespace PlaywrightTests.Helpers;
 
+//helper UI akcija za e2e 
 public static class E2eAppHelper
 {
     public static Task LoginAsync(IPage page, TestEnvironment env) =>

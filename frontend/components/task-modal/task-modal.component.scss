@@ -72,7 +72,7 @@
   }
 }
 
-.fields-row{
+.fields-row {
   display: flex;
   width: 100%;
   align-items: start;
@@ -194,16 +194,6 @@
 
   &:focus {
     border-color: #888;
-  }
-}
-
-.parent-task {
-  margin-top: 4px;
-  font-size: 12px;
-  color: #6b7280;
-
-  strong {
-    color: #374151;
   }
 }
 

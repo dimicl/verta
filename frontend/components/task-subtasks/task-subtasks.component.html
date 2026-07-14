@@ -10,6 +10,7 @@
     <button
       type="button"
       class="task-subtasks__create-btn"
+      *ngIf="!readOnly"
       [disabled]="!workItemId || isSubmitting()"
       (click)="onCreateSubtask()"
     >
@@ -32,7 +33,7 @@
           <th>Name</th>
           <th>Description</th>
           <th>Status</th>
-          <th></th>
+          <th *ngIf="!readOnly"></th>
         </tr>
       </thead>
       <tbody>
@@ -43,10 +44,15 @@
           <td class="task-subtasks__status" (click)="$event.stopPropagation()">
             <app-ve-status
               [taskStatus]="subtask.status"
+              [disabled]="readOnly"
               (statusChange)="onStatusChange(subtask, $event)"
             ></app-ve-status>
           </td>
-          <td class="task-subtasks__actions" (click)="$event.stopPropagation()">
+          <td
+            class="task-subtasks__actions"
+            *ngIf="!readOnly"
+            (click)="$event.stopPropagation()"
+          >
             <button
               type="button"
               class="task-subtasks__delete-btn"

@@ -2,6 +2,7 @@ using Microsoft.Playwright;
 
 namespace PlaywrightTests.Helpers;
 
+//koriste ga samo api testovi,  _playwright sluzi nam samo za http kod Apia 
 [TestFixture]
 public abstract class ApiTestBase
 {

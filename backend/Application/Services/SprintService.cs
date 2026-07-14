@@ -1,6 +1,7 @@
 using backend.Application.Interfaces;
 using backend.Shared.Helpers;
 
+using backend.Application.Exceptions;
 namespace backend.Application.Services;
 
 public class SprintService : ISprintService
@@ -25,14 +26,14 @@ public class SprintService : ISprintService
     public async Task<SprintResponse> Create(SprintRequest request)
     {
         if (request == null)
-            throw new Exception("Request not found.");
+            throw new ValidationException("Request not found.");
 
         if (string.IsNullOrWhiteSpace(request.Name))
-            throw new Exception("Sprint name is required.");
+            throw new ValidationException("Sprint name is required.");
 
         var board = await _boardRepo.GetById(request.BoardId);
         if (board == null)
-            throw new Exception("Board does not exist.");
+            throw new NotFoundException("Board does not exist.");
 
         await _boardAccessService.EnsureBoardAccessAsync(board);
 
@@ -40,7 +41,7 @@ public class SprintService : ISprintService
         var endDate = ToUtcDate(request.EndDate);
 
         if (startDate.HasValue && endDate.HasValue && endDate < startDate)
-            throw new Exception("End date must be on or after start date.");
+            throw new ValidationException("End date must be on or after start date.");
 
         var sprint = new Sprint
         {
@@ -60,11 +61,11 @@ public class SprintService : ISprintService
     {
         var sprint = await _sprintRepo.GetById(sprintId);
         if (sprint == null)
-            throw new Exception("Sprint does not exist.");
+            throw new NotFoundException("Sprint does not exist.");
 
         var board = await _boardRepo.GetById(sprint.BoardId);
         if (board == null)
-            throw new Exception("Board does not exist.");
+            throw new NotFoundException("Board does not exist.");
 
         await _boardAccessService.EnsureBoardAccessAsync(board);
 
@@ -75,7 +76,7 @@ public class SprintService : ISprintService
     {
         var board = await _boardRepo.GetById(boardId);
         if (board == null)
-            throw new Exception("Board does not exist.");
+            throw new NotFoundException("Board does not exist.");
 
         await _boardAccessService.EnsureBoardAccessAsync(board);
 
@@ -87,18 +88,18 @@ public class SprintService : ISprintService
     public async Task<SprintResponse> Update(int sprintId, UpdateSprintRequest request)
     {
         if (request == null)
-            throw new Exception("Request not found.");
+            throw new ValidationException("Request not found.");
 
         if (string.IsNullOrWhiteSpace(request.Name))
-            throw new Exception("Sprint name is required.");
+            throw new ValidationException("Sprint name is required.");
 
         var sprint = await _sprintRepo.GetById(sprintId);
         if (sprint == null)
-            throw new Exception("Sprint does not exist.");
+            throw new NotFoundException("Sprint does not exist.");
 
         var board = await _boardRepo.GetById(sprint.BoardId);
         if (board == null)
-            throw new Exception("Board does not exist.");
+            throw new NotFoundException("Board does not exist.");
 
         await _boardAccessService.EnsureBoardAccessAsync(board);
 
@@ -106,7 +107,7 @@ public class SprintService : ISprintService
         var endDate = ToUtcDate(request.EndDate);
 
         if (startDate.HasValue && endDate.HasValue && endDate < startDate)
-            throw new Exception("End date must be on or after start date.");
+            throw new ValidationException("End date must be on or after start date.");
 
         sprint.Name = request.Name.Trim();
         sprint.StartDate = startDate;
@@ -122,11 +123,11 @@ public class SprintService : ISprintService
     {
         var sprint = await _sprintRepo.GetById(sprintId);
         if (sprint == null)
-            throw new Exception("Sprint does not exist.");
+            throw new NotFoundException("Sprint does not exist.");
 
         var board = await _boardRepo.GetById(sprint.BoardId);
         if (board == null)
-            throw new Exception("Board does not exist.");
+            throw new NotFoundException("Board does not exist.");
 
         await _boardAccessService.EnsureBoardAccessAsync(board);
 

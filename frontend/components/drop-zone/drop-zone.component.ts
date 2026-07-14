@@ -44,6 +44,7 @@ const SUPPORTED_TYPES: FileExtension[] = [
 export class DropZoneComponent implements OnChanges {
   @Input() public workItemId: number | null = null;
   @Input() public subWorkItemId: number | null | undefined = undefined;
+  @Input() public readOnly = false;
 
   @ViewChild('fileInput') private fileInput?: ElementRef<HTMLInputElement>;
   @ViewChild('dropZoneContainer') private dropZoneContainer?: ElementRef<HTMLElement>;
@@ -97,6 +98,12 @@ export class DropZoneComponent implements OnChanges {
     }
   }
 
+  public reload(): void {
+    if (this.canPersistFiles()) {
+      this.loadFiles();
+    }
+  }
+
   private canPersistFiles(): boolean {
     if (!this.workItemId) {
       return false;
@@ -127,6 +134,9 @@ export class DropZoneComponent implements OnChanges {
   }
 
   public handleClickToAdd(): void {
+    if (this.readOnly) {
+      return;
+    }
     this.fileInput?.nativeElement.click();
   }
 
@@ -144,6 +154,9 @@ export class DropZoneComponent implements OnChanges {
   public onDrop(event: DragEvent): void {
     event.preventDefault();
     this.onDragover.set(false);
+    if (this.readOnly) {
+      return;
+    }
 
     const files = event.dataTransfer?.files;
     if (files?.length) {
@@ -180,6 +193,10 @@ export class DropZoneComponent implements OnChanges {
   }
 
   public handleDelete(fileName: string): void {
+    if (this.readOnly) {
+      return;
+    }
+
     const doc = this.docs().find((item) => item.fileName === fileName);
     if (!doc) {
       return;

@@ -87,6 +87,7 @@ public class WorkItemLockService : IWorkItemLockService, IWorkItemLockExpiryServ
                 await _domainEventSubject.NotifyAsync(DomainEventNames.WorkItemLocked, new
                 {
                     WorkItemId = workItemId,
+                    BoardId = workItem.BoardId,
                     LockedByUserId = userId,
                     Mode = "WRITE"
                 });
@@ -203,6 +204,9 @@ public class WorkItemLockService : IWorkItemLockService, IWorkItemLockExpiryServ
 
     public async Task PromoteNextInterestedAsync(int workItemId)
     {
+        var workItem = await _workItemRepo.GetById(workItemId);
+        var boardId = workItem?.BoardId;
+
         var next = await _interestRepo.GetFirstAsync(workItemId);
 
         if (next == null)
@@ -212,6 +216,7 @@ public class WorkItemLockService : IWorkItemLockService, IWorkItemLockExpiryServ
             await _domainEventSubject.NotifyAsync(DomainEventNames.WorkItemUnlocked, new
             {
                 WorkItemId = workItemId,
+                BoardId = boardId,
                 TargetUserIds = interestedUserIds
             });
             return;
@@ -248,12 +253,14 @@ public class WorkItemLockService : IWorkItemLockService, IWorkItemLockExpiryServ
         {
             TargetUserId = next.UserId,
             WorkItemId = workItemId,
+            BoardId = boardId,
             ExpiresAt = newLock.ExpiresAt
         });
 
         await _domainEventSubject.NotifyAsync(DomainEventNames.WorkItemLockTransferred, new
         {
             WorkItemId = workItemId,
+            BoardId = boardId,
             NewLockedByUserId = next.UserId
         });
     }

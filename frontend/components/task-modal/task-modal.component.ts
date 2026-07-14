@@ -1,4 +1,11 @@
-import { Component, Input, ViewChild, inject } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  Input,
+  OnDestroy,
+  ViewChild,
+  inject,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal, NgbModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
@@ -12,7 +19,7 @@ import {
   CONFIRM_MODAL_OPTIONS,
   STACKED_MODAL_OPTIONS,
 } from '../../shared/constants/modal-options';
-import { SubWorkItemService } from '../../shared/services';
+import { SubWorkItemService, TaskService } from '../../shared/services';
 import { ConfirmModalComponent } from '../confirm-modal/confirm-modal.component';
 import { VeStatusComponent } from '../ve-status/ve-status.component';
 import {
@@ -41,12 +48,14 @@ import { TaskPriorityComponent } from '../task-priority/task-priority.component'
   templateUrl: './task-modal.component.html',
   styleUrl: './task-modal.component.scss',
 })
-export class TaskModalComponent {
+export class TaskModalComponent implements OnDestroy {
   public sharedSvgRoutes = SharedSvgRoutes;
 
   @Input() public isSubtask = false;
   @Input() public isEditMode = false;
+  @Input() public isReadOnly = false;
   @Input() public workItemId: number | null = null;
+  @Input() public boardId: number | null = null;
   @Input() public parentWorkItemId: number | null = null;
   @Input() public parentTaskTitle = '';
   @Input() public subWorkItemId: number | null = null;
@@ -77,10 +86,23 @@ export class TaskModalComponent {
 
   private readonly modalService = inject(NgbModal);
   private readonly subWorkItemService = inject(SubWorkItemService);
+  private readonly taskService = inject(TaskService);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private fieldSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(private activeModal: NgbActiveModal) {}
 
+  public ngOnDestroy(): void {
+    if (this.fieldSaveTimer) {
+      clearTimeout(this.fieldSaveTimer);
+    }
+  }
+
   public get modalTitle(): string {
+    if (this.isReadOnly) {
+      return this.isSubtask ? 'View Subtask' : 'View Task';
+    }
+
     if (this.isSubtask) {
       return this.isEditMode ? 'Edit Subtask' : 'Add Subtask';
     }
@@ -109,10 +131,16 @@ export class TaskModalComponent {
   }
 
   public onCreateSubtask(): void {
+    if (this.isReadOnly) {
+      return;
+    }
     this.openSubtaskModal();
   }
 
   public onEditSubtask(subtask: SubWorkItemResponse): void {
+    if (this.isReadOnly) {
+      return;
+    }
     this.openSubtaskModal(subtask);
   }
 
@@ -121,13 +149,17 @@ export class TaskModalComponent {
       return;
     }
 
-    const modalRef = this.modalService.open(TaskModalComponent, STACKED_MODAL_OPTIONS);
+    const modalRef = this.modalService.open(
+      TaskModalComponent,
+      STACKED_MODAL_OPTIONS
+    );
     const instance = modalRef.componentInstance;
-
     instance.isSubtask = true;
     instance.isEditMode = !!existing;
+    instance.isReadOnly = this.isReadOnly;
     instance.parentWorkItemId = this.workItemId;
     instance.parentTaskTitle = this.title;
+    instance.boardId = this.boardId;
     instance.subWorkItemId = existing?.id ?? null;
     instance.title = existing?.name ?? '';
     instance.description = existing?.description ?? '';
@@ -141,12 +173,7 @@ export class TaskModalComponent {
 
     modalRef.result.then(
       (result) => {
-        if (result?.deleted && existing) {
-          this.taskSubtasks?.removeLocalSubtask(existing.id);
-          return;
-        }
-
-        if (result?.title) {
+        if (result && !this.isReadOnly) {
           this.taskSubtasks?.saveFromModal(existing ?? null, result);
         }
       },
@@ -155,7 +182,7 @@ export class TaskModalComponent {
   }
 
   public onDeleteSubtask(): void {
-    if (!this.isSubtask || !this.isEditMode || !this.subWorkItemId) {
+    if (this.isReadOnly || !this.isSubtask || !this.isEditMode || !this.subWorkItemId) {
       return;
     }
 
@@ -196,7 +223,49 @@ export class TaskModalComponent {
     this.activeModal.dismiss();
   }
 
+  public onTitleOrDescriptionChange(): void {
+    this.scheduleFieldAutosave();
+  }
+
+  public onStatusChange(status: TaskStatus): void {
+    this.status = status;
+    if (!this.canAutosaveWorkItem()) {
+      return;
+    }
+
+    this.taskService.changeStatus(this.workItemId!, status).subscribe({
+      error: (err) => {
+        this.errorMessage = err.error?.message ?? 'Failed to change status.';
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  public onAssigneeChange(userId: number | null): void {
+    this.assignedUserId = userId;
+    if (!this.canAutosaveWorkItem()) {
+      return;
+    }
+
+    this.taskService.changeAssignee(this.workItemId!, userId).subscribe({
+      error: (err) => {
+        this.errorMessage = err.error?.message ?? 'Failed to change assignee.';
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
   public onSave(): void {
+    if (this.isReadOnly) {
+      this.activeModal.dismiss();
+      return;
+    }
+
+    if (this.fieldSaveTimer) {
+      clearTimeout(this.fieldSaveTimer);
+      this.fieldSaveTimer = null;
+    }
+
     this.activeModal.close({
       isSubtask: this.isSubtask,
       title: this.title,
@@ -209,5 +278,94 @@ export class TaskModalComponent {
       sprintId: this.sprintId,
       assignedUserId: this.assignedUserId,
     });
+  }
+
+  public applyRemoteFields(update: {
+    title?: string;
+    description?: string;
+    status?: TaskStatus;
+    assignedUserId?: number | null;
+    sprintId?: number | null;
+  }): void {
+    if (update.title !== undefined) {
+      this.title = update.title;
+    }
+    if (update.description !== undefined) {
+      this.description = update.description;
+    }
+    if (update.status !== undefined) {
+      this.status = update.status;
+    }
+    if (update.assignedUserId !== undefined) {
+      this.assignedUserId = update.assignedUserId;
+    }
+    if (update.sprintId !== undefined) {
+      this.sprintId = update.sprintId;
+    }
+    this.cdr.detectChanges();
+  }
+
+  public reloadLiveContent(): void {
+    this.taskComments?.reload();
+    this.taskSubtasks?.reload();
+    this.dropZone?.reload();
+  }
+
+  public grantWriteAccess(): void {
+    this.isReadOnly = false;
+    this.cdr.detectChanges();
+  }
+
+  private canAutosaveWorkItem(): boolean {
+    return (
+      this.isEditMode &&
+      !this.isReadOnly &&
+      !this.isSubtask &&
+      !!this.workItemId &&
+      !!this.boardId
+    );
+  }
+
+  private scheduleFieldAutosave(): void {
+    if (!this.canAutosaveWorkItem()) {
+      return;
+    }
+
+    if (this.fieldSaveTimer) {
+      clearTimeout(this.fieldSaveTimer);
+    }
+
+    this.fieldSaveTimer = setTimeout(() => {
+      this.fieldSaveTimer = null;
+      this.persistWorkItemFields();
+    }, 500);
+  }
+
+  private persistWorkItemFields(): void {
+    if (!this.canAutosaveWorkItem()) {
+      return;
+    }
+
+    const name = this.title.trim();
+    const description = this.description.trim();
+    if (!name || !description) {
+      return;
+    }
+
+    this.taskService
+      .update(this.workItemId!, {
+        name,
+        description,
+        boardId: this.boardId!,
+        sprintId: this.sprintId ?? undefined,
+        priority: this.priority,
+        assignedUserId: this.assignedUserId,
+      })
+      .subscribe({
+        error: (err) => {
+          this.errorMessage = err.error?.message ?? 'Failed to save changes.';
+          this.cdr.detectChanges();
+        },
+      });
   }
 }

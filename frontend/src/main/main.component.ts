@@ -1,4 +1,5 @@
-import { Component, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, DestroyRef, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import {
@@ -12,11 +13,12 @@ import {
   UserService,
   WorkspaceService,
 } from '../../shared/services';
+import { BoardRealtimeEvent } from '../../shared/services/signalr.service';
 import { CommonModule } from '@angular/common';
 import { InputComponent } from '../../components/input/input.component';
 import { SharedSvgRoutes } from '../../shared/constants/shared-svg-routes';
 import { SvgIconComponent } from 'angular-svg-icon';
-import { NgbModal, NgbModule, NgbPopover } from '@ng-bootstrap/ng-bootstrap';
+import { NgbModal, NgbModalRef, NgbModule, NgbPopover } from '@ng-bootstrap/ng-bootstrap';
 import { AvatarComponent } from '../../components/avatar/avatar.component';
 import { ChatComponent } from '../chat/chat.component';
 import { VeNotificationComponent } from '../../components/ve-notification/ve-notification.component';
@@ -41,6 +43,8 @@ import { TaskPriorityComponent } from '../../components/task-priority/task-prior
 import { BoardModalComponent } from '../../components/board-modal/board-modal.component';
 import { TaskStatus } from '../../shared/types/task-status.type';
 import { TaskPriority } from '../../shared/types/task-priority.type';
+import { UserRole } from '../../shared/types/user-role.type';
+import { WorkspaceMemberResponse } from '../../shared/interfaces/workspace-member-response.interface';
 import {
   BOARD_COLUMNS,
   getAllowedNextStatuses,
@@ -93,6 +97,7 @@ export class MainComponent implements OnInit, OnDestroy {
     id: number;
     firstName: string;
     lastName: string;
+    role: UserRole;
   }> = [];
 
   public currentUser: {
@@ -105,7 +110,11 @@ export class MainComponent implements OnInit, OnDestroy {
     id: number;
     firstName: string;
     lastName: string;
+    role: UserRole;
   }> = [];
+
+  public currentUserWorkspaceRole: UserRole | null = null;
+  public currentUserBoardRole: UserRole | null = null;
 
   private readonly maxVisibleBoardMembers = 5;
 
@@ -137,6 +146,9 @@ export class MainComponent implements OnInit, OnDestroy {
 
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   private lockToastTimer: ReturnType<typeof setTimeout> | null = null;
+  private backlogRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+  private openTaskModalRef: NgbModalRef | null = null;
+  private readonly destroyRef = inject(DestroyRef);
 
   selectedUser = signal<number | null>(null);
 
@@ -148,11 +160,18 @@ export class MainComponent implements OnInit, OnDestroy {
           firstName: response?.firstName ?? 'User',
           lastName: response?.lastName ?? '',
         };
+        this.currentUserWorkspaceRole = this.resolveCurrentUserRole(
+          this.workspaceMembers
+        );
+        this.currentUserBoardRole = this.resolveCurrentUserRole(
+          this.boardMembers
+        );
       },
       error: (err) => console.error('Greška pri učitavanju korisnika:', err),
     });
 
     void this.signalRService.connect();
+    this.subscribeToRealtimeEvents();
 
     this.getWorkspace();
   }
@@ -162,6 +181,10 @@ export class MainComponent implements OnInit, OnDestroy {
     if (this.lockToastTimer) {
       clearTimeout(this.lockToastTimer);
     }
+    if (this.backlogRefreshTimer) {
+      clearTimeout(this.backlogRefreshTimer);
+    }
+    void this.signalRService.leaveBoard();
     if (this.activeWorkItemId !== null) {
       this.taskService.closeWorkItem(this.activeWorkItemId).subscribe();
     }
@@ -192,20 +215,58 @@ export class MainComponent implements OnInit, OnDestroy {
     });
   }
 
-  private mapMembers(
-    members: Array<{ userId: number; firstName?: string; lastName?: string }>
-  ) {
+  private mapMembers(members: WorkspaceMemberResponse[]) {
     return members.map((member) => ({
       id: member.userId,
       firstName: member.firstName || 'User',
       lastName: member.lastName || '',
+      role: this.normalizeRole(member.role),
     }));
+  }
+
+  private normalizeRole(role: string | UserRole | undefined): UserRole {
+    if (role === 'Owner' || role === 'Member' || role === 'Guest') {
+      return role;
+    }
+    // Legacy frontend name for Guest
+    if (role === 'Viewer') {
+      return 'Guest';
+    }
+    return 'Member';
+  }
+
+  private resolveCurrentUserRole(
+    members: Array<{ id: number; role: UserRole }>
+  ): UserRole | null {
+    if (!this.currentUser?.id) {
+      return null;
+    }
+    return members.find((m) => m.id === this.currentUser!.id)?.role ?? null;
+  }
+
+  /** Owner-only: invite to workspace, add board, invite to board */
+  public get canManageWorkspace(): boolean {
+    return this.currentUserWorkspaceRole === 'Owner';
+  }
+
+  /** Owner/Member: create/edit tasks, drag&drop, sprint. Guest = read-only board */
+  public get canEditBoard(): boolean {
+    const role = this.currentUserBoardRole ?? this.currentUserWorkspaceRole;
+    return role === 'Owner' || role === 'Member';
+  }
+
+  public get isGuest(): boolean {
+    const role = this.currentUserBoardRole ?? this.currentUserWorkspaceRole;
+    return role === 'Guest';
   }
 
   private getWorkspaceMembers(workspaceId: number): void {
     this.workspaceService.getMembers(workspaceId).subscribe({
       next: (members) => {
         this.workspaceMembers = this.mapMembers(members);
+        this.currentUserWorkspaceRole = this.resolveCurrentUserRole(
+          this.workspaceMembers
+        );
       },
       error: (err) => {
         console.error('Greška pri učitavanju članova radnog prostora:', err);
@@ -217,10 +278,14 @@ export class MainComponent implements OnInit, OnDestroy {
     this.boardService.getBoardMembers(boardId).subscribe({
       next: (members) => {
         this.boardMembers = this.mapMembers(members);
+        this.currentUserBoardRole = this.resolveCurrentUserRole(
+          this.boardMembers
+        );
       },
       error: (err) => {
         console.error('Greška pri učitavanju članova table:', err);
         this.boardMembers = [];
+        this.currentUserBoardRole = null;
       },
     });
   }
@@ -336,6 +401,9 @@ export class MainComponent implements OnInit, OnDestroy {
     subtask: SubWorkItemResponse,
     status: TaskStatus
   ): void {
+    if (!this.canEditBoard) {
+      return;
+    }
     if (subtask.status === status) {
       return;
     }
@@ -361,9 +429,11 @@ export class MainComponent implements OnInit, OnDestroy {
 
   public onOpenSubtask(task: WorkItemResponse, subtask: SubWorkItemResponse): void {
     const modalRef = this.modalService.open(TaskModalComponent, STACKED_MODAL_OPTIONS);
+    const roleReadOnly = !this.canEditBoard;
 
     modalRef.componentInstance.isSubtask = true;
     modalRef.componentInstance.isEditMode = true;
+    modalRef.componentInstance.isReadOnly = roleReadOnly;
     modalRef.componentInstance.parentWorkItemId = task.id;
     modalRef.componentInstance.parentTaskTitle = task.name;
     modalRef.componentInstance.subWorkItemId = subtask.id;
@@ -377,7 +447,7 @@ export class MainComponent implements OnInit, OnDestroy {
 
     modalRef.result.then(
       (result) => {
-        if (result?.title) {
+        if (result?.title && !roleReadOnly) {
           this.saveSubtaskFromBoard(task, subtask, result);
         }
       },
@@ -494,6 +564,9 @@ export class MainComponent implements OnInit, OnDestroy {
     event: CdkDragDrop<WorkItemResponse[]>,
     targetStatus: TaskStatus
   ): void {
+    if (!this.canEditBoard) {
+      return;
+    }
     if (event.previousContainer === event.container) {
       moveItemInArray(
         event.container.data,
@@ -573,6 +646,7 @@ export class MainComponent implements OnInit, OnDestroy {
     id: number;
     firstName: string;
     lastName: string;
+    role: UserRole;
   }> {
     return this.boardMembers.slice(0, this.maxVisibleBoardMembers);
   }
@@ -581,6 +655,7 @@ export class MainComponent implements OnInit, OnDestroy {
     id: number;
     firstName: string;
     lastName: string;
+    role: UserRole;
   }> {
     return this.boardMembers.slice(this.maxVisibleBoardMembers);
   }
@@ -593,6 +668,9 @@ export class MainComponent implements OnInit, OnDestroy {
   }
 
   public onAddTask(): void {
+    if (!this.canEditBoard) {
+      return;
+    }
     const modalRef = this.modalService.open(TaskModalComponent, TASK_MODAL_OPTIONS);
 
     modalRef.componentInstance.sprints = this.sprints;
@@ -628,6 +706,7 @@ export class MainComponent implements OnInit, OnDestroy {
     this.selectedBoardId.set(board.id);
     this.searchQuery.set('');
     this.selectedUser.set(null);
+    void this.signalRService.joinBoard(board.id);
     this.loadBacklog(board.id);
   }
 
@@ -636,6 +715,9 @@ export class MainComponent implements OnInit, OnDestroy {
   }
 
   public onAddSprint(): void {
+    if (!this.canEditBoard) {
+      return;
+    }
     const board = this.getSelectedBoard();
     if (!board) {
       return;
@@ -664,6 +746,163 @@ export class MainComponent implements OnInit, OnDestroy {
     if (board) {
       this.loadBacklog(board.id);
     }
+  }
+
+  private subscribeToRealtimeEvents(): void {
+    this.signalRService.boardContent$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((event) => this.onBoardContentEvent(event));
+
+    this.signalRService.workItemWriteAccess$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((payload) => {
+        if (this.activeWorkItemId !== payload.workItemId) {
+          return;
+        }
+
+        const modal = this.openTaskModalRef?.componentInstance as
+          | TaskModalComponent
+          | undefined;
+        if (modal?.isReadOnly && this.canEditBoard) {
+          modal.grantWriteAccess();
+          this.startHeartbeat(payload.workItemId);
+          this.stickyLockMessage = 'You now have write access.';
+        }
+      });
+
+    this.signalRService.workItemUnlocked$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((workItemId) => {
+        if (this.activeWorkItemId === workItemId) {
+          return;
+        }
+
+        this.stickyLockMessage = `Task #${workItemId} is now available for editing.`;
+      });
+  }
+
+  private onBoardContentEvent(event: BoardRealtimeEvent): void {
+    const boardId = Number(
+      event.payload['boardId'] ?? event.payload['BoardId'] ?? 0
+    );
+    const selectedBoardId = this.selectedBoardId();
+    if (!boardId || selectedBoardId !== boardId) {
+      return;
+    }
+
+    const workItemId = Number(
+      event.payload['workItemId'] ?? event.payload['WorkItemId'] ?? 0
+    );
+
+    this.scheduleBacklogRefresh();
+
+    if (!workItemId || this.activeWorkItemId !== workItemId) {
+      return;
+    }
+
+    const modal = this.openTaskModalRef?.componentInstance as
+      | TaskModalComponent
+      | undefined;
+    if (!modal) {
+      return;
+    }
+
+    const contentEvents = new Set([
+      'CommentCreated',
+      'CommentUpdated',
+      'CommentDeleted',
+      'SubWorkItemCreated',
+      'SubWorkItemUpdated',
+      'SubWorkItemStatusChanged',
+      'SubWorkItemDeleted',
+      'WorkItemFileAdded',
+      'WorkItemFileDeleted',
+    ]);
+
+    if (contentEvents.has(event.eventName)) {
+      modal.reloadLiveContent();
+    }
+
+    if (
+      event.eventName === 'WorkItemUpdated' ||
+      event.eventName === 'WorkItemPriorityChanged'
+    ) {
+      if (!modal.isReadOnly) {
+        return;
+      }
+
+      const title = this.readPayloadString(event.payload, 'name', 'Name');
+      const description = this.readPayloadString(
+        event.payload,
+        'description',
+        'Description'
+      );
+      const status = this.readPayloadString(
+        event.payload,
+        'status',
+        'Status'
+      ) as TaskStatus | '';
+      const hasAssignee =
+        'assignedUserId' in event.payload || 'AssignedUserId' in event.payload;
+      const assignedRaw =
+        event.payload['assignedUserId'] ?? event.payload['AssignedUserId'];
+      const hasSprint =
+        'sprintId' in event.payload || 'SprintId' in event.payload;
+      const sprintRaw = event.payload['sprintId'] ?? event.payload['SprintId'];
+
+      if (title || description || status || hasAssignee || hasSprint) {
+        modal.applyRemoteFields({
+          title: title || undefined,
+          description: description || undefined,
+          status: status || undefined,
+          assignedUserId: hasAssignee
+            ? assignedRaw == null
+              ? null
+              : Number(assignedRaw)
+            : undefined,
+          sprintId: hasSprint
+            ? sprintRaw == null
+              ? null
+              : Number(sprintRaw)
+            : undefined,
+        });
+        return;
+      }
+
+      this.taskService.getById(workItemId).subscribe({
+        next: (task) => {
+          modal.applyRemoteFields({
+            title: task.name,
+            description: task.description,
+            status: task.status,
+            assignedUserId: task.assignedUserId ?? null,
+            sprintId: task.sprintId ?? null,
+          });
+        },
+        error: (err) =>
+          console.error('Greška pri sinhronizaciji taska uživo:', err),
+      });
+    }
+  }
+
+  private readPayloadString(
+    payload: Record<string, unknown>,
+    camel: string,
+    pascal: string
+  ): string {
+    const value = payload[camel] ?? payload[pascal];
+    return value == null ? '' : String(value);
+  }
+
+  private scheduleBacklogRefresh(): void {
+    if (this.backlogRefreshTimer) {
+      clearTimeout(this.backlogRefreshTimer);
+    }
+
+    this.backlogRefreshTimer = setTimeout(() => {
+      this.backlogRefreshTimer = null;
+      this.refreshBacklog();
+    }, 300);
   }
 
   private createTask(result: {
@@ -768,6 +1007,9 @@ export class MainComponent implements OnInit, OnDestroy {
   }
 
   public onTaskStatusChange(task: WorkItemResponse, status: TaskStatus): void {
+    if (!this.canEditBoard) {
+      return;
+    }
     if (task.status === status) {
       return;
     }
@@ -820,6 +1062,9 @@ export class MainComponent implements OnInit, OnDestroy {
     task: WorkItemResponse,
     assignedUserId: number | null
   ): void {
+    if (!this.canEditBoard) {
+      return;
+    }
     this.taskService.changeAssignee(task.id, assignedUserId).subscribe({
       next: (updated) => {
         task.assignedUserId = updated.assignedUserId;
@@ -839,6 +1084,9 @@ export class MainComponent implements OnInit, OnDestroy {
     task: WorkItemResponse,
     priority: TaskPriority
   ): void {
+    if (!this.canEditBoard) {
+      return;
+    }
     this.taskService.changePriority(task.id, priority).subscribe({
       next: (updated) => {
         task.priority = updated.priority;
@@ -900,10 +1148,20 @@ export class MainComponent implements OnInit, OnDestroy {
   public onOpenTask(task: WorkItemResponse): void {
     this.taskService.openWorkItem(task.id).subscribe({
       next: (lock) => {
+        const roleReadOnly = !this.canEditBoard;
+
         if (lock.mode === 'WRITE') {
           this.activeWorkItemId = task.id;
-          this.startHeartbeat(task.id);
-          this.openTaskModal(task, true);
+          if (!roleReadOnly) {
+            this.startHeartbeat(task.id);
+          }
+          this.openTaskModal(task, true, roleReadOnly);
+          return;
+        }
+
+        if (lock.mode === 'READ_ONLY') {
+          this.activeWorkItemId = task.id;
+          this.openTaskModal(task, true, true);
           return;
         }
 
@@ -925,14 +1183,22 @@ export class MainComponent implements OnInit, OnDestroy {
     modal.currentUserLastName = this.currentUser.lastName;
   }
 
-  private openTaskModal(task: WorkItemResponse, isEditMode: boolean): void {
+  private openTaskModal(
+    task: WorkItemResponse,
+    isEditMode: boolean,
+    isReadOnly = false
+  ): void {
     const modalRef = this.modalService.open(TaskModalComponent, TASK_MODAL_OPTIONS);
+    this.openTaskModalRef = modalRef;
 
     modalRef.componentInstance.isEditMode = isEditMode;
+    modalRef.componentInstance.isReadOnly = isReadOnly;
     modalRef.componentInstance.workItemId = isEditMode ? task.id : null;
+    modalRef.componentInstance.boardId = task.boardId;
     modalRef.componentInstance.title = task.name;
     modalRef.componentInstance.description = task.description;
     modalRef.componentInstance.status = task.status;
+    modalRef.componentInstance.priority = (task.priority as TaskPriority) ?? 'Medium';
     modalRef.componentInstance.points = null;
     modalRef.componentInstance.sprintId = task.sprintId ?? null;
     modalRef.componentInstance.members = this.boardMembers;
@@ -941,7 +1207,8 @@ export class MainComponent implements OnInit, OnDestroy {
 
     modalRef.result.then(
       (result) => {
-        if (result && isEditMode) {
+        this.openTaskModalRef = null;
+        if (result && isEditMode && !isReadOnly) {
           this.updateTask(
             task.id,
             result,
@@ -955,6 +1222,7 @@ export class MainComponent implements OnInit, OnDestroy {
         this.closeTask(task.id);
       },
       () => {
+        this.openTaskModalRef = null;
         this.closeTask(task.id);
       }
     );
@@ -999,6 +1267,9 @@ export class MainComponent implements OnInit, OnDestroy {
   }
 
   public onDeleteTask(task: WorkItemResponse): void {
+    if (!this.canEditBoard) {
+      return;
+    }
     if (!confirm('Želite li sigurno da obrišete ovaj task?')) {
       return;
     }
@@ -1100,10 +1371,13 @@ export class MainComponent implements OnInit, OnDestroy {
               ? result.find((item) => item.id === selectedId) ?? result[0]
               : result[0];
           this.selectedBoardId.set(board.id);
+          void this.signalRService.joinBoard(board.id);
           this.loadBacklog(board.id);
         } else {
           this.selectedBoardId.set(null);
+          void this.signalRService.leaveBoard();
           this.boardMembers = [];
+          this.currentUserBoardRole = null;
           this.sprintTaskGroups = [];
           this.sprints = [];
         }
@@ -1150,6 +1424,9 @@ export class MainComponent implements OnInit, OnDestroy {
   }
 
   public onOpenBoardInviteModal(): void {
+    if (!this.canManageWorkspace) {
+      return;
+    }
     const board = this.getSelectedBoard();
     if (!board) {
       return;
@@ -1171,6 +1448,9 @@ export class MainComponent implements OnInit, OnDestroy {
   }
 
   public onOpenInviteModal() {
+    if (!this.canManageWorkspace) {
+      return;
+    }
     const modalRef = this.modalService.open(InviteModalComponent, {
       backdrop: 'static',
       keyboard: true,
@@ -1191,6 +1471,9 @@ export class MainComponent implements OnInit, OnDestroy {
   }
 
   public onAddBoard() {
+    if (!this.canManageWorkspace) {
+      return;
+    }
     const modalRef = this.modalService.open(BoardModalComponent, {
       backdrop: 'static',
       keyboard: true,

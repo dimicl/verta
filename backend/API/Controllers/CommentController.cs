@@ -17,43 +17,22 @@ public class CommentController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CommentRequest request)
     {
-        try
-        {
-            var result = await _commentService.Create(request);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _commentService.Create(request);
+        return Ok(result);
     }
 
     [HttpGet("work-item/{workItemId:int}")]
     public async Task<IActionResult> GetByWorkItemId(int workItemId)
     {
-        try
-        {
-            var result = await _commentService.GetByWorkItemId(workItemId);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _commentService.GetByWorkItemId(workItemId);
+        return Ok(result);
     }
 
     [HttpGet("sub-work-item/{subWorkItemId:int}")]
     public async Task<IActionResult> GetBySubWorkItemId(int subWorkItemId)
     {
-        try
-        {
-            var result = await _commentService.GetBySubWorkItemId(subWorkItemId);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _commentService.GetBySubWorkItemId(subWorkItemId);
+        return Ok(result);
     }
 
     [HttpPut("{commentId:int}")]
@@ -61,28 +40,14 @@ public class CommentController : ControllerBase
         int commentId,
         [FromBody] UpdateCommentRequest request)
     {
-        try
-        {
-            var result = await _commentService.Update(commentId, request);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _commentService.Update(commentId, request);
+        return Ok(result);
     }
 
     [HttpDelete("{commentId:int}")]
     public async Task<IActionResult> Delete(int commentId)
     {
-        try
-        {
-            await _commentService.Delete(commentId);
-            return NoContent();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        await _commentService.Delete(commentId);
+        return NoContent();
     }
 }

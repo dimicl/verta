@@ -1,4 +1,5 @@
 using System.Text.Json;
+using backend.API.Hubs;
 using backend.Application.Interfaces;
 using Microsoft.Extensions.Logging;
 
@@ -14,6 +15,26 @@ public class SignalRDomainEventObserver : IDomainEventObserver
         DomainEventNames.WorkspaceInvitation,
     };
 
+    private static readonly HashSet<string> BoardBroadcastEvents = new(StringComparer.Ordinal)
+    {
+        DomainEventNames.WorkItemCreated,
+        DomainEventNames.WorkItemUpdated,
+        DomainEventNames.WorkItemDeleted,
+        DomainEventNames.WorkItemPriorityChanged,
+        DomainEventNames.CommentCreated,
+        DomainEventNames.CommentUpdated,
+        DomainEventNames.CommentDeleted,
+        DomainEventNames.WorkItemFileAdded,
+        DomainEventNames.WorkItemFileDeleted,
+        DomainEventNames.BoardLocked,
+        DomainEventNames.BoardUnlocked,
+        DomainEventNames.BoardLockTransferred,
+        DomainEventNames.SubWorkItemCreated,
+        DomainEventNames.SubWorkItemUpdated,
+        DomainEventNames.SubWorkItemStatusChanged,
+        DomainEventNames.SubWorkItemDeleted,
+    };
+
     private readonly INotificationService _notificationService;
     private readonly ILogger<SignalRDomainEventObserver> _logger;
 
@@ -27,7 +48,10 @@ public class SignalRDomainEventObserver : IDomainEventObserver
 
     public async Task UpdateAsync(string eventName, object payload)
     {
-        if (!UserTargetedEvents.Contains(eventName))
+        var isUserTargeted = UserTargetedEvents.Contains(eventName);
+        var isBoardBroadcast = BoardBroadcastEvents.Contains(eventName);
+
+        if (!isUserTargeted && !isBoardBroadcast)
             return;
 
         var element = JsonSerializer.SerializeToElement(payload);
@@ -40,20 +64,28 @@ public class SignalRDomainEventObserver : IDomainEventObserver
             clientEventName = clientNameProp.GetString()!;
         }
 
-        if (TryGetTargetUserIds(element, out var userIds))
+        if (isUserTargeted)
         {
-            foreach (var userId in userIds)
+            if (TryGetTargetUserIds(element, out var userIds))
             {
-                await NotifyUserAsync(userId, clientEventName, payload);
+                foreach (var userId in userIds)
+                {
+                    await NotifyUserAsync(userId, clientEventName, payload);
+                }
             }
-
-            return;
+            else if (element.TryGetProperty("TargetUserId", out var targetProp)
+                && targetProp.TryGetInt32(out var targetUserId))
+            {
+                await NotifyUserAsync(targetUserId, clientEventName, payload);
+            }
         }
 
-        if (element.TryGetProperty("TargetUserId", out var targetProp)
-            && targetProp.TryGetInt32(out var targetUserId))
+        if (isBoardBroadcast
+            && element.TryGetProperty("BoardId", out var boardProp)
+            && boardProp.TryGetInt32(out var boardId)
+            && boardId > 0)
         {
-            await NotifyUserAsync(targetUserId, clientEventName, payload);
+            await NotifyBoardAsync(boardId, clientEventName, payload);
         }
     }
 
@@ -84,5 +116,18 @@ public class SignalRDomainEventObserver : IDomainEventObserver
             userId);
 
         await _notificationService.SendToUserAsync(userId, clientEventName, payload);
+    }
+
+    private async Task NotifyBoardAsync(int boardId, string clientEventName, object payload)
+    {
+        _logger.LogDebug(
+            "SignalR domain event {EventName} -> board {BoardId}",
+            clientEventName,
+            boardId);
+
+        await _notificationService.SendToGroupAsync(
+            SystemHub.BoardGroup(boardId),
+            clientEventName,
+            payload);
     }
 }

@@ -1,5 +1,6 @@
 using System.Security.Claims;
 
+using backend.Application.Exceptions;
 public class UserContext: IUserContext
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
@@ -16,7 +17,7 @@ public class UserContext: IUserContext
         var id = user?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
         if (string.IsNullOrEmpty(id))
-            throw new Exception("User ID not found in token");
+            throw new ForbiddenException("User ID not found in token");
 
         return int.Parse(id);
     }

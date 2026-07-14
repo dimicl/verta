@@ -27,8 +27,12 @@
       <input
         class="title-input"
         type="text"
-        [placeholder]="isSubtask ? 'Enter subtask title...' : 'Enter task title...'"
+        [placeholder]="
+          isSubtask ? 'Enter subtask title...' : 'Enter task title...'
+        "
         [(ngModel)]="title"
+        [readonly]="isReadOnly"
+        (ngModelChange)="onTitleOrDescriptionChange()"
       />
     </div>
 
@@ -39,6 +43,8 @@
         rows="4"
         placeholder="Enter description..."
         [(ngModel)]="description"
+        [readonly]="isReadOnly"
+        (ngModelChange)="onTitleOrDescriptionChange()"
       ></textarea>
     </div>
 
@@ -50,6 +56,7 @@
       [currentUserId]="currentUserId"
       [currentUserFirstName]="currentUserFirstName"
       [currentUserLastName]="currentUserLastName"
+      [readOnly]="isReadOnly"
       (subtasksChanged)="onSubtasksChanged($event)"
       (createSubtaskRequest)="onCreateSubtask()"
       (editSubtaskRequest)="onEditSubtask($event)"
@@ -61,12 +68,17 @@
       [currentUserId]="currentUserId"
       [currentUserFirstName]="currentUserFirstName"
       [currentUserLastName]="currentUserLastName"
+      [readOnly]="isReadOnly"
     ></app-task-comments>
 
     <div class="fields-row">
       <div class="field-group" *ngIf="!isEditMode && !isSubtask">
         <div class="field-label">Sprint</div>
-        <select class="field-select" [(ngModel)]="sprintId">
+        <select
+          class="field-select"
+          [(ngModel)]="sprintId"
+          [disabled]="isReadOnly"
+        >
           <option [ngValue]="null">No sprint (Backlog)</option>
           <option *ngFor="let sprint of sprints" [ngValue]="sprint.id">
             {{ sprint.name }}
@@ -77,26 +89,36 @@
         <div class="field-label">Assigned</div>
         <app-task-assignee
           [members]="members"
-          [(assignedUserId)]="assignedUserId"
+          [assignedUserId]="assignedUserId"
+          [disabled]="isReadOnly"
+          (assignedUserIdChange)="onAssigneeChange($event)"
         ></app-task-assignee>
       </div>
       <div class="field-group" *ngIf="isEditMode">
         <div class="field-label">Status</div>
         <app-ve-status
           [taskStatus]="status"
-          (statusChange)="status = $event"
+          [disabled]="isReadOnly"
+          (statusChange)="onStatusChange($event)"
         ></app-ve-status>
       </div>
       <div class="field-group" *ngIf="isSubtask">
         <div class="field-label">Priority</div>
         <app-task-priority
           [priority]="priority"
+          [disabled]="isReadOnly"
           (priorityChange)="priority = $event"
         ></app-task-priority>
       </div>
       <div class="field-group">
         <div class="field-label">Points</div>
-        <input class="field-input" type="number" min="0" [(ngModel)]="points" />
+        <input
+          class="field-input"
+          type="number"
+          min="0"
+          [(ngModel)]="points"
+          [readonly]="isReadOnly"
+        />
       </div>
     </div>
 
@@ -110,6 +132,7 @@
       <app-drop-zone
         [workItemId]="commentsWorkItemId"
         [subWorkItemId]="commentsSubWorkItemId"
+        [readOnly]="isReadOnly"
       ></app-drop-zone>
     </div>
   </div>
@@ -120,13 +143,13 @@
     <button
       type="button"
       class="action-button action-button--danger"
-      *ngIf="isSubtask && isEditMode"
+      *ngIf="isSubtask && isEditMode && !isReadOnly"
       (click)="onDeleteSubtask()"
     >
       Delete
     </button>
-    <div class="action-button" (click)="onSave()">
-      {{ saveLabel }}
+    <div class="action-button" (click)="isReadOnly ? onClose() : onSave()">
+      {{ isReadOnly ? "Close" : saveLabel }}
     </div>
   </div>
 </div>

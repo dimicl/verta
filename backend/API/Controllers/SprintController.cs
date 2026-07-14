@@ -1,7 +1,6 @@
 using backend.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 [ApiController]
 [Authorize]
@@ -18,47 +17,22 @@ public class SprintController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] SprintRequest request)
     {
-        try
-        {
-            var result = await _sprintService.Create(request);
-            return Ok(result);
-        }
-        catch (DbUpdateException ex)
-        {
-            return BadRequest(new { message = ex.InnerException?.Message ?? ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _sprintService.Create(request);
+        return Ok(result);
     }
 
     [HttpGet("{sprintId:int}")]
     public async Task<IActionResult> GetById(int sprintId)
     {
-        try
-        {
-            var result = await _sprintService.GetById(sprintId);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _sprintService.GetById(sprintId);
+        return Ok(result);
     }
 
     [HttpGet("board/{boardId:int}")]
     public async Task<IActionResult> GetByBoardId(int boardId)
     {
-        try
-        {
-            var result = await _sprintService.GetByBoardId(boardId);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _sprintService.GetByBoardId(boardId);
+        return Ok(result);
     }
 
     [HttpPut("{sprintId:int}")]
@@ -66,28 +40,14 @@ public class SprintController : ControllerBase
         int sprintId,
         [FromBody] UpdateSprintRequest request)
     {
-        try
-        {
-            var result = await _sprintService.Update(sprintId, request);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _sprintService.Update(sprintId, request);
+        return Ok(result);
     }
 
     [HttpDelete("{sprintId:int}")]
     public async Task<IActionResult> Delete(int sprintId)
     {
-        try
-        {
-            await _sprintService.Delete(sprintId);
-            return NoContent();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        await _sprintService.Delete(sprintId);
+        return NoContent();
     }
 }
