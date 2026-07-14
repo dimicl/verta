@@ -232,6 +232,7 @@
                 class="task-menu"
                 [ngbPopover]="boardTaskMenuTpl"
                 #boardTaskMenuPopover="ngbPopover"
+                [popoverContext]="{ popover: boardTaskMenuPopover }"
                 triggers="click"
                 placement="left"
                 container="body"
@@ -262,23 +263,19 @@
                 (priorityChange)="onTaskPriorityChange(task, $event)"
               ></app-task-priority>
 
-              <ng-template #boardTaskMenuTpl>
+              <ng-template #boardTaskMenuTpl let-popover="popover">
                 <div class="task-options">
                   <button
                     type="button"
                     class="task-option task-option--edit"
-                    (click)="
-                      onEditTaskFromMenu(task, boardTaskMenuPopover, $event)
-                    "
+                    (click)="onEditTaskFromMenu(task, popover, $event)"
                   >
                     Edit
                   </button>
                   <button
                     type="button"
                     class="task-option task-option--delete"
-                    (click)="
-                      onDeleteTaskFromMenu(task, boardTaskMenuPopover, $event)
-                    "
+                    (click)="onDeleteTaskFromMenu(task, popover, $event)"
                   >
                     Delete
                   </button>
@@ -389,6 +386,7 @@
                 class="task-menu"
                 [ngbPopover]="taskMenuTpl"
                 #taskMenuPopover="ngbPopover"
+                [popoverContext]="{ popover: taskMenuPopover }"
                 triggers="click"
                 placement="left"
                 container="body"
@@ -398,21 +396,19 @@
               >
                 ⋮
               </div>
-              <ng-template #taskMenuTpl>
+              <ng-template #taskMenuTpl let-popover="popover">
                 <div class="task-options">
                   <button
                     type="button"
                     class="task-option task-option--edit"
-                    (click)="onEditTaskFromMenu(task, taskMenuPopover, $event)"
+                    (click)="onEditTaskFromMenu(task, popover, $event)"
                   >
                     Edit
                   </button>
                   <button
                     type="button"
                     class="task-option task-option--delete"
-                    (click)="
-                      onDeleteTaskFromMenu(task, taskMenuPopover, $event)
-                    "
+                    (click)="onDeleteTaskFromMenu(task, popover, $event)"
                   >
                     Delete
                   </button>
