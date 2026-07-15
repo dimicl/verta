@@ -17,15 +17,22 @@ export class WorkItemFileService {
 
   public upload(workItemId: number, file: File, subWorkItemId?: number | null) {
     const formData = new FormData();
-    formData.append('workItemId', String(workItemId));
-    if (subWorkItemId) {
-      formData.append('subWorkItemId', String(subWorkItemId));
-    }
     formData.append('file', file, file.name);
 
-    return this.http.post<WorkItemFileResponse>(`${this.apiUrl}/upload`, formData, {
-      headers: this.authHeaders(),
+    const queryParams = new URLSearchParams({
+      workItemId: String(workItemId),
     });
+    if (subWorkItemId) {
+      queryParams.set('subWorkItemId', String(subWorkItemId));
+    }
+
+    return this.http.post<WorkItemFileResponse>(
+      `${this.apiUrl}/upload?${queryParams.toString()}`,
+      formData,
+      {
+        headers: this.authHeaders(),
+      }
+    );
   }
 
   public getByWorkItemId(workItemId: number) {

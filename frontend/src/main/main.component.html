@@ -382,7 +382,6 @@
                 (priorityChange)="onTaskPriorityChange(task, $event)"
               ></app-task-priority>
               <div
-                *ngIf="canEditBoard"
                 class="task-menu"
                 [ngbPopover]="taskMenuTpl"
                 #taskMenuPopover="ngbPopover"
@@ -405,6 +404,7 @@
                   >
                     Edit
                   </button>
+                  @if(canEditBoard){
                   <button
                     type="button"
                     class="task-option task-option--delete"
@@ -412,6 +412,7 @@
                   >
                     Delete
                   </button>
+                  }
                 </div>
               </ng-template>
             </div>
@@ -422,8 +423,8 @@
           <div class="empty-state-board">
             {{
               hasActiveTaskFilters()
-                ? 'No tasks match your filters.'
-                : 'No tasks found for this sprint.'
+                ? "No tasks match your filters."
+                : "No tasks found for this sprint."
             }}
           </div>
         </ng-template>
@@ -431,5 +432,3 @@
     </div>
   </div>
 </ng-template>
-
-
