@@ -114,6 +114,8 @@ public sealed class ApiClient : IAsyncDisposable
 
     public async Task<int> CreateCommentAsync(int workItemId, string content)
     {
+        await OpenWorkItemLockAsync(workItemId);
+
         var response = await _request.PostAsync("comments", new()
         {
             DataObject = new { workItemId, content }
