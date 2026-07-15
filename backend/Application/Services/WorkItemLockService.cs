@@ -47,13 +47,26 @@ public class WorkItemLockService : IWorkItemLockService, IWorkItemLockExpiryServ
         var board = await _boardRepo.GetById(workItem.BoardId);
         if (board == null) throw new NotFoundException("Board does not exist.");
 
+        WorkspaceMember member;
         try
         {
-            await _boardAccessService.EnsureBoardAccessAsync(board);
+            member = await _boardAccessService.EnsureBoardAccessAsync(board);
         }
         catch (Exception ex)
         {
             throw new ForbiddenException(ex.Message);
+        }
+
+        if (member.Role is not UserRole.Owner and not UserRole.Member)
+        {
+            return new WorkItemLockResponse
+            {
+                WorkItemId = workItemId,
+                UserId = userId,
+                Mode = "READ_ONLY",
+                LockedAt = null,
+                ExpiresAt = null
+            };
         }
 
         var existingLock = await _lockRepo.GetByWorkItemIdAsync(workItemId);

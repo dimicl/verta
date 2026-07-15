@@ -763,7 +763,7 @@ export class MainComponent implements OnInit, OnDestroy {
         const modal = this.openTaskModalRef?.componentInstance as
           | TaskModalComponent
           | undefined;
-        if (modal?.isReadOnly && this.canEditBoard) {
+        if (modal?.isReadOnly) {
           modal.grantWriteAccess();
           this.startHeartbeat(payload.workItemId);
           this.stickyLockMessage = 'You now have write access.';
@@ -1148,14 +1148,10 @@ export class MainComponent implements OnInit, OnDestroy {
   public onOpenTask(task: WorkItemResponse): void {
     this.taskService.openWorkItem(task.id).subscribe({
       next: (lock) => {
-        const roleReadOnly = !this.canEditBoard;
-
         if (lock.mode === 'WRITE') {
           this.activeWorkItemId = task.id;
-          if (!roleReadOnly) {
-            this.startHeartbeat(task.id);
-          }
-          this.openTaskModal(task, true, roleReadOnly);
+          this.startHeartbeat(task.id);
+          this.openTaskModal(task, true, false);
           return;
         }
 
@@ -1208,7 +1204,7 @@ export class MainComponent implements OnInit, OnDestroy {
     modalRef.result.then(
       (result) => {
         this.openTaskModalRef = null;
-        if (result && isEditMode && !isReadOnly) {
+        if (result && isEditMode && !modalRef.componentInstance.isReadOnly) {
           this.updateTask(
             task.id,
             result,
