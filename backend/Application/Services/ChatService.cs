@@ -149,7 +149,10 @@ public class ChatService : IChatService
         var participant = await _participantRepository.GetParticipantAsync(conversationId, userId);
         if (participant == null)
             throw new InvalidOperationException("User is not a participant in this conversation.");
-        return await _messageRepository.GetUnreadCountAsync(conversationId, participant?.LastReadMessageId);
+        return await _messageRepository.GetUnreadCountAsync(
+            conversationId,
+            userId,
+            participant.LastReadMessageId);
     }
 
     public async Task<List<ConversationResponse>> GetMyConversations(int userId)
@@ -160,7 +163,10 @@ public class ChatService : IChatService
         {
             var participant = await _participantRepository.GetParticipantAsync(c.Id, userId);
             var unread = participant != null
-                ? await _messageRepository.GetUnreadCountAsync(c.Id, participant.LastReadMessageId)
+                ? await _messageRepository.GetUnreadCountAsync(
+                    c.Id,
+                    userId,
+                    participant.LastReadMessageId)
                 : 0;
 
             var participants = c.Participants.Select(p => new ConversationParticipantResponse

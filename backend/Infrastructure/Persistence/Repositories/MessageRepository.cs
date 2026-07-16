@@ -28,9 +28,11 @@ public class MessageRepository : GenericRepository<Message>, IMessageRepository
             .FirstOrDefaultAsync();
     }
 
-    public async Task<int> GetUnreadCountAsync(int conversationId, int? lastReadMessageId)
+    public async Task<int> GetUnreadCountAsync(int conversationId, int userId, int? lastReadMessageId)
     {
-        var query = _dbSet.Where(m => m.ConversationId == conversationId);
+        var query = _dbSet.Where(m =>
+            m.ConversationId == conversationId &&
+            m.SenderId != userId);
 
         if (lastReadMessageId.HasValue)
             query = query.Where(m => m.Id > lastReadMessageId.Value);
