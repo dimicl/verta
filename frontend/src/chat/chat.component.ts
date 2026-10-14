@@ -130,57 +130,64 @@ export class ChatComponent implements OnInit {
         this.updateUserPresence(userId, isOnline);
       });
 
-    this.signalRService.chatMessage$
+        this.signalRService.chatMessage$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((message) => {
         if (message.senderId === this.currentUserId) {
           return;
         }
 
+        const selection = this.selectedChat();
+        const isActiveDirect =
+          selection?.type === 'direct' &&
+          selection.user.conversationId === message.conversationId;
+        const isActiveGroup =
+          selection?.type === 'group' &&
+          selection.group.id === message.conversationId;
+
+        if (isActiveDirect || isActiveGroup) {
+          return;
+        }
+
+        this.syncUnreadCount(message.conversationId);
+      });
+  }
+
+  private syncUnreadCount(conversationId: number): void {
+    this.chatService.getUnreadCount(conversationId).subscribe({
+      next: ({ unreadCount }) => {
         this.directUsers.update((users) =>
-          users.map((user) => {
-            const selection = this.selectedChat();
-            if (
-              user.conversationId === message.conversationId &&
-              user.id === message.senderId &&
-              selection?.type !== 'direct'
-            ) {
-              return {
-                ...user,
-                unreadCount: (user.unreadCount ?? 0) + 1,
-              };
-            }
-            if (
-              user.conversationId === message.conversationId &&
-              user.id === message.senderId &&
-              selection?.type === 'direct' &&
-              selection.user.id !== user.id
-            ) {
-              return {
-                ...user,
-                unreadCount: (user.unreadCount ?? 0) + 1,
-              };
-            }
-            return user;
-          })
+          users.map((user) =>
+            user.conversationId === conversationId
+              ? { ...user, unreadCount }
+              : user
+          )
         );
 
         this.groups.update((groupList) =>
-          groupList.map((group) => {
-            const selection = this.selectedChat();
-            if (
-              group.id === message.conversationId &&
-              (selection?.type !== 'group' || selection.group.id !== group.id)
-            ) {
-              return {
-                ...group,
-                unreadCount: group.unreadCount + 1,
-              };
-            }
-            return group;
-          })
+          groupList.map((group) =>
+            group.id === conversationId ? { ...group, unreadCount } : group
+          )
         );
-      });
+      },
+      error: () => {
+        // Fallback: optimistic bump if API fails
+        this.directUsers.update((users) =>
+          users.map((user) =>
+            user.conversationId === conversationId
+              ? { ...user, unreadCount: (user.unreadCount ?? 0) + 1 }
+              : user
+          )
+        );
+        this.groups.update((groupList) =>
+          groupList.map((group) =>
+            group.id === conversationId
+              ? { ...group, unreadCount: group.unreadCount + 1 }
+              : group
+          )
+        );
+      },
+    });
   }
 
   private updateUserPresence(userId: number, isOnline: boolean): void {

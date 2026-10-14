@@ -1,27 +1,33 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { SprintRequest, SprintResponse } from '../interfaces';
+import { SprintRequest, SprintResponse, UpdateSprintRequest } from '../interfaces';
+import { API_URL } from '../config/api.config';
+
+export type { UpdateSprintRequest } from '../interfaces';
 
 @Injectable({ providedIn: 'root' })
 export class SprintService {
-  private API_URL = 'http://localhost:8080/api/sprints';
-  private readonly token = localStorage.getItem('token');
+  private readonly apiUrl = `${API_URL}/sprints`;
 
   constructor(private http: HttpClient) {}
 
   public create(request: SprintRequest) {
-    return this.http.post<SprintResponse>(this.API_URL, request, {
-      headers: {
-        Authorization: `Bearer ${this.token}`,
-      },
-    });
+    return this.http.post<SprintResponse>(this.apiUrl, request);
+  }
+
+  public getById(sprintId: number) {
+    return this.http.get<SprintResponse>(`${this.apiUrl}/${sprintId}`);
   }
 
   public getByBoardId(boardId: number) {
-    return this.http.get<SprintResponse[]>(`${this.API_URL}/board/${boardId}`, {
-      headers: {
-        Authorization: `Bearer ${this.token}`,
-      },
-    });
+    return this.http.get<SprintResponse[]>(`${this.apiUrl}/board/${boardId}`);
+  }
+
+  public update(sprintId: number, request: UpdateSprintRequest) {
+    return this.http.put<SprintResponse>(`${this.apiUrl}/${sprintId}`, request);
+  }
+
+  public delete(sprintId: number) {
+    return this.http.delete<void>(`${this.apiUrl}/${sprintId}`);
   }
 }

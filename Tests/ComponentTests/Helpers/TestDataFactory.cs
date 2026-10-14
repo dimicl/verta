@@ -2,133 +2,158 @@ namespace ComponentTests.Helpers;
 
 public static class TestDataFactory
 {
-    public static WorkItemRequest CreateWorkItemRequest() => new()
-    {
-        Name = "Test task",
-        Description = "Test description",
-        BoardId = 1,
-        Priority = Priority.Medium
-    };
+    public static DomainEventSubject EmptyEvents() =>
+        new(Enumerable.Empty<IDomainEventObserver>());
 
-    public static WorkItemResponse CreateWorkItemResponse(int id = 1) => new()
+    public static Board CreateBoard(int id = 1, int workspaceId = 1, int ownerId = 1) => new()
     {
         Id = id,
-        Name = "Test task",
-        Description = "Test description",
+        Name = "Demo Board",
+        WorkspaceId = workspaceId,
+        OwnerId = ownerId,
+        CreatedAt = DateTime.UtcNow
+    };
+
+    public static WorkItem CreateWorkItem(
+        int id = 1,
+        int boardId = 1,
+        string name = "Test task",
+        string description = "Test description") => new()
+    {
+        Id = id,
+        Name = name,
+        Description = description,
+        BoardId = boardId,
         Status = WorkItemStatus.ToDo,
         Priority = Priority.Medium,
-        BoardId = 1,
         CreatedByUserId = 1,
         CreatedAt = DateTime.UtcNow
     };
 
-    public static CommentRequest CreateCommentRequest() => new()
-    {
-        WorkItemId = 1,
-        Content = "Test comment"
-    };
-
-    public static CommentResponse CreateCommentResponse(int id = 1) => new()
-    {
-        Id = id,
-        Content = "Test comment",
-        WorkItemId = 1,
-        UserId = 1,
-        FirstName = "Test",
-        LastName = "User",
-        CreatedAt = DateTime.UtcNow
-    };
-
-    public static UpdateCommentRequest CreateUpdateCommentRequest() => new()
-    {
-        Content = "Updated comment"
-    };
-
-    public static WorkspaceRequest CreateWorkspaceRequest() => new()
-    {
-        Name = "Demo Workspace"
-    };
-
-    public static WorkspaceResponse CreateWorkspaceResponse(int id = 1) => new()
-    {
-        Id = id,
-        Name = "Demo Workspace",
-        OwnerId = 1,
-        CreatedAt = DateTime.UtcNow
-    };
-
-    public static SprintRequest CreateSprintRequest() => new()
-    {
-        Name = "Sprint 1",
-        BoardId = 1,
-        StartDate = DateTime.UtcNow.Date,
-        EndDate = DateTime.UtcNow.Date.AddDays(14)
-    };
-
-    public static SprintResponse CreateSprintResponse(int id = 1) => new()
-    {
-        Id = id,
-        Name = "Sprint 1",
-        BoardId = 1,
-        StartDate = DateTime.UtcNow.Date,
-        EndDate = DateTime.UtcNow.Date.AddDays(14),
-        CreatedAt = DateTime.UtcNow
-    };
-
-    public static UpdateSprintRequest CreateUpdateSprintRequest() => new()
-    {
-        Name = "Updated sprint",
-        StartDate = DateTime.UtcNow.Date,
-        EndDate = DateTime.UtcNow.Date.AddDays(21)
-    };
-
-    public static WorkItemLockResponse CreateWriteLockResponse(
+    public static WorkItemLock CreateLock(
         int workItemId = 1,
         int userId = 1,
         DateTime? lockedAt = null,
         DateTime? expiresAt = null) => new()
     {
+        Id = 1,
         WorkItemId = workItemId,
-        UserId = userId,
-        Mode = "WRITE",
-        LockedAt = lockedAt ?? DateTime.UtcNow,
+        LockedByUserId = userId,
+        LockedAt = lockedAt ?? DateTime.UtcNow.AddMinutes(-1),
         ExpiresAt = expiresAt ?? DateTime.UtcNow.AddSeconds(30)
     };
 
-    public static WorkItemLockResponse CreateReadOnlyLockResponse(
+    public static WorkItemLockInterest CreateInterest(
         int workItemId = 1,
-        int userId = 2,
-        int queuePosition = 1) => new()
+        int userId = 2) => new()
     {
+        Id = 1,
         WorkItemId = workItemId,
         UserId = userId,
-        Mode = "READ_ONLY",
-        LockedAt = DateTime.UtcNow.AddMinutes(-1),
-        ExpiresAt = DateTime.UtcNow.AddSeconds(20),
-        QueuePosition = queuePosition
+        RegisteredAt = DateTime.UtcNow
     };
 
-    public static WorkItemLockResponse CreateUnlockedResponse(int workItemId = 1, int userId = 1) => new()
+    public static Comment CreateComment(
+        int id = 1,
+        int workItemId = 1,
+        int userId = 1,
+        string content = "Test comment") => new()
     {
+        Id = id,
+        Content = content,
         WorkItemId = workItemId,
         UserId = userId,
-        Mode = "UNLOCKED",
-        LockedAt = null,
-        ExpiresAt = null
+        CreatedAt = DateTime.UtcNow,
+        User = new User
+        {
+            Id = userId,
+            FirstName = "Test",
+            LastName = "User",
+            Email = "test@example.com",
+            Password = "x"
+        }
     };
 
-    public static WorkItemLockResponse CreateNoLockResponse(int workItemId = 1, int userId = 2) => new()
+    public static Sprint CreateSprint(int id = 1, int boardId = 1) => new()
+    {
+        Id = id,
+        Name = "Sprint 1",
+        BoardId = boardId,
+        StartDate = DateTime.UtcNow.Date,
+        EndDate = DateTime.UtcNow.Date.AddDays(14),
+        CreatedAt = DateTime.UtcNow
+    };
+
+    public static Workspace CreateWorkspace(int id = 1, int ownerId = 1, string name = "Demo Workspace") => new()
+    {
+        Id = id,
+        Name = name,
+        OwnerId = ownerId,
+        CreatedAt = DateTime.UtcNow
+    };
+
+    public static WorkspaceMember CreateMember(
+        int workspaceId = 1,
+        int userId = 1,
+        UserRole role = UserRole.Owner) => new()
+    {
+        Id = 1,
+        WorkspaceId = workspaceId,
+        UserId = userId,
+        Role = role,
+        CreatedAt = DateTime.UtcNow
+    };
+
+    public static WorkItemRequest CreateWorkItemRequest(
+        string name = "Test task",
+        string description = "Test description",
+        int boardId = 1) => new()
+    {
+        Name = name,
+        Description = description,
+        BoardId = boardId,
+        Priority = Priority.Medium
+    };
+
+    public static CommentRequest CreateCommentRequest(
+        int workItemId = 1,
+        string content = "Test comment") => new()
     {
         WorkItemId = workItemId,
-        UserId = userId,
-        Mode = "NO_LOCK",
-        LockedAt = null,
-        ExpiresAt = null
+        Content = content
     };
 
-    public static List<WorkItemResponse> CreateWorkItemList(params int[] ids) =>
-        ids.Select(CreateWorkItemResponse).ToList();
+    public static UpdateCommentRequest CreateUpdateCommentRequest(string content = "Updated comment") => new()
+    {
+        Content = content
+    };
 
-    public static List<CommentResponse> CreateCommentList(params int[] ids) =>
-        ids.Select(CreateCommentResponse).ToList();
+    public static WorkspaceRequest CreateWorkspaceRequest(string name = "Demo Workspace") => new()
+    {
+        Name = name
+    };
+
+    public static SprintRequest CreateSprintRequest(
+        string name = "Sprint 1",
+        int boardId = 1) => new()
+    {
+        Name = name,
+        BoardId = boardId,
+        StartDate = DateTime.UtcNow.Date,
+        EndDate = DateTime.UtcNow.Date.AddDays(14)
+    };
+
+    public static UpdateSprintRequest CreateUpdateSprintRequest(
+        string name = "Updated sprint") => new()
+    {
+        Name = name,
+        StartDate = DateTime.UtcNow.Date,
+        EndDate = DateTime.UtcNow.Date.AddDays(21)
+    };
+
+    public static List<WorkItem> CreateWorkItemEntities(params int[] ids) =>
+        ids.Select(id => CreateWorkItem(id)).ToList();
+
+    public static List<Comment> CreateCommentEntities(params int[] ids) =>
+        ids.Select(id => CreateComment(id)).ToList();
 }

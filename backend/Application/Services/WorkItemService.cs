@@ -14,6 +14,7 @@ public class WorkItemService : IWorkItemService
     private readonly DomainEventSubject _domainEventSubject;
     private readonly CommandInvoker _commandInvoker;
     private readonly IWorkItemLockService _workItemLockService;
+    private readonly IBoardLockService _boardLockService;
 
     public WorkItemService(
         IWorkItemRepository workItemRepo,
@@ -24,7 +25,8 @@ public class WorkItemService : IWorkItemService
         IUserContext userContext,
         DomainEventSubject domainEventSubject,
         CommandInvoker commandInvoker,
-        IWorkItemLockService workItemLockService)
+        IWorkItemLockService workItemLockService,
+        IBoardLockService boardLockService)
     {
         _workItemRepo = workItemRepo;
         _boardRepo = boardRepo;
@@ -35,6 +37,7 @@ public class WorkItemService : IWorkItemService
         _domainEventSubject = domainEventSubject;
         _commandInvoker = commandInvoker;
         _workItemLockService = workItemLockService;
+        _boardLockService = boardLockService;
     }
 
     public async Task<WorkItemResponse> Create(WorkItemRequest request)
@@ -47,6 +50,7 @@ public class WorkItemService : IWorkItemService
             _sprintRepo,
             _workspaceMemberRepo,
             _boardAccessService,
+            _boardLockService,
             _domainEventSubject);
 
         return await _commandInvoker.ExecuteAsync(command);
@@ -106,6 +110,8 @@ public class WorkItemService : IWorkItemService
             _workItemRepo,
             _boardRepo,
             _boardAccessService,
+            _workItemLockService,
+            _boardLockService,
             _domainEventSubject);
 
         return await _commandInvoker.ExecuteAsync(command);
@@ -120,6 +126,8 @@ public class WorkItemService : IWorkItemService
             _workItemRepo,
             _boardRepo,
             _boardAccessService,
+            _workItemLockService,
+            _boardLockService,
             _domainEventSubject);
 
         return await _commandInvoker.ExecuteAsync(command);
@@ -137,6 +145,8 @@ public class WorkItemService : IWorkItemService
             _boardRepo,
             _workspaceMemberRepo,
             _boardAccessService,
+            _workItemLockService,
+            _boardLockService,
             _domainEventSubject);
 
         return await _commandInvoker.ExecuteAsync(command);
@@ -154,6 +164,7 @@ public class WorkItemService : IWorkItemService
             _workspaceMemberRepo,
             _boardAccessService,
             _workItemLockService,
+            _boardLockService,
             _domainEventSubject);
 
         return await _commandInvoker.ExecuteAsync(command);
@@ -168,6 +179,7 @@ public class WorkItemService : IWorkItemService
             _boardRepo,
             _boardAccessService,
             _workItemLockService,
+            _boardLockService,
             _domainEventSubject);
 
         await _commandInvoker.ExecuteAsync(command);

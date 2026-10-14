@@ -1,5 +1,6 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { API_URL } from '../config/api.config';
 import {
   ChangeWorkItemStatusRequest,
   CommentRequest,
@@ -12,9 +13,9 @@ import { TaskPriority } from '../types/task-priority.type';
 
 @Injectable({ providedIn: 'root' })
 export class TaskService {
-  private API_URL = 'http://localhost:8080/api/work-items';
-  private LOCK_API_URL = 'http://localhost:8080/api/work-item-locks';
-  private COMMENT_API_URL = 'http://localhost:8080/api/comments';
+  private readonly apiUrl = `${API_URL}/work-items`;
+  private readonly lockApiUrl = `${API_URL}/work-item-locks`;
+  private readonly commentApiUrl = `${API_URL}/comments`;
 
   constructor(private http: HttpClient) {}
 
@@ -26,31 +27,37 @@ export class TaskService {
   }
 
   public getByBoardId(boardId: number) {
-    return this.http.get<WorkItemResponse[]>(`${this.API_URL}/board/${boardId}`, {
+    return this.http.get<WorkItemResponse[]>(`${this.apiUrl}/board/${boardId}`, {
+      headers: this.authHeaders(),
+    });
+  }
+
+  public getBySprintId(sprintId: number) {
+    return this.http.get<WorkItemResponse[]>(`${this.apiUrl}/sprint/${sprintId}`, {
       headers: this.authHeaders(),
     });
   }
 
   public getById(workItemId: number) {
-    return this.http.get<WorkItemResponse>(`${this.API_URL}/${workItemId}`, {
+    return this.http.get<WorkItemResponse>(`${this.apiUrl}/${workItemId}`, {
       headers: this.authHeaders(),
     });
   }
 
   public create(request: WorkItemRequest) {
-    return this.http.post<WorkItemResponse>(this.API_URL, request, {
+    return this.http.post<WorkItemResponse>(this.apiUrl, request, {
       headers: this.authHeaders(),
     });
   }
 
   public update(workItemId: number, request: WorkItemRequest) {
-    return this.http.put<WorkItemResponse>(`${this.API_URL}/${workItemId}`, request, {
+    return this.http.put<WorkItemResponse>(`${this.apiUrl}/${workItemId}`, request, {
       headers: this.authHeaders(),
     });
   }
 
   public delete(workItemId: number) {
-    return this.http.delete<void>(`${this.API_URL}/${workItemId}`, {
+    return this.http.delete<void>(`${this.apiUrl}/${workItemId}`, {
       headers: this.authHeaders(),
     });
   }
@@ -58,7 +65,7 @@ export class TaskService {
   public changeStatus(workItemId: number, status: TaskStatus) {
     const payload: ChangeWorkItemStatusRequest = { status };
     return this.http.patch<WorkItemResponse>(
-      `${this.API_URL}/${workItemId}/status`,
+      `${this.apiUrl}/${workItemId}/status`,
       payload,
       {
         headers: this.authHeaders(),
@@ -68,7 +75,7 @@ export class TaskService {
 
   public changePriority(workItemId: number, priority: TaskPriority) {
     return this.http.patch<WorkItemResponse>(
-      `${this.API_URL}/${workItemId}/priority`,
+      `${this.apiUrl}/${workItemId}/priority`,
       { priority },
       {
         headers: this.authHeaders(),
@@ -78,7 +85,7 @@ export class TaskService {
 
   public changeAssignee(workItemId: number, assignedUserId: number | null) {
     return this.http.patch<WorkItemResponse>(
-      `${this.API_URL}/${workItemId}/assignee`,
+      `${this.apiUrl}/${workItemId}/assignee`,
       { assignedUserId },
       {
         headers: this.authHeaders(),
@@ -88,7 +95,7 @@ export class TaskService {
 
   public openWorkItem(workItemId: number) {
     return this.http.post<WorkItemLockResponse>(
-      `${this.LOCK_API_URL}/open/${workItemId}`,
+      `${this.lockApiUrl}/open/${workItemId}`,
       null,
       {
         headers: this.authHeaders(),
@@ -98,7 +105,7 @@ export class TaskService {
 
   public closeWorkItem(workItemId: number) {
     return this.http.post<WorkItemLockResponse>(
-      `${this.LOCK_API_URL}/close/${workItemId}`,
+      `${this.lockApiUrl}/close/${workItemId}`,
       null,
       {
         headers: this.authHeaders(),
@@ -108,7 +115,7 @@ export class TaskService {
 
   public heartbeatWorkItem(workItemId: number) {
     return this.http.post<WorkItemLockResponse>(
-      `${this.LOCK_API_URL}/heartbeat/${workItemId}`,
+      `${this.lockApiUrl}/heartbeat/${workItemId}`,
       null,
       {
         headers: this.authHeaders(),
@@ -117,7 +124,7 @@ export class TaskService {
   }
 
   public createComment(request: CommentRequest) {
-    return this.http.post(this.COMMENT_API_URL, request, {
+    return this.http.post(this.commentApiUrl, request, {
       headers: this.authHeaders(),
     });
   }

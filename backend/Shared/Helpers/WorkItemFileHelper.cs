@@ -2,6 +2,8 @@ public static class WorkItemFileHelper
 {
     public static WorkItemFileResponse ToResponse(WorkItemFile file)
     {
+        var contentUrl = $"/api/work-item-files/{file.Id}/content";
+
         return new WorkItemFileResponse
         {
             Id = file.Id,
@@ -9,8 +11,8 @@ public static class WorkItemFileHelper
             FileName = file.FileName,
             FileType = file.FileType,
             FileSize = file.FileSize,
-            FileUrl = file.FileUrl,
-            FileThumbnailUrl = file.FileThumbnailUrl,
+            FileUrl = contentUrl,
+            FileThumbnailUrl = string.IsNullOrWhiteSpace(file.FileThumbnailUrl) ? null : contentUrl,
             CreatedAt = file.CreatedAt
         };
     }

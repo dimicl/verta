@@ -1,12 +1,15 @@
 <div class="sprint-modal">
   <div class="sprint-modal-header">
-    <span class="sprint-modal-header-text">Add Sprint</span>
+    <span class="sprint-modal-header-text">
+      {{ isEditMode ? 'Edit Sprint' : 'Add Sprint' }}
+    </span>
   </div>
 
   <div class="sprint-modal-body">
     <div class="sprint-form-group">
       <app-input
         [label]="'Sprint name'"
+        [modelValue]="sprintName.value"
         (onGetValue)="onNameInput($event)"
       />
     </div>
@@ -26,11 +29,26 @@
         (onGetValue)="onEndDateInput($event)"
       />
     </div>
-    <p class="sprint-error" *ngIf="createError()">{{ createError() }}</p>
+    <p class="sprint-error" *ngIf="formError()">{{ formError() }}</p>
   </div>
 
   <div class="sprint-modal-footer">
-    <div class="sprint-btn sprint-btn--secondary" (click)="onClose()">Cancel</div>
-    <div class="sprint-btn sprint-btn--primary" (click)="onCreate()">Create</div>
+    <div
+      *ngIf="isEditMode"
+      class="sprint-btn sprint-btn--danger"
+      (click)="onDelete()"
+    >
+      Delete
+    </div>
+    <div class="sprint-footer-right">
+      <div class="sprint-btn sprint-btn--secondary" (click)="onClose()">Cancel</div>
+      <div
+        class="sprint-btn sprint-btn--primary"
+        [class.is-disabled]="isSaving()"
+        (click)="onSave()"
+      >
+        {{ isEditMode ? 'Save' : 'Create' }}
+      </div>
+    </div>
   </div>
 </div>

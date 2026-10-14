@@ -54,9 +54,10 @@ public class AddCommentCommand : ICommand<CommentResponse>
         await _boardAccessService.EnsureBoardAccessAsync(board);
         await _workItemLockService.EnsureUserHasWriteLockAsync(_request.WorkItemId);
 
+        SubWorkItem? subWorkItem = null;
         if (_request.SubWorkItemId.HasValue)
         {
-            var subWorkItem = await _subWorkItemRepo.GetById(_request.SubWorkItemId.Value);
+            subWorkItem = await _subWorkItemRepo.GetById(_request.SubWorkItemId.Value);
             if (subWorkItem == null)
                 throw new NotFoundException("Sub work item does not exist.");
 
@@ -84,6 +85,25 @@ public class AddCommentCommand : ICommand<CommentResponse>
             UserId = createdComment.UserId,
             Content = createdComment.Content
         });
+
+        var reporterId = subWorkItem?.UserId ?? workItem.CreatedByUserId;
+        var assigneeId = subWorkItem?.AssignedUserId ?? workItem.AssignedUserId;
+        var itemName = subWorkItem?.Name ?? workItem.Name;
+
+        var commentTargets = WorkItemWatcherHelper.GetTargetUserIds(_userId, reporterId, assigneeId);
+        if (commentTargets.Length > 0)
+        {
+            await _domainEventSubject.NotifyAsync(DomainEventNames.WorkItemActivityNotification, new
+            {
+                TargetUserIds = commentTargets,
+                ActivityType = "CommentCreated",
+                WorkItemId = workItem.Id,
+                SubWorkItemId = createdComment.SubWorkItemId,
+                BoardId = workItem.BoardId,
+                Name = itemName,
+                UpdatedByUserId = _userId
+            });
+        }
 
         return CommentHelper.ToResponse(withUser ?? createdComment);
     }

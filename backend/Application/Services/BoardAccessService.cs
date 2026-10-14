@@ -57,6 +57,7 @@ public class BoardAccessService : IBoardAccessService
         if (member == null)
             return false;
 
+        // Member/Owner → all boards. Guest → only boards in board_members.
         return member.Role is UserRole.Owner or UserRole.Member;
     }
 }

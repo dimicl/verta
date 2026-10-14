@@ -1,20 +1,21 @@
 import { HttpClient } from '@angular/common/http';
-import { inject, Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
+import { API_URL } from '../config/api.config';
 import { LoginRequest, RegisterRequest } from '../interfaces';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private API_URL = 'http://localhost:8080/api';
+  private readonly apiUrl = API_URL;
   constructor(private httpClient: HttpClient) {}
 
   public register(registerRequest: RegisterRequest) {
     return this.httpClient.post<any>(
-      `${this.API_URL}/register`,
+      `${this.apiUrl}/register`,
       registerRequest
     );
   }
 
   public login(loginRequest: LoginRequest) {
-    return this.httpClient.post<any>(`${this.API_URL}/login`, loginRequest);
+    return this.httpClient.post<any>(`${this.apiUrl}/login`, loginRequest);
   }
 }

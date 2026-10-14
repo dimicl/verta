@@ -81,9 +81,14 @@ export class BoardModalComponent {
       return;
     }
 
+    if (!this.workspaceMember?.id) {
+      this.createError.set('Workspace is still loading. Please try again.');
+      return;
+    }
+
     const request: BoardRequest = {
       name: this.workspaceName.value,
-      workspaceId: this.workspaceMember?.id ?? -1,
+      workspaceId: this.workspaceMember.id,
     };
 
     this.createError.set('');

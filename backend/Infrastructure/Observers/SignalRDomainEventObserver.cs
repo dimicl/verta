@@ -9,6 +9,7 @@ public class SignalRDomainEventObserver : IDomainEventObserver
     {
         DomainEventNames.WorkItemAssigned,
         DomainEventNames.WorkItemStatusChanged,
+        DomainEventNames.WorkItemActivityNotification,
         DomainEventNames.YouNowHaveWriteAccess,
         DomainEventNames.WorkItemUnlocked,
         DomainEventNames.BoardInvitation,
@@ -33,6 +34,11 @@ public class SignalRDomainEventObserver : IDomainEventObserver
         DomainEventNames.SubWorkItemUpdated,
         DomainEventNames.SubWorkItemStatusChanged,
         DomainEventNames.SubWorkItemDeleted,
+        DomainEventNames.SprintCreated,
+        DomainEventNames.SprintUpdated,
+        DomainEventNames.SprintDeleted,
+        DomainEventNames.WorkItemLocked,
+        DomainEventNames.WorkItemLockTransferred,
     };
 
     private readonly INotificationService _notificationService;

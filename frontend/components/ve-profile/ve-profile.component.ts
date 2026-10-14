@@ -1,9 +1,14 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { SvgIconComponent } from 'angular-svg-icon';
 import { SharedSvgRoutes } from '../../shared/constants/shared-svg-routes';
-import { UserService } from '../../shared/services';
+import {
+  ActiveWorkItemLockTracker,
+  SignalRService,
+  TaskService,
+  UserService,
+} from '../../shared/services';
 import { AvatarComponent } from '../avatar/avatar.component';
 import { Router } from '@angular/router';
 
@@ -20,24 +25,35 @@ export class VeProfileComponent implements OnInit {
 
   public sharedSvgRoutes = SharedSvgRoutes;
 
+  private readonly userService = inject(UserService);
+  private readonly router = inject(Router);
+  private readonly signalRService = inject(SignalRService);
+  private readonly lockTracker = inject(ActiveWorkItemLockTracker);
+  private readonly taskService = inject(TaskService);
+
   ngOnInit(): void {
     this.getUserProfile();
   }
 
-  constructor(private userService: UserService, private router: Router) {}
-
   public getUserProfile() {
     this.userService.getUserById().subscribe({
       next: (result) => {
-        console.log('res', result);
         this.user = result;
       },
     });
   }
 
   public onLogout() {
+    this.lockTracker.release(this.taskService).subscribe({
+      next: () => this.clearSessionAndLeave(),
+      error: () => this.clearSessionAndLeave(),
+    });
+  }
+
+  private clearSessionAndLeave(): void {
     localStorage.removeItem('user_id');
     localStorage.removeItem('token');
+    void this.signalRService.disconnect();
     this.router.navigate(['/login']);
   }
 }

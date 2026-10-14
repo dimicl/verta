@@ -1,0 +1,131 @@
+<div class="board-view">
+  <div class="lock-toast" *ngIf="store.showLockToast">{{ store.stickyLockMessage }}</div>
+  <div class="lock-toast lock-toast--error" *ngIf="store.showStatusErrorToast">
+    {{ store.statusErrorMessage }}
+  </div>
+
+  <div class="phases-container">
+    <div class="phase-container" *ngFor="let column of store.boardColumns">
+      <span class="phase-title">{{ column.label }}</span>
+      <div
+        class="phase-content"
+        cdkDropList
+        [id]="column.status"
+        [cdkDropListData]="store.boardTasksByStatus[column.status]"
+        [cdkDropListConnectedTo]="store.boardColumnIds"
+        [cdkDropListDisabled]="!store.canEditBoard"
+        (cdkDropListDropped)="store.onBoardDrop($event, column.status)"
+      >
+        <div
+          class="board-card"
+          *ngFor="let task of store.boardTasksByStatus[column.status]"
+          cdkDrag
+          [cdkDragDisabled]="!store.canEditBoard"
+        >
+          <div class="board-card-header">
+            <div class="board-card-title-row">
+              <button
+                *ngIf="store.hasSubtasks(task.id)"
+                type="button"
+                class="subtask-toggle"
+                [class.is-expanded]="store.isTaskExpanded(task.id)"
+                (click)="store.onToggleTaskSubtasks(task.id, $event)"
+              >
+                <svg-icon
+                  [src]="sharedSvgRoutes.ARROW_DOWN_ICON"
+                  class="subtask-toggle-icon"
+                ></svg-icon>
+              </button>
+              <div class="board-card-body" (click)="taskSession.onOpenTask(task)">
+                <span class="task-title">{{ task.name }}</span>
+                <span class="task-description">{{ task.description }}</span>
+              </div>
+            </div>
+            <div
+              *ngIf="store.canEditBoard"
+              class="task-menu"
+              [ngbPopover]="boardTaskMenuTpl"
+              #boardTaskMenuPopover="ngbPopover"
+              [popoverContext]="{ popover: boardTaskMenuPopover }"
+              triggers="click"
+              placement="left"
+              container="body"
+              popoverClass="task-menu-popover"
+              autoClose="outside"
+              (click)="$event.stopPropagation()"
+            >
+              ⋮
+            </div>
+          </div>
+          <div class="board-card-footer" (click)="$event.stopPropagation()">
+            <app-task-assignee
+              [members]="store.boardMembers"
+              [assignedUserId]="task.assignedUserId ?? null"
+              [disabled]="!store.canEditBoard"
+              (assignedUserIdChange)="store.onTaskAssigneeChange(task, $event)"
+            ></app-task-assignee>
+
+            <app-ve-status
+              [taskStatus]="task.status"
+              [disabled]="!store.canEditBoard"
+              (statusChange)="store.onTaskStatusChange(task, $event)"
+            ></app-ve-status>
+
+            <app-task-priority
+              [priority]="task.priority"
+              [disabled]="!store.canEditBoard"
+              (priorityChange)="store.onTaskPriorityChange(task, $event)"
+            ></app-task-priority>
+
+            <ng-template #boardTaskMenuTpl let-popover="popover">
+              <div class="task-options">
+                <button
+                  type="button"
+                  class="task-option task-option--edit"
+                  (click)="taskSession.onEditTaskFromMenu(task, popover, $event)"
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  class="task-option task-option--delete"
+                  (click)="taskSession.onDeleteTaskFromMenu(task, popover, $event)"
+                >
+                  Delete
+                </button>
+              </div>
+            </ng-template>
+          </div>
+
+          <div
+            class="board-subtasks"
+            *ngIf="store.hasSubtasks(task.id) && store.isTaskExpanded(task.id)"
+            (click)="$event.stopPropagation()"
+          >
+            <div
+              class="board-subtask-row"
+              *ngFor="let subtask of store.getSubtasks(task.id)"
+              (click)="taskSession.onOpenSubtask(task, subtask)"
+            >
+              <div class="board-subtask-info">
+                <span class="board-subtask-name">{{ subtask.name }}</span>
+                <span class="board-subtask-description">{{
+                  subtask.description
+                }}</span>
+              </div>
+              <div (click)="$event.stopPropagation()">
+                <app-ve-status
+                  [taskStatus]="subtask.status"
+                  [disabled]="!store.canEditBoard"
+                  (statusChange)="
+                    store.onSubtaskStatusChange(task.id, subtask, $event)
+                  "
+                ></app-ve-status>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

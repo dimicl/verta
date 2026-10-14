@@ -191,7 +191,8 @@ public class BoardService : IBoardService
                 Id = member.Id,
                 WorkspaceId = board.WorkspaceId,
                 UserId = member.UserId,
-                Role = UserRole.Guest,
+                // Board-scoped users are Members for permissions; Guest is only stored for access scope.
+                Role = UserRole.Member,
                 CreatedAt = member.CreatedAt,
                 FirstName = member.User.FirstName ?? string.Empty,
                 LastName = member.User.LastName ?? string.Empty,
@@ -248,6 +249,8 @@ public class BoardService : IBoardService
 
         if (existingMember == null)
         {
+            // Guest in DB = board-scoped Member (edit rights, only boards they're invited to).
+            // Full workspace Members get all boards via HasFullWorkspaceBoardAccessAsync.
             await _workspaceMemberRepo.Add(new WorkspaceMember
             {
                 WorkspaceId = board.WorkspaceId,

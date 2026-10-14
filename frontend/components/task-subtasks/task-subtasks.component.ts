@@ -26,7 +26,7 @@ import {
   WorkItemFileService,
 } from '../../shared/services';
 import { TaskStatus } from '../../shared/types/task-status.type';
-import { TaskMember } from '../task-assignee/task-assignee.component';
+import { TaskMember } from '../../shared/models/member.model';
 import { TaskPriority } from '../../shared/types/task-priority.type';
 
 @Component({

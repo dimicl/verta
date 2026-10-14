@@ -22,10 +22,8 @@ import {
 import { SubWorkItemService, TaskService } from '../../shared/services';
 import { ConfirmModalComponent } from '../confirm-modal/confirm-modal.component';
 import { VeStatusComponent } from '../ve-status/ve-status.component';
-import {
-  TaskAssigneeComponent,
-  TaskMember,
-} from '../task-assignee/task-assignee.component';
+import { TaskAssigneeComponent } from '../task-assignee/task-assignee.component';
+import { TaskMember } from '../../shared/models/member.model';
 import { TaskCommentsComponent } from '../task-comments/task-comments.component';
 import { TaskSubtasksComponent } from '../task-subtasks/task-subtasks.component';
 import { TaskPriorityComponent } from '../task-priority/task-priority.component';

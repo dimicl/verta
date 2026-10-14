@@ -10,17 +10,20 @@ public class SprintService : ISprintService
     private readonly IBoardRepository _boardRepo;
     private readonly IBoardAccessService _boardAccessService;
     private readonly IUserContext _userContext;
+    private readonly DomainEventSubject _domainEventSubject;
 
     public SprintService(
         ISprintRepository sprintRepo,
         IBoardRepository boardRepo,
         IBoardAccessService boardAccessService,
-        IUserContext userContext)
+        IUserContext userContext,
+        DomainEventSubject domainEventSubject)
     {
         _sprintRepo = sprintRepo;
         _boardRepo = boardRepo;
         _boardAccessService = boardAccessService;
         _userContext = userContext;
+        _domainEventSubject = domainEventSubject;
     }
 
     public async Task<SprintResponse> Create(SprintRequest request)
@@ -53,6 +56,16 @@ public class SprintService : ISprintService
         };
 
         var createdSprint = await _sprintRepo.Add(sprint);
+
+        await _domainEventSubject.NotifyAsync(DomainEventNames.SprintCreated, new
+        {
+            SprintId = createdSprint.Id,
+            BoardId = createdSprint.BoardId,
+            Name = createdSprint.Name,
+            StartDate = createdSprint.StartDate,
+            EndDate = createdSprint.EndDate,
+            CreatedByUserId = _userContext.GetUserId()
+        });
 
         return SprintHelper.ToResponse(createdSprint);
     }
@@ -116,6 +129,16 @@ public class SprintService : ISprintService
 
         await _sprintRepo.Update(sprint);
 
+        await _domainEventSubject.NotifyAsync(DomainEventNames.SprintUpdated, new
+        {
+            SprintId = sprint.Id,
+            BoardId = sprint.BoardId,
+            Name = sprint.Name,
+            StartDate = sprint.StartDate,
+            EndDate = sprint.EndDate,
+            UpdatedByUserId = _userContext.GetUserId()
+        });
+
         return SprintHelper.ToResponse(sprint);
     }
 
@@ -131,7 +154,18 @@ public class SprintService : ISprintService
 
         await _boardAccessService.EnsureBoardAccessAsync(board);
 
+        var boardId = sprint.BoardId;
+        var sprintName = sprint.Name;
+
         await _sprintRepo.Delete(sprint);
+
+        await _domainEventSubject.NotifyAsync(DomainEventNames.SprintDeleted, new
+        {
+            SprintId = sprintId,
+            BoardId = boardId,
+            Name = sprintName,
+            DeletedByUserId = _userContext.GetUserId()
+        });
     }
 
     private static DateTime? ToUtcDate(DateTime? value)

@@ -9,6 +9,8 @@ public class ChangeWorkItemStatusCommand : ICommand<WorkItemResponse>
     private readonly IWorkItemRepository _workItemRepo;
     private readonly IBoardRepository _boardRepo;
     private readonly IBoardAccessService _boardAccessService;
+    private readonly IWorkItemLockService _workItemLockService;
+    private readonly IBoardLockService _boardLockService;
     private readonly DomainEventSubject _domainEventSubject;
 
     public ChangeWorkItemStatusCommand(
@@ -18,6 +20,8 @@ public class ChangeWorkItemStatusCommand : ICommand<WorkItemResponse>
         IWorkItemRepository workItemRepo,
         IBoardRepository boardRepo,
         IBoardAccessService boardAccessService,
+        IWorkItemLockService workItemLockService,
+        IBoardLockService boardLockService,
         DomainEventSubject domainEventSubject)
     {
         _workItemId = workItemId;
@@ -26,6 +30,8 @@ public class ChangeWorkItemStatusCommand : ICommand<WorkItemResponse>
         _workItemRepo = workItemRepo;
         _boardRepo = boardRepo;
         _boardAccessService = boardAccessService;
+        _workItemLockService = workItemLockService;
+        _boardLockService = boardLockService;
         _domainEventSubject = domainEventSubject;
     }
 
@@ -43,6 +49,8 @@ public class ChangeWorkItemStatusCommand : ICommand<WorkItemResponse>
             throw new NotFoundException("Board does not exist.");
 
         await _boardAccessService.EnsureBoardAccessAsync(board);
+        await _boardLockService.EnsureBoardAllowsMutationAsync(board.Id);
+        await _workItemLockService.EnsureWorkItemNotLockedByOtherAsync(_workItemId);
 
         var currentState = WorkItemStateFactory.Create(workItem.Status);
 
@@ -56,15 +64,23 @@ public class ChangeWorkItemStatusCommand : ICommand<WorkItemResponse>
 
         await _workItemRepo.Update(workItem);
 
-        await _domainEventSubject.NotifyAsync(DomainEventNames.WorkItemStatusChanged, new
+        var statusTargets = WorkItemWatcherHelper.GetTargetUserIds(
+            _userId,
+            workItem.CreatedByUserId,
+            workItem.AssignedUserId);
+
+        if (statusTargets.Length > 0)
         {
-            WorkItemId = workItem.Id,
-            BoardId = workItem.BoardId,
-            Name = workItem.Name,
-            Status = workItem.Status,
-            UpdatedByUserId = _userId,
-            TargetUserId = workItem.AssignedUserId
-        });
+            await _domainEventSubject.NotifyAsync(DomainEventNames.WorkItemStatusChanged, new
+            {
+                WorkItemId = workItem.Id,
+                BoardId = workItem.BoardId,
+                Name = workItem.Name,
+                Status = workItem.Status,
+                UpdatedByUserId = _userId,
+                TargetUserIds = statusTargets
+            });
+        }
 
         await _domainEventSubject.NotifyAsync(DomainEventNames.WorkItemUpdated, new
         {

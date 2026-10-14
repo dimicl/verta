@@ -69,11 +69,24 @@
   }
 }
 
+.workspace-error {
+  margin: 0;
+  font-size: 13px;
+  color: #dc2626;
+}
+
 .workspace-modal-footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   gap: 10px;
   margin-top: 18px;
+}
+
+.workspace-footer-right {
+  display: flex;
+  gap: 10px;
+  margin-left: auto;
 }
 
 .workspace-btn {
@@ -92,10 +105,28 @@
     &:hover {
       background: #3f4de0;
     }
+  }
 
-    &:disabled {
-      opacity: 0.6;
-      pointer-events: none;
+  &--secondary {
+    background: #ececec;
+    color: #333;
+
+    &:hover {
+      background: #dcdcdc;
     }
+  }
+
+  &--danger {
+    background: #fee2e2;
+    color: #b91c1c;
+
+    &:hover {
+      background: #fecaca;
+    }
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    pointer-events: none;
   }
 }

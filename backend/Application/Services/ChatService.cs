@@ -194,6 +194,8 @@ public class ChatService : IChatService
 
     public async Task<int> GetOrCreateDirectConversationId(int senderId, int receiverId)
     {
+        await EnsureSharedWorkspaceAsync(senderId, receiverId);
+
         var conversation = await _conversationRepository.GetDirectConversation(senderId, receiverId);
         
         if (conversation == null)
@@ -206,21 +208,29 @@ public class ChatService : IChatService
                 Participants = new List<ConversationParticipant>()
             };
 
-            await _conversationRepository.Add(conversation);
-
-            await _participantRepository.Add(new ConversationParticipant
+            try
             {
-                ConversationId = conversation.Id,
-                UserId = senderId,
-                JoinedAt = DateTime.UtcNow
-            });
+                await _conversationRepository.Add(conversation);
 
-            await _participantRepository.Add(new ConversationParticipant
+                await _participantRepository.Add(new ConversationParticipant
+                {
+                    ConversationId = conversation.Id,
+                    UserId = senderId,
+                    JoinedAt = DateTime.UtcNow
+                });
+
+                await _participantRepository.Add(new ConversationParticipant
+                {
+                    ConversationId = conversation.Id,
+                    UserId = receiverId,
+                    JoinedAt = DateTime.UtcNow
+                });
+            }
+            catch (DbUpdateException)
             {
-                ConversationId = conversation.Id,
-                UserId = receiverId,
-                JoinedAt = DateTime.UtcNow
-            });
+                conversation = await _conversationRepository.GetDirectConversation(senderId, receiverId);
+                if (conversation == null) throw;
+            }
         }
 
         return conversation.Id;
@@ -236,6 +246,19 @@ public class ChatService : IChatService
         if (!isSenderParticipant)
             throw new ForbiddenException("You are not a participant in this conversation.");
 
+        if (conversation.Type == ConversationType.Direct)
+        {
+            var otherParticipant = conversation.Participants
+                .FirstOrDefault(p => p.UserId != senderId);
+
+            if (otherParticipant != null)
+                await EnsureSharedWorkspaceAsync(senderId, otherParticipant.UserId);
+        }
+        else
+        {
+            await EnsureAllParticipantsShareWorkspaceWithSenderAsync(senderId, conversation);
+        }
+
         var message = new Message
         {
             ConversationId = conversationId,
@@ -250,6 +273,34 @@ public class ChatService : IChatService
         await _notificationService.SendChatMessageAsync(participantUserIds, message);
 
         return ToResponse(message);
+    }
+
+    private async Task EnsureSharedWorkspaceAsync(int senderId, int receiverId)
+    {
+        var senderWorkspaces = await _workspaceMemberRepo.GetByUserIdAsync(senderId);
+        var senderWorkspaceIds = senderWorkspaces.Select(m => m.WorkspaceId).ToHashSet();
+
+        var receiverWorkspaces = await _workspaceMemberRepo.GetByUserIdAsync(receiverId);
+        var hasCommonWorkspace = receiverWorkspaces.Any(m => senderWorkspaceIds.Contains(m.WorkspaceId));
+
+        if (!hasCommonWorkspace)
+            throw new ForbiddenException("You can only message users in your workspace.");
+    }
+
+    private async Task EnsureAllParticipantsShareWorkspaceWithSenderAsync(
+        int senderId,
+        Conversation conversation)
+    {
+        var senderWorkspaces = await _workspaceMemberRepo.GetByUserIdAsync(senderId);
+        var senderWorkspaceIds = senderWorkspaces.Select(m => m.WorkspaceId).ToHashSet();
+
+        foreach (var participant in conversation.Participants.Where(p => p.UserId != senderId))
+        {
+            var memberWorkspaces = await _workspaceMemberRepo.GetByUserIdAsync(participant.UserId);
+            var hasCommonWorkspace = memberWorkspaces.Any(m => senderWorkspaceIds.Contains(m.WorkspaceId));
+            if (!hasCommonWorkspace)
+                throw new ForbiddenException("You can only message users in your workspace.");
+        }
     }
 
     public async Task<ConversationResponse> CreateGroupConversation(int creatorId, string name, List<int> memberIds)

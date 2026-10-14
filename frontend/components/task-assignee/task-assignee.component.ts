@@ -2,12 +2,9 @@ import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { NgbModule, NgbPopover } from '@ng-bootstrap/ng-bootstrap';
 import { AvatarComponent } from '../avatar/avatar.component';
+import { TaskMember } from '../../shared/models/member.model';
 
-export interface TaskMember {
-  id: number;
-  firstName: string;
-  lastName: string;
-}
+export type { TaskMember } from '../../shared/models/member.model';
 
 @Component({
   selector: 'app-task-assignee',

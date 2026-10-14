@@ -36,7 +36,8 @@ public class WorkspaceMemberService : IWorkspaceMemberService
             Id = m.Id,
             WorkspaceId = m.WorkspaceId,
             UserId = m.UserId,
-            Role = m.Role,
+            // Guest is board-scoped Member; expose as Member so both invite paths look the same.
+            Role = m.Role == UserRole.Guest ? UserRole.Member : m.Role,
             CreatedAt = m.CreatedAt,
             FirstName = m.User?.FirstName ?? string.Empty,
             LastName = m.User?.LastName ?? string.Empty,

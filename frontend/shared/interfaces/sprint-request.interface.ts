@@ -4,3 +4,9 @@ export interface SprintRequest {
   startDate?: string;
   endDate?: string;
 }
+
+export interface UpdateSprintRequest {
+  name: string;
+  startDate?: string | null;
+  endDate?: string | null;
+}

@@ -1,6 +1,8 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using backend.Application.Exceptions;
+using backend.Application.Interfaces;
 
 namespace backend.API.Hubs;
 
@@ -8,10 +10,17 @@ namespace backend.API.Hubs;
 public class SystemHub : Hub
 {
     private readonly IUserRepository _userRepository;
+    private readonly IBoardRepository _boardRepository;
+    private readonly IBoardAccessService _boardAccessService;
 
-    public SystemHub(IUserRepository userRepository)
+    public SystemHub(
+        IUserRepository userRepository,
+        IBoardRepository boardRepository,
+        IBoardAccessService boardAccessService)
     {
         _userRepository = userRepository;
+        _boardRepository = boardRepository;
+        _boardAccessService = boardAccessService;
     }
 
     public static string UserGroup(int userId) => $"user-{userId}";
@@ -22,6 +31,19 @@ public class SystemHub : Hub
     {
         if (boardId <= 0)
             return;
+
+        var board = await _boardRepository.GetById(boardId);
+        if (board == null)
+            throw new HubException("Board does not exist.");
+
+        try
+        {
+            await _boardAccessService.EnsureBoardAccessAsync(board);
+        }
+        catch (ForbiddenException ex)
+        {
+            throw new HubException(ex.Message);
+        }
 
         await Groups.AddToGroupAsync(Context.ConnectionId, BoardGroup(boardId));
     }

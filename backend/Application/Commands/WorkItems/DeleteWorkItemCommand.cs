@@ -9,6 +9,7 @@ public class DeleteWorkItemCommand : ICommand<bool>
     private readonly IBoardRepository _boardRepo;
     private readonly IBoardAccessService _boardAccessService;
     private readonly IWorkItemLockService _workItemLockService;
+    private readonly IBoardLockService _boardLockService;
     private readonly DomainEventSubject _domainEventSubject;
 
     public DeleteWorkItemCommand(
@@ -18,6 +19,7 @@ public class DeleteWorkItemCommand : ICommand<bool>
         IBoardRepository boardRepo,
         IBoardAccessService boardAccessService,
         IWorkItemLockService workItemLockService,
+        IBoardLockService boardLockService,
         DomainEventSubject domainEventSubject)
     {
         _workItemId = workItemId;
@@ -26,6 +28,7 @@ public class DeleteWorkItemCommand : ICommand<bool>
         _boardRepo = boardRepo;
         _boardAccessService = boardAccessService;
         _workItemLockService = workItemLockService;
+        _boardLockService = boardLockService;
         _domainEventSubject = domainEventSubject;
     }
 
@@ -40,7 +43,7 @@ public class DeleteWorkItemCommand : ICommand<bool>
             throw new NotFoundException("Board does not exist.");
 
         await _boardAccessService.EnsureBoardAccessAsync(board);
-
+        await _boardLockService.EnsureBoardAllowsMutationAsync(board.Id);
         await _workItemLockService.EnsureUserHasWriteLockAsync(_workItemId);
 
         await _workItemRepo.Delete(workItem);

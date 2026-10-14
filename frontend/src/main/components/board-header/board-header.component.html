@@ -1,0 +1,91 @@
+<div class="header-container">
+  <div class="toolbar">
+    <div class="toolbar-tabs">
+      <div
+        class="toolbar-slider"
+        [style.left]="getToolbarSliderLeft()"
+        [style.width]="getToolbarSliderWidth()"
+      ></div>
+      <div
+        class="toolbar-item"
+        *ngFor="let item of toolbarItems"
+        [class.toolbar-item--active]="selectedToolbarTab() === item"
+        (click)="toolbarTabSelect.emit(item)"
+      >
+        <span class="toolbar-item-text">{{ item }}</span>
+      </div>
+    </div>
+  </div>
+  <div class="input">
+    <app-input
+      [label]="'Search'"
+      [type]="'search'"
+      [icon]="sharedSvgRoutes.SEARCH_ICON"
+      (onGetValue)="searchChange.emit($event)"
+    />
+  </div>
+  <ng-container *ngIf="selectedToolbarTab() !== 'Chat'">
+    <div class="board-actions">
+      <div
+        *ngIf="store.canEditBoard"
+        class="users-container-add-button add-sprint-btn"
+        ngbTooltip="Add Sprint"
+        triggers="hover"
+        container="body"
+        placement="bottom"
+        (click)="addSprint.emit()"
+      >
+        Add Sprint
+      </div>
+      <div
+        *ngIf="store.canManageWorkspace"
+        class="users-container-add-button invite-board-btn"
+        ngbTooltip="Invite to Board"
+        triggers="hover"
+        container="body"
+        placement="bottom"
+        (click)="inviteBoard.emit()"
+      >
+        Invite to Board
+      </div>
+      <div class="users-container">
+        <app-avatar
+          *ngFor="let user of store.visibleBoardMembers"
+          [userId]="user.id"
+          [firstName]="user.firstName"
+          [lastName]="user.lastName"
+          [width]="18"
+          [height]="18"
+          [dashboardType]="true"
+          [isSelected]="store.selectedUser() === user.id"
+          (avatarClick)="userSelect.emit($event)"
+        ></app-avatar>
+        <app-ve-extra-members
+          *ngIf="store.extraBoardMembersCount > 0"
+          [members]="store.hiddenBoardMembers"
+          [extraCount]="store.extraBoardMembersCount"
+          [selectedUserId]="store.selectedUser()"
+          (memberSelect)="userSelect.emit($event)"
+        ></app-ve-extra-members>
+      </div>
+      <div
+        *ngIf="store.canEditBoard"
+        class="users-container-add-button"
+        ngbTooltip="Create Task"
+        triggers="hover"
+        container="body"
+        placement="bottom"
+        (click)="addTask.emit()"
+      >
+        <svg-icon
+          [src]="sharedSvgRoutes.PLUS_ICON"
+          class="users-container-add-button-icon"
+        ></svg-icon>
+      </div>
+    </div>
+  </ng-container>
+</div>
+<div class="header-actions">
+  <app-ve-notification></app-ve-notification>
+  <app-ve-profile></app-ve-profile>
+</div>

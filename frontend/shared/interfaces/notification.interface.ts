@@ -27,3 +27,22 @@ export interface WorkItemStatusChangedPayload {
   status: string;
   updatedByUserId: number;
 }
+
+export type WorkItemActivityType =
+  | 'WorkItemUpdated'
+  | 'CommentCreated'
+  | 'WorkItemFileAdded'
+  | 'WorkItemFileDeleted'
+  | 'SubWorkItemUpdated'
+  | 'SubWorkItemStatusChanged';
+
+export interface WorkItemActivityNotificationPayload {
+  activityType: WorkItemActivityType;
+  workItemId: number;
+  boardId: number;
+  name: string;
+  updatedByUserId: number;
+  subWorkItemId?: number;
+  status?: string;
+  fileName?: string;
+}

@@ -1,10 +1,11 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { API_URL } from '../config/api.config';
 import { WorkItemFileResponse } from '../interfaces/work-item-file-response.interface';
 
 @Injectable({ providedIn: 'root' })
 export class WorkItemFileService {
-  private readonly apiUrl = 'http://localhost:8080/api/work-item-files';
+  private readonly apiUrl = `${API_URL}/work-item-files`;
 
   constructor(private readonly http: HttpClient) {}
 

@@ -71,10 +71,13 @@ public class LocalFileStorageService : IFileStorageService
         return Task.CompletedTask;
     }
 
-    private void DeleteIfExists(string relativeUrl)
+    public string? ResolveAbsolutePath(string relativeUrl)
     {
         if (string.IsNullOrWhiteSpace(relativeUrl))
-            return;
+            return null;
+
+        if (relativeUrl.Contains("..", StringComparison.Ordinal))
+            return null;
 
         var normalized = relativeUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
         if (normalized.StartsWith($"uploads{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
@@ -82,9 +85,19 @@ public class LocalFileStorageService : IFileStorageService
             normalized = normalized[("uploads".Length + 1)..];
         }
 
-        var absolutePath = Path.Combine(_uploadRoot, normalized);
+        var absolutePath = Path.GetFullPath(Path.Combine(_uploadRoot, normalized));
+        var uploadRootFull = Path.GetFullPath(_uploadRoot);
 
-        if (File.Exists(absolutePath))
+        if (!absolutePath.StartsWith(uploadRootFull, StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        return File.Exists(absolutePath) ? absolutePath : null;
+    }
+
+    private void DeleteIfExists(string relativeUrl)
+    {
+        var absolutePath = ResolveAbsolutePath(relativeUrl);
+        if (absolutePath != null)
         {
             File.Delete(absolutePath);
         }

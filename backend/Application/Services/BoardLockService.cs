@@ -180,6 +180,18 @@ public class BoardLockService : IBoardLockService, IBoardLockPromotionService
         };
     }
 
+    public async Task EnsureBoardAllowsMutationAsync(int boardId)
+    {
+        var userId = _userContext.GetUserId();
+        var existingLock = await _lockRepo.GetByBoardIdAsync(boardId);
+
+        if (existingLock == null || existingLock.ExpiresAt < DateTime.UtcNow)
+            return;
+
+        if (existingLock.LockedByUserId != userId)
+            throw new ForbiddenException("This board is locked by another user.");
+    }
+
     public async Task PromoteNextInQueueAsync(int boardId)
     {
         var next = await _queueRepo.GetFirstAsync(boardId);

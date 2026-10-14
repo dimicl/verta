@@ -1,3 +1,5 @@
+import { API_BASE_URL } from '../config/api.config';
+
 export interface WorkItemFileResponse {
   id: number;
   workItemId: number;
@@ -9,18 +11,29 @@ export interface WorkItemFileResponse {
   createdAt: string;
 }
 
-export const API_BASE_URL = 'http://localhost:8080';
-
 export function resolveFileUrl(path: string): string {
   if (!path) {
     return '';
   }
 
-  if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:')) {
+  if (path.startsWith('blob:')) {
     return path;
   }
 
-  return `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
+  let url = path;
+  if (!(path.startsWith('http://') || path.startsWith('https://'))) {
+    url = `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
+  }
+
+  if (url.includes('/api/work-item-files/') && url.includes('/content')) {
+    const token = localStorage.getItem('token');
+    if (token) {
+      const separator = url.includes('?') ? '&' : '?';
+      return `${url}${separator}access_token=${encodeURIComponent(token)}`;
+    }
+  }
+
+  return url;
 }
 
 export function fileExtensionFromName(fileName: string): string {

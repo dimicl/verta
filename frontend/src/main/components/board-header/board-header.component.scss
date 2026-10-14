@@ -1,0 +1,145 @@
+:host {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.input {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.users-container-add-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 8px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+
+  &:hover {
+    transform: scale(1.1);
+    background-color: #535353;
+    color: #fff;
+
+    .users-container-add-button-icon svg path {
+      fill: #fff;
+    }
+  }
+}
+
+.users-container-add-button-icon {
+  width: 18px;
+  height: 18px;
+  display: flex;
+
+  svg path {
+    fill: #3c3c3c;
+    transition: fill 0.2s ease;
+  }
+}
+
+.users-container-add-button.add-sprint-btn,
+.users-container-add-button.invite-board-btn {
+  width: auto;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #3c3c3c;
+}
+
+.users-container-add-button.add-sprint-btn:hover,
+.users-container-add-button.invite-board-btn:hover {
+  color: #fff;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: start;
+  gap: 10px;
+  align-items: center;
+}
+
+.toolbar-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  position: relative;
+  isolation: isolate;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.toolbar-slider {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: #000;
+  border-radius: 6px;
+  transition: left 0.28s ease;
+  z-index: 0;
+}
+
+.toolbar-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  padding: 8px;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+}
+
+.toolbar-item-text {
+  font-size: 14px;
+  line-height: 18px;
+  font-weight: 600;
+  color: #2f2f2f;
+}
+
+.toolbar-item--active .toolbar-item-text {
+  color: #fff;
+}
+
+.header-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-container .toolbar,
+.header-container .input,
+.header-container .users-container,
+.header-container .board-actions {
+  display: flex;
+  align-items: center;
+}
+
+.board-actions {
+  gap: 8px;
+  padding-left: 8px;
+  border-left: 1px solid #e5e7eb;
+}
+
+.users-container {
+  gap: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.users-container app-avatar + app-avatar,
+.users-container app-avatar + app-ve-extra-members {
+  margin-left: -4px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}

@@ -1,0 +1,119 @@
+<div class="backlog-container">
+  <div class="lock-toast" *ngIf="store.showLockToast">{{ store.stickyLockMessage }}</div>
+  <div class="lock-toast lock-toast--error" *ngIf="store.showStatusErrorToast">
+    {{ store.statusErrorMessage }}
+  </div>
+
+  <div
+    class="sprint-container"
+    *ngFor="let group of store.sprintTaskGroups"
+    [class.is-expanded]="store.isGroupExpanded(group)"
+  >
+    <div
+      class="sprint-header"
+      [class.is-collapsed]="!store.isGroupExpanded(group)"
+      (click)="store.onHeaderGroupsToggle(group)"
+    >
+      <div class="sprint-header-general">
+        <svg-icon
+          [src]="sharedSvgRoutes.ARROW_DOWN_ICON"
+          class="sprint-header-icon"
+          [class.is-expanded]="store.isGroupExpanded(group)"
+        ></svg-icon>
+        <div>
+          <span class="sprint-header-text">{{ group.name }}</span>
+        </div>
+        <div
+          *ngIf="store.canEditBoard && group.id !== null"
+          class="sprint-edit-btn"
+          ngbTooltip="Edit sprint"
+          triggers="hover"
+          container="body"
+          (click)="store.onEditSprint(group, $event)"
+        >
+          Edit
+        </div>
+      </div>
+    </div>
+
+    <div class="task-group" [class.is-collapsed]="!store.isGroupExpanded(group)">
+      <ng-container *ngIf="group.tasks.length > 0; else noTasks">
+        <div class="task-item" *ngFor="let task of group.tasks">
+          <div class="task-left" (click)="taskSession.onOpenTask(task)">
+            <input type="checkbox" class="checkbox" />
+            <div class="task-main">
+              <span class="task-title">{{ task.name }}</span>
+              <span class="task-description">{{ task.description }}</span>
+            </div>
+          </div>
+
+          <div class="task-middle" (click)="$event.stopPropagation()">
+            <app-task-assignee
+              [members]="store.boardMembers"
+              [assignedUserId]="task.assignedUserId ?? null"
+              [disabled]="!store.canEditBoard"
+              (assignedUserIdChange)="store.onTaskAssigneeChange(task, $event)"
+            ></app-task-assignee>
+          </div>
+
+          <div class="task-right" (click)="$event.stopPropagation()">
+            <app-ve-status
+              [taskStatus]="task.status"
+              [disabled]="!store.canEditBoard"
+              (statusChange)="store.onTaskStatusChange(task, $event)"
+            ></app-ve-status>
+            <app-task-priority
+              [priority]="task.priority"
+              [disabled]="!store.canEditBoard"
+              (priorityChange)="store.onTaskPriorityChange(task, $event)"
+            ></app-task-priority>
+            <div
+              class="task-menu"
+              [ngbPopover]="taskMenuTpl"
+              #taskMenuPopover="ngbPopover"
+              [popoverContext]="{ popover: taskMenuPopover }"
+              triggers="click"
+              placement="left"
+              container="body"
+              popoverClass="task-menu-popover"
+              autoClose="outside"
+              (click)="$event.stopPropagation()"
+            >
+              ⋮
+            </div>
+            <ng-template #taskMenuTpl let-popover="popover">
+              <div class="task-options">
+                <button
+                  type="button"
+                  class="task-option task-option--edit"
+                  (click)="taskSession.onEditTaskFromMenu(task, popover, $event)"
+                >
+                  Edit
+                </button>
+                @if(store.canEditBoard){
+                <button
+                  type="button"
+                  class="task-option task-option--delete"
+                  (click)="taskSession.onDeleteTaskFromMenu(task, popover, $event)"
+                >
+                  Delete
+                </button>
+                }
+              </div>
+            </ng-template>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-template #noTasks>
+        <div class="empty-state-board">
+          {{
+            store.hasActiveTaskFilters()
+              ? "No tasks match your filters."
+              : "No tasks found for this sprint."
+          }}
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>

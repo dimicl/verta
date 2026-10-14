@@ -1,4 +1,5 @@
 using backend.Application.Interfaces;
+using backend.Application.Interfaces.Messaging;
 using backend.Shared.Helpers;
 using backend.Application.Exceptions;
 
@@ -39,22 +40,16 @@ public class AuthService : IAuthService
 
         await _userRepository.Add(user);
 
-        // Publish ne blokira registraciju — greška se samo loguje
         try
         {
-            await _messageBus.PublishAsync("user-events",
-                System.Text.Json.JsonSerializer.Serialize(new
-                {
-                    EventName = "UserRegistered",
-                    Payload = new { UserId = user.Id, Email = user.Email },
-                    CreatedAt = DateTime.UtcNow
-                }));
+            await _messageBus.PublishAsync(
+                MessagingTopology.User("UserRegistered"),
+                "UserRegistered",
+                new { UserId = user.Id, Email = user.Email });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            // Log only — ne propagiramo, korisnik je kreiran uspešno
-            // U produkciji: ILogger<AuthService> ovde
-            _ = ex;
+            // Do not fail registration if messaging is down.
         }
 
         return AuthHelper.BuildAuthResponse(user, _configuration);
@@ -72,13 +67,10 @@ public class AuthService : IAuthService
         if (user.Status != UserStatus.Active)
             throw new ValidationException("User account is not active");
 
-        await _messageBus.PublishAsync("user-events",
-            System.Text.Json.JsonSerializer.Serialize(new
-            {
-                EventName = "UserLoggedIn",
-                Payload = new { UserId = user.Id },
-                CreatedAt = DateTime.UtcNow
-            }));
+        await _messageBus.PublishAsync(
+            MessagingTopology.User("UserLoggedIn"),
+            "UserLoggedIn",
+            new { UserId = user.Id });
 
         return AuthHelper.BuildAuthResponse(user, _configuration);
     }

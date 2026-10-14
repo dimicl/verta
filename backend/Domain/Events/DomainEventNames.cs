@@ -7,6 +7,12 @@ public static class DomainEventNames
     public const string WorkItemStatusChanged = "WorkItemStatusChanged";
     public const string WorkItemPriorityChanged = "WorkItemPriorityChanged";
 
+    /// <summary>
+    /// Personal inbox notification for reporter/assignee (not board broadcast).
+    /// </summary>
+    public const string WorkItemActivityNotification = "WorkItemActivityNotification";
+
+
     public const string WorkItemLocked = "WorkItemLocked";
     public const string WorkItemUnlocked = "WorkItemUnlocked";
     public const string WorkItemLockTransferred = "WorkItemLockTransferred";
@@ -32,6 +38,7 @@ public static class DomainEventNames
     public const string SubWorkItemStatusChanged = "SubWorkItemStatusChanged";
     public const string SubWorkItemDeleted = "SubWorkItemDeleted";
 
+    public const string SprintCreated = "SprintCreated";
     public const string SprintUpdated = "SprintUpdated";
     public const string SprintDeleted = "SprintDeleted";
 }

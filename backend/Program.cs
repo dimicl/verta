@@ -95,7 +95,9 @@ builder.Services.AddAuthentication(options =>
         {
             var accessToken = context.Request.Query["access_token"];
             var path = context.HttpContext.Request.Path;
-            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+            if (!string.IsNullOrEmpty(accessToken) &&
+                (path.StartsWithSegments("/hubs") ||
+                 path.StartsWithSegments("/api/work-item-files")))
             {
                 context.Token = accessToken;
             }
@@ -107,19 +109,17 @@ builder.Services.AddAuthentication(options =>
 
 var app = builder.Build();
 
-//app.MapOpenApi();
-app.UseSwagger();
-app.UseSwaggerUI();
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
 app.UseCors("Frontend");
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
 var uploadsPath = Path.Combine(app.Environment.ContentRootPath, "uploads");
 Directory.CreateDirectory(uploadsPath);
-app.UseStaticFiles(new StaticFileOptions
-{
-    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsPath),
-    RequestPath = "/uploads",
-});
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -132,10 +132,13 @@ using (var scope = app.Services.CreateScope())
 
     db.Database.Migrate();
 
-    db.Database.ExecuteSqlRaw("DELETE FROM board_lock_queue");
-    db.Database.ExecuteSqlRaw("DELETE FROM board_locks");
-    db.Database.ExecuteSqlRaw("DELETE FROM work_item_lock_interests");
-    db.Database.ExecuteSqlRaw("DELETE FROM work_item_locks");
+    if (app.Environment.IsDevelopment())
+    {
+        db.Database.ExecuteSqlRaw("DELETE FROM board_lock_queue");
+        db.Database.ExecuteSqlRaw("DELETE FROM board_locks");
+        db.Database.ExecuteSqlRaw("DELETE FROM work_item_lock_interests");
+        db.Database.ExecuteSqlRaw("DELETE FROM work_item_locks");
+    }
 
     await DatabaseSeeder.SeedAsync(db, configuration, logger);
 }

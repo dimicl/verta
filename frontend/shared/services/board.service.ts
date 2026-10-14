@@ -1,5 +1,6 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { API_URL } from '../config/api.config';
 import {
   BoardInviteRequest,
   BoardRequest,
@@ -8,40 +9,44 @@ import {
 
 @Injectable({ providedIn: 'root' })
 export class BoardService {
-  private API_URL = 'http://localhost:8080/api/boards';
-  private readonly token = localStorage.getItem('token');
+  private readonly apiUrl = `${API_URL}/boards`;
 
   constructor(private http: HttpClient) {}
 
+  private authHeaders(): HttpHeaders {
+    const token = localStorage.getItem('token');
+    return new HttpHeaders({
+      Authorization: `Bearer ${token ?? ''}`,
+    });
+  }
+
   public createBoard(request: BoardRequest) {
-    return this.http.post<BoardResponse>(`${this.API_URL}`, request, {
-      headers: {
-        Authorization: `Bearer ${this.token}`,
-      },
+    return this.http.post<BoardResponse>(`${this.apiUrl}`, request, {
+      headers: this.authHeaders(),
     });
   }
 
   public getBoards(workspaceId: number | undefined) {
-    return this.http.get<BoardResponse[]>(`${this.API_URL}/workspace/${workspaceId}`, {
-      headers: {
-        Authorization: `Bearer ${this.token}`,
-      },
+    return this.http.get<BoardResponse[]>(`${this.apiUrl}/workspace/${workspaceId}`, {
+      headers: this.authHeaders(),
+    });
+  }
+
+  public getById(boardId: number) {
+    return this.http.get<BoardResponse>(`${this.apiUrl}/${boardId}`, {
+      headers: this.authHeaders(),
     });
   }
 
   public getBoardMembers(boardId: number) {
-    return this.http.get<any[]>(`${this.API_URL}/${boardId}/members`, {
-      headers: {
-        Authorization: `Bearer ${this.token}`,
-      },
+    return this.http.get<any[]>(`${this.apiUrl}/${boardId}/members`, {
+      headers: this.authHeaders(),
     });
   }
 
   public inviteToBoard(request: BoardInviteRequest) {
-    return this.http.post<{ message: string }>(`${this.API_URL}/invite`, request, {
-      headers: {
-        Authorization: `Bearer ${this.token}`,
-      },
+    return this.http.post<{ message: string }>(`${this.apiUrl}/invite`, request, {
+      headers: this.authHeaders(),
     });
   }
 }

@@ -73,9 +73,30 @@ public class ChangeSubWorkItemStatusCommand : ICommand<SubWorkItemResponse>
             SubWorkItemId = subWorkItem.Id,
             WorkItemId = subWorkItem.WorkItemId,
             BoardId = workItem.BoardId,
+            Name = subWorkItem.Name,
             Status = subWorkItem.Status,
             UpdatedByUserId = _userId
         });
+
+        var statusTargets = WorkItemWatcherHelper.GetTargetUserIds(
+            _userId,
+            subWorkItem.UserId,
+            subWorkItem.AssignedUserId);
+
+        if (statusTargets.Length > 0)
+        {
+            await _domainEventSubject.NotifyAsync(DomainEventNames.WorkItemActivityNotification, new
+            {
+                TargetUserIds = statusTargets,
+                ActivityType = "SubWorkItemStatusChanged",
+                WorkItemId = workItem.Id,
+                SubWorkItemId = subWorkItem.Id,
+                BoardId = workItem.BoardId,
+                Name = subWorkItem.Name,
+                Status = subWorkItem.Status,
+                UpdatedByUserId = _userId
+            });
+        }
 
         return SubWorkItemHelper.ToResponse(subWorkItem);
     }

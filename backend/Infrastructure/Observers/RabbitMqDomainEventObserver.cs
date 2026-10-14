@@ -1,5 +1,5 @@
-using System.Text.Json;
 using backend.Application.Interfaces;
+using backend.Application.Interfaces.Messaging;
 
 public class RabbitMqDomainEventObserver : IDomainEventObserver
 {
@@ -12,13 +12,9 @@ public class RabbitMqDomainEventObserver : IDomainEventObserver
 
     public async Task UpdateAsync(string eventName, object payload)
     {
-        var message = JsonSerializer.Serialize(new
-        {
-            EventName = eventName,
-            Payload = payload,
-            CreatedAt = DateTime.UtcNow
-        });
-
-        await _messageBus.PublishAsync("domain-events", message);
+        await _messageBus.PublishAsync(
+            MessagingTopology.Domain(eventName),
+            eventName,
+            payload);
     }
 }

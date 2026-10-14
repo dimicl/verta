@@ -1,5 +1,6 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { API_URL } from '../config/api.config';
 import {
   ChangeSubWorkItemStatusRequest,
   SubWorkItemRequest,
@@ -10,7 +11,7 @@ import { TaskStatus } from '../types/task-status.type';
 
 @Injectable({ providedIn: 'root' })
 export class SubWorkItemService {
-  private readonly apiUrl = 'http://localhost:8080/api/sub-work-items';
+  private readonly apiUrl = `${API_URL}/sub-work-items`;
 
   constructor(private readonly http: HttpClient) {}
 

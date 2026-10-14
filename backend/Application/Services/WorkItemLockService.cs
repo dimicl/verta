@@ -47,26 +47,13 @@ public class WorkItemLockService : IWorkItemLockService, IWorkItemLockExpiryServ
         var board = await _boardRepo.GetById(workItem.BoardId);
         if (board == null) throw new NotFoundException("Board does not exist.");
 
-        WorkspaceMember member;
         try
         {
-            member = await _boardAccessService.EnsureBoardAccessAsync(board);
+            await _boardAccessService.EnsureBoardAccessAsync(board);
         }
         catch (Exception ex)
         {
             throw new ForbiddenException(ex.Message);
-        }
-
-        if (member.Role is not UserRole.Owner and not UserRole.Member)
-        {
-            return new WorkItemLockResponse
-            {
-                WorkItemId = workItemId,
-                UserId = userId,
-                Mode = "READ_ONLY",
-                LockedAt = null,
-                ExpiresAt = null
-            };
         }
 
         var existingLock = await _lockRepo.GetByWorkItemIdAsync(workItemId);
@@ -206,10 +193,32 @@ public class WorkItemLockService : IWorkItemLockService, IWorkItemLockExpiryServ
     public async Task EnsureUserHasWriteLockAsync(int workItemId)
     {
         var userId = _userContext.GetUserId();
+        var refreshed = await _lockRepo.TryRefreshActiveLockAsync(
+            workItemId,
+            userId,
+            DateTime.UtcNow.Add(LockDuration));
+
+        if (!refreshed)
+        {
+            var existingLock = await _lockRepo.GetByWorkItemIdAsync(workItemId);
+            if (existingLock != null &&
+                existingLock.ExpiresAt >= DateTime.UtcNow &&
+                existingLock.LockedByUserId != userId)
+            {
+                throw new ForbiddenException("This work item is locked by another user.");
+            }
+
+            throw new ForbiddenException("You must open the work item for editing before making changes.");
+        }
+    }
+
+    public async Task EnsureWorkItemNotLockedByOtherAsync(int workItemId)
+    {
+        var userId = _userContext.GetUserId();
         var existingLock = await _lockRepo.GetByWorkItemIdAsync(workItemId);
 
         if (existingLock == null || existingLock.ExpiresAt < DateTime.UtcNow)
-            throw new ForbiddenException("You must open the work item for editing before making changes.");
+            return;
 
         if (existingLock.LockedByUserId != userId)
             throw new ForbiddenException("This work item is locked by another user.");

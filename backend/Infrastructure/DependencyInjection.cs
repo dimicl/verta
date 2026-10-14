@@ -1,6 +1,8 @@
 using backend.Application.Interfaces;
+using backend.Application.Interfaces.Messaging;
 using backend.Application.Services;
 using backend.Infrastructure.Messaging;
+using backend.Infrastructure.Messaging.Handlers;
 using backend.Infrastructure.Notifications;
 using backend.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -71,8 +73,11 @@ public static class DependencyInjection
         services.AddScoped<CommandInvoker>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IDomainEventLogRepository, DomainEventLogRepository>();
-        services.AddHostedService<DomainEventConsumerService>();
-        services.AddHostedService<UserEventConsumerService>();
+        services.AddScoped<IIntegrationEventHandler, PersistDomainEventHandler>();
+        services.AddScoped<IIntegrationEventHandler, PersistUserEventHandler>();
+        // When you build a real notifications service, register e.g.:
+        // services.AddScoped<IIntegrationEventHandler, ExampleWorkItemAssignedHandler>();
+        services.AddHostedService<IntegrationEventConsumerService>();
 
         services.AddHttpContextAccessor();
 

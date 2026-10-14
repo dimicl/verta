@@ -1,0 +1,58 @@
+<div class="workspace">
+  <ng-container *ngIf="store.workspace?.id; else createWorkspace">
+    <div class="workspace-info">
+      <div class="workspace-avatar">V</div>
+      <div class="workspace-name">{{ store.workspace?.name }}</div>
+    </div>
+    <div class="workspace-actions" *ngIf="store.canManageWorkspace">
+      <div class="invite-btn" (click)="openInvite.emit()">
+        Invite to Workspace
+      </div>
+      <div class="invite-btn" (click)="openSettings.emit()">
+        Settings
+      </div>
+    </div>
+  </ng-container>
+  <ng-template #createWorkspace>
+    <div class="workspace-actions">
+      <div class="invite-btn" (click)="openCreate.emit()">
+        Create Workspace
+      </div>
+    </div>
+  </ng-template>
+</div>
+
+<ng-container *ngIf="store.workspace">
+  <div class="boards-section">
+    <div class="boards-header">
+      <span>Boards</span>
+      <div
+        *ngIf="store.canManageWorkspace"
+        class="add-board-btn"
+        ngbTooltip="Add Board"
+        triggers="hover"
+        container="body"
+        placement="bottom"
+        (click)="addBoard.emit()"
+      >
+        <svg-icon class="add-icon" [src]="sharedSvgRoutes.PLUS_ICON" />
+      </div>
+    </div>
+
+    <div class="boards-list">
+      <ng-container *ngIf="(store.boards?.length ?? 0) > 0; else noBoardItems">
+        <div
+          class="board-item"
+          *ngFor="let item of store.boards"
+          [class.board-item--active]="store.isBoardSelected(item)"
+          (click)="selectBoard.emit(item)"
+        >
+          <span class="board-item-name">{{ item.name }}</span>
+        </div>
+      </ng-container>
+      <ng-template #noBoardItems>
+        <div class="empty-state-board">No boards</div>
+      </ng-template>
+    </div>
+  </div>
+</ng-container>

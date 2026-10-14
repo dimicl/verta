@@ -10,6 +10,7 @@ public class CreateWorkItemCommand : ICommand<WorkItemResponse>
     private readonly ISprintRepository _sprintRepo;
     private readonly IWorkspaceMemberRepository _workspaceMemberRepo;
     private readonly IBoardAccessService _boardAccessService;
+    private readonly IBoardLockService _boardLockService;
     private readonly DomainEventSubject _domainEventSubject;
 
     public CreateWorkItemCommand(
@@ -20,6 +21,7 @@ public class CreateWorkItemCommand : ICommand<WorkItemResponse>
         ISprintRepository sprintRepo,
         IWorkspaceMemberRepository workspaceMemberRepo,
         IBoardAccessService boardAccessService,
+        IBoardLockService boardLockService,
         DomainEventSubject domainEventSubject)
     {
         _request = request;
@@ -29,6 +31,7 @@ public class CreateWorkItemCommand : ICommand<WorkItemResponse>
         _sprintRepo = sprintRepo;
         _workspaceMemberRepo = workspaceMemberRepo;
         _boardAccessService = boardAccessService;
+        _boardLockService = boardLockService;
         _domainEventSubject = domainEventSubject;
     }
 
@@ -48,6 +51,7 @@ public class CreateWorkItemCommand : ICommand<WorkItemResponse>
             throw new NotFoundException("Board does not exist.");
 
         await _boardAccessService.EnsureBoardAccessAsync(board);
+        await _boardLockService.EnsureBoardAllowsMutationAsync(board.Id);
 
         if (_request.SprintId.HasValue)
         {

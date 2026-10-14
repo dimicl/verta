@@ -92,6 +92,25 @@ public class UpdateSubWorkItemCommand : ICommand<SubWorkItemResponse>
             UpdatedByUserId = _userId
         });
 
+        var updateTargets = WorkItemWatcherHelper.GetTargetUserIds(
+            _userId,
+            subWorkItem.UserId,
+            subWorkItem.AssignedUserId);
+
+        if (updateTargets.Length > 0)
+        {
+            await _domainEventSubject.NotifyAsync(DomainEventNames.WorkItemActivityNotification, new
+            {
+                TargetUserIds = updateTargets,
+                ActivityType = "SubWorkItemUpdated",
+                WorkItemId = workItem.Id,
+                SubWorkItemId = subWorkItem.Id,
+                BoardId = workItem.BoardId,
+                Name = subWorkItem.Name,
+                UpdatedByUserId = _userId
+            });
+        }
+
         return SubWorkItemHelper.ToResponse(subWorkItem);
     }
 }

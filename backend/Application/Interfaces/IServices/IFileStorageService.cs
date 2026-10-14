@@ -9,4 +9,6 @@ public interface IFileStorageService
         IFormFile file);
 
     Task DeleteByUrlsAsync(string fileUrl, string? thumbnailUrl);
+
+    string? ResolveAbsolutePath(string relativeUrl);
 }

@@ -25,13 +25,6 @@ public class WorkItemFileController : ControllerBase
         return Ok(result);
     }
 
-    [HttpPost]
-    public async Task<IActionResult> Create([FromBody] WorkItemFileRequest request)
-    {
-        var result = await _fileService.Create(request);
-        return Ok(result);
-    }
-
     [HttpGet("work-item/{workItemId:int}")]
     public async Task<IActionResult> GetByWorkItemId(int workItemId)
     {
@@ -44,6 +37,15 @@ public class WorkItemFileController : ControllerBase
     {
         var result = await _fileService.GetBySubWorkItemId(subWorkItemId);
         return Ok(result);
+    }
+
+    [HttpGet("{fileId:int}/content")]
+    public async Task<IActionResult> GetContent(int fileId)
+    {
+        var (stream, contentType, _) = await _fileService.GetContentAsync(fileId);
+        return File(
+            stream,
+            string.IsNullOrWhiteSpace(contentType) ? "application/octet-stream" : contentType);
     }
 
     [HttpDelete("{fileId:int}")]

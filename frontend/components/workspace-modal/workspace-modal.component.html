@@ -1,19 +1,48 @@
 <div class="workspace-modal-overlay">
   <div class="workspace-modal">
     <div class="workspace-modal-header">
-      <span class="workspace-modal-header-text">Create Workspace</span>
+      <span class="workspace-modal-header-text">
+        {{ isEditMode ? 'Workspace settings' : 'Create Workspace' }}
+      </span>
     </div>
 
     <div class="workspace-modal-body">
       <div class="workspace-form-group">
-        <app-input [label]="'Workspace name'" (onGetValue)="onInput($event)" />
+        <app-input
+          [label]="'Workspace name'"
+          [modelValue]="workspaceName.value"
+          (onGetValue)="onInput($event)"
+        />
       </div>
+      <p class="workspace-error" *ngIf="formError()">{{ formError() }}</p>
     </div>
 
     <div class="workspace-modal-footer">
-      <button class="workspace-btn workspace-btn--primary" (click)="onCreate()">
-        {{ "Create" }}
+      <button
+        *ngIf="isEditMode"
+        type="button"
+        class="workspace-btn workspace-btn--danger"
+        (click)="onDelete()"
+      >
+        Delete
       </button>
+      <div class="workspace-footer-right">
+        <button
+          type="button"
+          class="workspace-btn workspace-btn--secondary"
+          (click)="onClose()"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="workspace-btn workspace-btn--primary"
+          [disabled]="isSaving()"
+          (click)="onCreate()"
+        >
+          {{ isEditMode ? 'Save' : 'Create' }}
+        </button>
+      </div>
     </div>
   </div>
 </div>

@@ -1,49 +1,24 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { API_URL } from '../config/api.config';
+import {
+  ChatApiMessage,
+  ConversationResponse,
+  CreateGroupConversationRequest,
+  SendConversationMessageRequest,
+  SendMessageRequest,
+} from '../interfaces/chat.interfaces';
 
-export interface ChatApiMessage {
-  id: number;
-  content: string;
-  senderId: number;
-  conversationId: number;
-  createdAt?: string;
-}
-
-export interface ConversationParticipant {
-  id: number;
-  userId: number;
-  firstName: string;
-  lastName: string;
-  isOnline: boolean;
-}
-
-export interface ConversationResponse {
-  id: number;
-  type: string;
-  name?: string;
-  createdAt: string;
-  unreadCount: number;
-  participants: ConversationParticipant[];
-}
-
-interface SendMessageRequest {
-  receiverId: number;
-  content: string;
-}
-
-interface SendConversationMessageRequest {
-  content: string;
-}
-
-interface CreateGroupConversationRequest {
-  name: string;
-  memberIds: number[];
-}
+export type {
+  ChatApiMessage,
+  ConversationParticipant,
+  ConversationResponse,
+} from '../interfaces/chat.interfaces';
 
 @Injectable({ providedIn: 'root' })
 export class ChatService {
-  private readonly apiUrl = 'http://localhost:8080/api/chat';
+  private readonly apiUrl = `${API_URL}/chat`;
 
   constructor(private readonly httpClient: HttpClient) {}
 

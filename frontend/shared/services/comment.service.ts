@@ -1,11 +1,12 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { API_URL } from '../config/api.config';
 import { CommentRequest } from '../interfaces/comment-request.interface';
 import { CommentResponse } from '../interfaces/comment-response.interface';
 
 @Injectable({ providedIn: 'root' })
 export class CommentService {
-  private readonly apiUrl = 'http://localhost:8080/api/comments';
+  private readonly apiUrl = `${API_URL}/comments`;
 
   constructor(private readonly http: HttpClient) {}
 

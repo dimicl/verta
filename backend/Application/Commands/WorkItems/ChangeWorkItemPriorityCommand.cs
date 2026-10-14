@@ -9,6 +9,8 @@ public class ChangeWorkItemPriorityCommand : ICommand<WorkItemResponse>
     private readonly IWorkItemRepository _workItemRepo;
     private readonly IBoardRepository _boardRepo;
     private readonly IBoardAccessService _boardAccessService;
+    private readonly IWorkItemLockService _workItemLockService;
+    private readonly IBoardLockService _boardLockService;
     private readonly DomainEventSubject _domainEventSubject;
 
     public ChangeWorkItemPriorityCommand(
@@ -18,6 +20,8 @@ public class ChangeWorkItemPriorityCommand : ICommand<WorkItemResponse>
         IWorkItemRepository workItemRepo,
         IBoardRepository boardRepo,
         IBoardAccessService boardAccessService,
+        IWorkItemLockService workItemLockService,
+        IBoardLockService boardLockService,
         DomainEventSubject domainEventSubject)
     {
         _workItemId = workItemId;
@@ -26,6 +30,8 @@ public class ChangeWorkItemPriorityCommand : ICommand<WorkItemResponse>
         _workItemRepo = workItemRepo;
         _boardRepo = boardRepo;
         _boardAccessService = boardAccessService;
+        _workItemLockService = workItemLockService;
+        _boardLockService = boardLockService;
         _domainEventSubject = domainEventSubject;
     }
 
@@ -43,6 +49,8 @@ public class ChangeWorkItemPriorityCommand : ICommand<WorkItemResponse>
             throw new NotFoundException("Board does not exist.");
 
         await _boardAccessService.EnsureBoardAccessAsync(board);
+        await _boardLockService.EnsureBoardAllowsMutationAsync(board.Id);
+        await _workItemLockService.EnsureWorkItemNotLockedByOtherAsync(_workItemId);
 
         workItem.Priority = _request.Priority;
         workItem.UpdatedAt = DateTime.UtcNow;
