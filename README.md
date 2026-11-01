@@ -184,5 +184,5 @@ verta/
 
 ## Team
 
-- **Petar Nikolić** – [@petarNi](https://github.com/petarNi) – backend
+- **Petar Nikolić** – [@petarNi](https://github.com/petarNi)
 - **Luka Dimić** – [@dimicl](https://github.com/dimicl)
